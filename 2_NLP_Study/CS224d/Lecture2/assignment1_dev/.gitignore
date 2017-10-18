@@ -1,0 +1,4 @@
+*.pyc
+*.npy
+assignment.zip
+cs224d/datasets/stanfordSentimentTreebank/*
