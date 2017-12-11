@@ -1,0 +1,195 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+EOS	../lib/model_new.py	/^    EOS = 1$/;"	kind:variable	line:19
+EOS	../seq2seq_chat/lib/model_new.py	/^    EOS = 1$/;"	kind:variable	line:19
+EOS	../seq2seq_chat/simple_model.py	/^EOS = 1$/;"	kind:variable	line:30
+PAD	../lib/model_new.py	/^    PAD = 0$/;"	kind:variable	line:18
+PAD	../seq2seq_chat/lib/model_new.py	/^    PAD = 0$/;"	kind:variable	line:18
+PAD	../seq2seq_chat/simple_model.py	/^PAD = 0$/;"	kind:variable	line:29
+Seq2SeqModel	../lib/model_new.py	/^class Seq2SeqModel():$/;"	kind:class	line:14
+Seq2SeqModel	../seq2seq_chat/lib/model_new.py	/^class Seq2SeqModel():$/;"	kind:class	line:14
+W	../tb_bmi.py	/^    W = tf.Variable(tf.random_uniform([2, 3], -1.0, 1.0), name='W')$/;"	kind:variable	line:41
+__init__	../lib/model_new.py	/^    def __init__(self, encoder_cell, decoder_cell, vocab_size, embedding_size,$/;"	kind:member	line:21
+__init__	../seq2seq_chat/lib/model_new.py	/^    def __init__(self, encoder_cell, decoder_cell, vocab_size, embedding_size,$/;"	kind:member	line:21
+_acc	../day2_tf_tut.py	/^                _acc = sess.run(accuracy)$/;"	kind:variable	line:96
+_init_bidirectional_encoder	../lib/model_new.py	/^    def _init_bidirectional_encoder(self):$/;"	kind:member	line:161
+_init_bidirectional_encoder	../seq2seq_chat/lib/model_new.py	/^    def _init_bidirectional_encoder(self):$/;"	kind:member	line:161
+_init_debug_inputs	../lib/model_new.py	/^    def _init_debug_inputs(self):$/;"	kind:member	line:60
+_init_debug_inputs	../seq2seq_chat/lib/model_new.py	/^    def _init_debug_inputs(self):$/;"	kind:member	line:60
+_init_decoder	../lib/model_new.py	/^    def _init_decoder(self):$/;"	kind:member	line:189
+_init_decoder	../seq2seq_chat/lib/model_new.py	/^    def _init_decoder(self):$/;"	kind:member	line:189
+_init_decoder_train_connectors	../lib/model_new.py	/^    def _init_decoder_train_connectors(self):$/;"	kind:member	line:97
+_init_decoder_train_connectors	../seq2seq_chat/lib/model_new.py	/^    def _init_decoder_train_connectors(self):$/;"	kind:member	line:97
+_init_embeddings	../lib/model_new.py	/^    def _init_embeddings(self):$/;"	kind:member	line:132
+_init_embeddings	../seq2seq_chat/lib/model_new.py	/^    def _init_embeddings(self):$/;"	kind:member	line:132
+_init_optimizer	../lib/model_new.py	/^    def _init_optimizer(self):$/;"	kind:member	line:272
+_init_optimizer	../seq2seq_chat/lib/model_new.py	/^    def _init_optimizer(self):$/;"	kind:member	line:272
+_init_placeholders	../lib/model_new.py	/^    def _init_placeholders(self):$/;"	kind:member	line:72
+_init_placeholders	../seq2seq_chat/lib/model_new.py	/^    def _init_placeholders(self):$/;"	kind:member	line:72
+_init_simple_encoder	../lib/model_new.py	/^    def _init_simple_encoder(self):$/;"	kind:member	line:151
+_init_simple_encoder	../seq2seq_chat/lib/model_new.py	/^    def _init_simple_encoder(self):$/;"	kind:member	line:151
+_make_graph	../lib/model_new.py	/^    def _make_graph(self):$/;"	kind:member	line:42
+_make_graph	../seq2seq_chat/lib/model_new.py	/^    def _make_graph(self):$/;"	kind:member	line:42
+a	../tb_bmi.py	/^        a = sess.run(acc, feed_dict={x: test_pat, y_: test_ans})$/;"	kind:variable	line:74
+a	../tb_test.py	/^a = tf.constant(20, name="a")$/;"	kind:variable	line:4
+a	../tb_test2.py	/^a = tf.constant(100, name="a")$/;"	kind:variable	line:3
+acc	../tb_bmi.py	/^acc = tf.reduce_mean(tf.cast(predict, "float"))$/;"	kind:variable	line:59
+acc	../tb_bmi.py	/^acc = tf.reduce_mean(tf.cast(predict, "float"))$/;"	kind:variable	line:82
+accuracy	../day2_tf_tut.py	/^accuracy = tf.metrics.accuracy(test_label, tf.argmax(pred, axis=1))$/;"	kind:variable	line:85
+assign_op	../tb_test2.py	/^assign_op = tf.assign(v, calc_op)$/;"	kind:variable	line:9
+b	../tb_bmi.py	/^    b = tf.Variable(tf.zeros([3]), name='b')$/;"	kind:variable	line:42
+b	../tb_test.py	/^b = tf.constant(30, name="b")$/;"	kind:variable	line:5
+b	../tb_test2.py	/^b = tf.constant(200, name="b")$/;"	kind:variable	line:4
+batch	../lib/helpers.py	/^def batch(inputs, max_sequence_length=None):$/;"	kind:function	line:3
+batch	../seq2seq_chat/lib/helpers.py	/^def batch(inputs, max_sequence_length=None):$/;"	kind:function	line:3
+bclass	../tb_bmi.py	/^bclass = {"thin": [1,0,0], "normal": [0,1,0], "fat": [0,0,1]}$/;"	kind:variable	line:8
+c	../tb_test2.py	/^c = tf.constant(300, name="c")$/;"	kind:variable	line:5
+calc_op	../tb_test2.py	/^calc_op = a + b * c $/;"	kind:variable	line:8
+const	../OLD/cry_tensorflow.py	/^const = tf.constant("hello world")$/;"	kind:variable	line:13
+cross_entropy	../tb_bmi.py	/^    cross_entropy = -tf.reduce_sum(y_ * tf.log(tf.clip_by_value(y, 1e-10,1.0)))$/;"	kind:variable	line:48
+cry_tensorflow.py	../OLD/cry_tensorflow.py	1;"	kind:file	line:1
+csv	../tb_bmi.py	/^csv = pd.read_csv("bmi.csv")$/;"	kind:variable	line:7
+data	../day2_tf_tut.py	/^data = []$/;"	kind:variable	line:16
+day2_tf_tut.py	../day2_tf_tut.py	1;"	kind:file	line:1
+decoded_test	../day2_tf_tut.py	/^decoded_test = tf.decode_csv(test_batch, [[0]]*11)$/;"	kind:variable	line:52
+decoded_train	../day2_tf_tut.py	/^decoded_train = tf.decode_csv(train_batch, [[0]]*11)$/;"	kind:variable	line:51
+decoder_hidden_units	../lib/model_new.py	/^    def decoder_hidden_units(self):$/;"	kind:member	line:38
+decoder_hidden_units	../seq2seq_chat/lib/model_new.py	/^    def decoder_hidden_units(self):$/;"	kind:member	line:38
+decoder_hidden_units	../seq2seq_chat/simple_model.py	/^decoder_hidden_units = encoder_hidden_units$/;"	kind:variable	line:36
+down	../day2_tf_tut.py	/^down = [9-i for i in range(10)]$/;"	kind:variable	line:13
+e	../tb_bmi.py	/^        e = sess.run(cross_entropy, feed_dict=fd)$/;"	kind:variable	line:73
+encoder_hidden_units	../seq2seq_chat/simple_model.py	/^encoder_hidden_units = 20$/;"	kind:variable	line:35
+fd	../lib/model_new.py	/^            fd = model.make_inference_inputs([[5, 4, 6, 7], [6, 6]])$/;"	kind:variable	line:364
+fd	../lib/model_new.py	/^        fd = model.make_inference_inputs([[5, 4, 6, 7], [6, 6]])$/;"	kind:variable	line:395
+fd	../seq2seq_chat/lib/model_new.py	/^            fd = model.make_inference_inputs([[5, 4, 6, 7], [6, 6]])$/;"	kind:variable	line:364
+fd	../seq2seq_chat/lib/model_new.py	/^        fd = model.make_inference_inputs([[5, 4, 6, 7], [6, 6]])$/;"	kind:variable	line:395
+fd	../tb_bmi.py	/^    fd = {x: x_pat, y_: y_ans}$/;"	kind:variable	line:70
+flat	../day2_tf_tut.py	/^flat = [5 for i in range(10)]$/;"	kind:variable	line:14
+functions.py	../functions.py	1;"	kind:file	line:1
+getLength	../functions.py	/^def getLength(t):$/;"	kind:function	line:8
+hello	../OLD/cry_tensorflow.py	/^hello = sess.run(const)$/;"	kind:variable	line:17
+helpers.py	../lib/helpers.py	1;"	kind:file	line:1
+helpers.py	../seq2seq_chat/lib/helpers.py	1;"	kind:file	line:1
+i	../tb_bmi.py	/^    i = (step * 100) % 1000$/;"	kind:variable	line:66
+inf_out	../lib/model_new.py	/^            inf_out = session.run(model.decoder_prediction_inference, fd)$/;"	kind:variable	line:365
+inf_out	../lib/model_new.py	/^        inf_out = session.run(model.decoder_prediction_inference, fd)/;"	kind:variable	line:397
+inf_out	../seq2seq_chat/lib/model_new.py	/^            inf_out = session.run(model.decoder_prediction_inference, fd)$/;"	kind:variable	line:365
+inf_out	../seq2seq_chat/lib/model_new.py	/^        inf_out = session.run(model.decoder_prediction_inference, fd)/;"	kind:variable	line:397
+input_embedding_size	../seq2seq_chat/simple_model.py	/^input_embedding_size = 20$/;"	kind:variable	line:33
+label	../day2_tf_tut.py	/^label = []$/;"	kind:variable	line:17
+loss	../day2_tf_tut.py	/^loss = tf.losses.softmax_cross_entropy(train_label, train_out)$/;"	kind:variable	line:81
+loss_track_attention	../lib/model_new.py	/^            loss_track_attention = train_on_copy_task(session, model)$/;"	kind:variable	line:376
+loss_track_attention	../seq2seq_chat/lib/model_new.py	/^            loss_track_attention = train_on_copy_task(session, model)$/;"	kind:variable	line:376
+loss_track_no_attention	../lib/model_new.py	/^            loss_track_no_attention = train_on_copy_task(session, model)$/;"	kind:variable	line:383
+loss_track_no_attention	../seq2seq_chat/lib/model_new.py	/^            loss_track_no_attention = train_on_copy_task(session, model)$/;"	kind:variable	line:383
+make_inference_inputs	../lib/model_new.py	/^    def make_inference_inputs(self, input_seq):$/;"	kind:member	line:289
+make_inference_inputs	../seq2seq_chat/lib/model_new.py	/^    def make_inference_inputs(self, input_seq):$/;"	kind:member	line:289
+make_seq2seq_model	../lib/model_new.py	/^def make_seq2seq_model(**kwargs):$/;"	kind:function	line:297
+make_seq2seq_model	../seq2seq_chat/lib/model_new.py	/^def make_seq2seq_model(**kwargs):$/;"	kind:function	line:297
+make_train_inputs	../lib/model_new.py	/^    def make_train_inputs(self, input_seq, target_seq):$/;"	kind:member	line:279
+make_train_inputs	../seq2seq_chat/lib/model_new.py	/^    def make_train_inputs(self, input_seq, target_seq):$/;"	kind:member	line:279
+model	../lib/model_new.py	/^            model = make_seq2seq_model()$/;"	kind:variable	line:362
+model	../lib/model_new.py	/^            model = make_seq2seq_model(attention=False)$/;"	kind:variable	line:381
+model	../lib/model_new.py	/^            model = make_seq2seq_model(attention=True)$/;"	kind:variable	line:374
+model	../lib/model_new.py	/^            model = make_seq2seq_model(debug=True)$/;"	kind:variable	line:354
+model	../lib/model_new.py	/^        model = make_seq2seq_model(debug=False)$/;"	kind:variable	line:392
+model	../seq2seq_chat/lib/model_new.py	/^            model = make_seq2seq_model()$/;"	kind:variable	line:362
+model	../seq2seq_chat/lib/model_new.py	/^            model = make_seq2seq_model(attention=False)$/;"	kind:variable	line:381
+model	../seq2seq_chat/lib/model_new.py	/^            model = make_seq2seq_model(attention=True)$/;"	kind:variable	line:374
+model	../seq2seq_chat/lib/model_new.py	/^            model = make_seq2seq_model(debug=True)$/;"	kind:variable	line:354
+model	../seq2seq_chat/lib/model_new.py	/^        model = make_seq2seq_model(debug=False)$/;"	kind:variable	line:392
+model_new.py	../lib/model_new.py	1;"	kind:file	line:1
+model_new.py	../seq2seq_chat/lib/model_new.py	1;"	kind:file	line:1
+mul_op	../tb_test.py	/^mul_op = a*b$/;"	kind:variable	line:7
+multi_class_model	../day2_tf_tut.py	/^def multi_class_model(x, activation, reuse=False):$/;"	kind:function	line:68
+op2Numpy	../functions.py	/^def op2Numpy(op):$/;"	kind:function	line:41
+optimizer	../tb_bmi.py	/^optimizer = tf.train.GradientDescentOptimizer(0.01)$/;"	kind:variable	line:50
+output_fn	../lib/model_new.py	/^            def output_fn(outputs):$/;"	kind:function	line:191
+output_fn	../seq2seq_chat/lib/model_new.py	/^            def output_fn(outputs):$/;"	kind:function	line:191
+pred	../day2_tf_tut.py	/^pred = tf.nn.softmax(test_out)$/;"	kind:variable	line:84
+predict	../tb_bmi.py	/^predict = tf.equal(tf.argmax(y, 1), tf.argmax(y_,1))$/;"	kind:variable	line:58
+predict	../tb_bmi.py	/^predict = tf.equal(tf.argmax(y, 1), tf.argmax(y_,1))$/;"	kind:variable	line:81
+r	../tb_bmi.py	/^r = sess.run(acc, feed_dict={x: test_pat, y_:test_ans})$/;"	kind:variable	line:83
+r	../tb_bmi.py	/^r = sess.run(test, feed_dict={x: [[70\/100, 170\/200]]})$/;"	kind:variable	line:87
+random_length	../lib/helpers.py	/^    def random_length():$/;"	kind:function	line:49
+random_length	../seq2seq_chat/lib/helpers.py	/^    def random_length():$/;"	kind:function	line:49
+random_sequences	../lib/helpers.py	/^def random_sequences(length_from, length_to,$/;"	kind:function	line:39
+random_sequences	../seq2seq_chat/lib/helpers.py	/^def random_sequences(length_from, length_to,$/;"	kind:function	line:39
+rows	../tb_bmi.py	/^    rows = csv[1 + i : 1 + i + 100]$/;"	kind:variable	line:67
+rows	../tb_bmi.py	/^rows = csv[1+step*10:(step+1)*10]$/;"	kind:variable	line:23
+rows	../tb_bmi.py	/^rows = csv[step*10:(step+1)*10]$/;"	kind:variable	line:16
+samples	../day2_tf_tut.py	/^samples = 1000$/;"	kind:variable	line:7
+saver	../day2_tf_tut.py	/^saver = tf.train.Saver()$/;"	kind:variable	line:87
+sess	../OLD/cry_tensorflow.py	/^sess = tf.Session()$/;"	kind:variable	line:15
+sess	../seq2seq_chat/simple_model.py	/^sess = tf.InteractiveSession()$/;"	kind:variable	line:21
+sess	../tb_bmi.py	/^sess = tf.Session()$/;"	kind:variable	line:31
+sess	../tb_bmi.py	/^sess = tf.Session()$/;"	kind:variable	line:62
+sess	../tb_test.py	/^sess = tf.Session()$/;"	kind:variable	line:10
+sess	../tb_test2.py	/^sess = tf.Session()$/;"	kind:variable	line:11
+session	../lib/model_new.py	/^        session = tf.InteractiveSession()$/;"	kind:variable	line:391
+session	../seq2seq_chat/lib/model_new.py	/^        session = tf.InteractiveSession()$/;"	kind:variable	line:391
+showConstant	../functions.py	/^def showConstant(t):$/;"	kind:function	line:12
+showConstantDetail	../functions.py	/^def showConstantDetail(t):$/;"	kind:function	line:17
+showOperation	../functions.py	/^def showOperation(op):$/;"	kind:function	line:50
+showVariable	../functions.py	/^def showVariable(v):$/;"	kind:function	line:27
+simple_model.py	../seq2seq_chat/simple_model.py	1;"	kind:file	line:1
+step	../tb_bmi.py	/^step = 0$/;"	kind:variable	line:22
+step	../tb_bmi.py	/^step=0$/;"	kind:variable	line:15
+tb_bmi.py	../tb_bmi.py	1;"	kind:file	line:1
+tb_test.py	../tb_test.py	1;"	kind:file	line:1
+tb_test2.py	../tb_test2.py	1;"	kind:file	line:1
+test	../tb_bmi.py	/^test = tf.argmax(y, 1)$/;"	kind:variable	line:86
+test_ans	../tb_bmi.py	/^test_ans = list(test_csv["label_pat"])$/;"	kind:variable	line:56
+test_ans	../tb_bmi.py	/^test_ans = list(test_csv["label_pat"])$/;"	kind:variable	line:80
+test_batch	../day2_tf_tut.py	/^test_batch = test_itr.get_next()$/;"	kind:variable	line:49
+test_csv	../tb_bmi.py	/^test_csv = csv[15000:20000]$/;"	kind:variable	line:54
+test_csv	../tb_bmi.py	/^test_csv = csv[15000:20000]$/;"	kind:variable	line:78
+test_data	../day2_tf_tut.py	/^test_data = tf.cast(test_data, tf.float32)$/;"	kind:variable	line:60
+test_data	../day2_tf_tut.py	/^test_data = tf.stack(decoded_test[1:], axis=1)$/;"	kind:variable	line:58
+test_dataset	../day2_tf_tut.py	/^test_dataset = '.\/ffnn_multiclass_dataset\/test_dataset.csv'$/;"	kind:variable	line:10
+test_itr	../day2_tf_tut.py	/^test_itr = testset.make_one_shot_iterator()$/;"	kind:variable	line:46
+test_label	../day2_tf_tut.py	/^test_label = tf.reshape(decoded_test[0], [-1, 1])$/;"	kind:variable	line:55
+test_out	../day2_tf_tut.py	/^test_out = multi_class_model(test_data, tf.nn.sigmoid, True)$/;"	kind:variable	line:76
+test_pat	../tb_bmi.py	/^test_pat = test_csv[["weight","height"]]$/;"	kind:variable	line:55
+test_pat	../tb_bmi.py	/^test_pat = test_csv[["weight","height"]]$/;"	kind:variable	line:79
+test_samples	../day2_tf_tut.py	/^test_samples = 100$/;"	kind:variable	line:8
+testset	../day2_tf_tut.py	/^testset = tf.contrib.data.TextLineDataset(test_dataset).batch(10)$/;"	kind:variable	line:43
+tracks	../lib/model_new.py	/^        tracks = {}$/;"	kind:variable	line:369
+tracks	../seq2seq_chat/lib/model_new.py	/^        tracks = {}$/;"	kind:variable	line:369
+train	../tb_bmi.py	/^train = optimizer.minimize(cross_entropy)$/;"	kind:variable	line:51
+train_batch	../day2_tf_tut.py	/^train_batch = train_itr.get_next()$/;"	kind:variable	line:48
+train_data	../day2_tf_tut.py	/^train_data = tf.cast(train_data, tf.float32)$/;"	kind:variable	line:61
+train_data	../day2_tf_tut.py	/^train_data = tf.stack(decoded_train[1:], axis=1)$/;"	kind:variable	line:57
+train_dataset	../day2_tf_tut.py	/^train_dataset = '.\/ffnn_multiclass_dataset\/train_dataset.csv'$/;"	kind:variable	line:9
+train_itr	../day2_tf_tut.py	/^train_itr = trainset.make_one_shot_iterator()$/;"	kind:variable	line:45
+train_label	../day2_tf_tut.py	/^train_label = tf.one_hot(decoded_train[0], depth=3, axis=-1, dtype=tf.float32)$/;"	kind:variable	line:54
+train_on_copy_task	../lib/model_new.py	/^def train_on_copy_task(session, model,$/;"	kind:function	line:309
+train_on_copy_task	../seq2seq_chat/lib/model_new.py	/^def train_on_copy_task(session, model,$/;"	kind:function	line:309
+train_op	../day2_tf_tut.py	/^train_op = tf.train.GradientDescentOptimizer(1e-6).minimize(loss)$/;"	kind:variable	line:82
+train_out	../day2_tf_tut.py	/^train_out = multi_class_model(train_data, tf.nn.sigmoid)$/;"	kind:variable	line:75
+trainset	../day2_tf_tut.py	/^trainset = tf.contrib.data.TextLineDataset(train_dataset).batch(10)$/;"	kind:variable	line:42
+tw	../tb_bmi.py	/^tw = tf.summary.FileWriter("log_dir", graph=sess.graph)/;"	kind:variable	line:90
+tw	../tb_test.py	/^tw = tf.summary.FileWriter('log_dir', graph=sess.graph)$/;"	kind:variable	line:13
+tw	../tb_test2.py	/^tw = tf.summary.FileWriter("log_dir", graph=sess.graph)$/;"	kind:variable	line:13
+up	../day2_tf_tut.py	/^up = [i for i in range(10)]$/;"	kind:variable	line:12
+v	../tb_test2.py	/^v = tf.Variable(0, name="v")$/;"	kind:variable	line:6
+var2Numpy	../functions.py	/^def var2Numpy(v):$/;"	kind:function	line:33
+vocab_size	../seq2seq_chat/simple_model.py	/^vocab_size = 10$/;"	kind:variable	line:32
+writer	../day2_tf_tut.py	/^    writer = csv.writer(csvfile)$/;"	kind:variable	line:30
+writer	../day2_tf_tut.py	/^    writer = csv.writer(csvfile)$/;"	kind:variable	line:36
+x	../seq2seq_chat/simple_model.py	/^x = [[5, 7, 8], [6, 3], [3], [1]] #input$/;"	kind:variable	line:13
+x	../tb_bmi.py	/^x    = tf.placeholder(tf.float32, [None, 2], name="x") $/;"	kind:variable	line:36
+x	../tb_bmi.py	/^x = tf.placeholder(tf.float32, [None, 2], name="x")$/;"	kind:variable	line:28
+x_pat	../tb_bmi.py	/^    x_pat = rows[["weight","height"]]$/;"	kind:variable	line:68
+x_pat	../tb_bmi.py	/^x_pat = rows[["weight","height"]]$/;"	kind:variable	line:17
+x_pat	../tb_bmi.py	/^x_pat = rows[["weight","height"]]$/;"	kind:variable	line:24
+y	../tb_bmi.py	/^        y = tf.nn.softmax(tf.matmul(x,W)+b)$/;"	kind:variable	line:45
+y_	../tb_bmi.py	/^y_ = tf.placeholder(tf.float32, [None, 3], name = 'y_') $/;"	kind:variable	line:37
+y_	../tb_bmi.py	/^y_ = tf.placeholder(tf.float32, [None, 3], name="y_")$/;"	kind:variable	line:29
+y_ans	../tb_bmi.py	/^    y_ans = list(rows["label_pat"])$/;"	kind:variable	line:69
+y_ans	../tb_bmi.py	/^y_ans = list(rows["label_pat"])$/;"	kind:variable	line:25
+y_ans	../tb_bmi.py	/^y_ans = rows["label_pat"]$/;"	kind:variable	line:18
