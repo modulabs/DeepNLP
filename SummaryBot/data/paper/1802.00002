@@ -1,0 +1,975 @@
+
+Emerging Trends. Trafﬁc congestion in urban areas has
+become a signiﬁcant issue in recent years. Because of trafﬁc
+congestion, people in the United States traveled an extra 6.9
+billion hours and purchased an extra 3.1 billion gallons of
+fuel in 2014. The extra time and fuel cost were valued up to
+160 billion dollars [1]. Congestion that is caused by accidents,
+roadwork, special events, or adverse weather is called non-
+recurring congestion (NRC) [2]. Compared with the recurring
+congestion that happens repeatedly at particular times in the
+day, weekday and peak hours, NRC makes people unprepared
+and has a signiﬁcant impact on urban mobility. For example,
+in the US, NRC accounts for two-thirds of the overall trafﬁc
+delay in urban areas with a population of over one million [3].
+Driven by the concepts of the Internet of Things (IoT)
+and smart cities, various trafﬁc sensors have been deployed
+in urban environments on a large scale. A number of tech-
+niques have been developed for knowledge discovery and data
+mining by integrating and utilizing the sensor data. Trafﬁc
+data is widely available by using static sensors (e.g., loop
+detectors, radars, cameras, etc.) as well as mobile sensors (e.g.,
+in-vehicle GPS and other crowdsensing techniques that use
+mobile phones). The fast development of sensor techniques
+enables the possibility of in-depth analysis of congestion and
+causes.
+The problem of ﬁnding anomalous trafﬁc patterns is called
+trafﬁc anomaly detection. Understanding and analyzing trafﬁc
+anomalies, especially congestion patterns, is critical to help-
+ing city planners make better decisions to optimize urban
+transportation systems and reduce congestion conditions. To
+identify faulty sensors, many data-driven and model-driven
+methods have been proposed to incorporate historical and real-
+time data [4], [5], [6], [7]. Some researchers [8], [9], [10], [11]
+have worked on detecting trafﬁc events such as car accidents
+and congestion using videos, trafﬁc, and vehicular ad hoc data.
+There are also researchers who have explored the root causes
+of anomalous trafﬁc [12], [13], [14], [15], [16], [17].
+Most existing work still mainly focuses on a road section
+or a small network region to identify trafﬁc congestion, but
+few studies explore non-recurring congestion and its causes
+for a large urban area. Recently, deep learning techniques
+have gained great success in many research ﬁelds (including
+image processing, speech recognition, bioinformatics, etc.),
+and provide a great opportunity to potentially solve the NRC
+identiﬁcation and classiﬁcation problem. There are still many
+open problems: (1) using feature vectors to represent trafﬁc
+conditions loses the spatial information of the road segments,
+(2) using small and unbalanced dataset (trafﬁc data with event
+labels is limited) to train neural networks downgrades the
+performance, a proper data augmentation mechanism is needed
+to balance the training data with different class labels, (3)
+building deep neural networks to model the trafﬁc conditions
+of both recurring and non-recurring congestion.
+Contributions. In this paper, we propose DxNAT, a deep
+neural network model to identify non-recurring trafﬁc conges-
+tion and explain its causes. To the best of our knowledge,
+our work is one of the ﬁrst efforts to utilize deep learning
+techniques to study trafﬁc congestion patterns and explain non-
+recurring congestion using events. The main contributions of
+our research are summarized as follows:
+• We present an algorithm to efﬁciently convert trafﬁc data
+• We introduce a crossover operator as a data augmentation
+• A convolutional neural network (CNN) is proposed to
+identify non-recurring trafﬁc anomalies that are caused
+by events.
+• We create three scenarios to evaluate the performance
+in Trafﬁc Message Channel (TMC) format to images
+method for training class balancing.
+of the proposed model by using real-world data of three
+events types (football games, hockey games, and trafﬁc
+incidents).
+Paper Organization. The remainder of this paper is orga-
+nized as follows: Section II compares our work with related
+work; Section III presents the dataset and a motivating example
+that explores the impact of football games on trafﬁc conges-
+tion; Section IV formulates the problem; Section V presents
+the solution approach; Section VI evaluates the performance
+of our model; Section VII gives concluding remarks;
+II. RELATED WORK AND CHALLENGES
+This section presents an overview of the related work on
+trafﬁc anomaly detection, which includes studies about faulty
+trafﬁc sensor detection, trafﬁc event detection, and congestion
+cause indication. Three key research challenges and our con-
+tributions for detecting NRC are discussed in the end.
+Faulty Trafﬁc Sensor Detection. Robinson et al. [4]
+proposed an approach that used data from inductive loop
+detectors to estimate travel time on road segments. His ap-
+proach included a data cleaning method to clean the collected
+trafﬁc data. Lu et al. [5] reviewed previous work on faulty
+inductive loops data analysis. Widhalm et al. [18] presented a
+trafﬁc anomaly detection method that used Floating-Car Data
+(FCD) as an independent information source. They developed
+a non-linear regression model to ﬁt the trafﬁc sensor data and
+FCD data. Zygouras et al. [6] proposed a method comparing
+correlations among nearby sensors to identify faulty sensor
+readings. Their system was based on MapReduce paradigm to
+work for crowdsourcing data. Ghafouri et al. [7] presented
+a faulty trafﬁc sensor detection model based on Gaussian
+Processes. Particularly, they provided an effective approach for
+computing the parameters of detectors to minimize the loss due
+to false-positive and false-negative errors.
+Event Detection Using Trafﬁc Data. Monitoring trafﬁc
+ﬂow at intersections is important in the trafﬁc event detection
+research. Kamijo et al. [8] developed an algorithm based on
+spatiotemporal Markov random ﬁeld (MRF) for processing
+trafﬁc images and tracking vehicles at intersections. Using the
+timeseries observed behaviors of vehicles, a hidden Markov
+model for accident detection is then proposed. Veeraraghavan
+et al. [9] presented a multiple cue-based approach combined
+with a switching Kalman ﬁlter for detecting vehicle events
+such as turning, stopping and slow moving. Terroso-Senz et
+al. [19] presented an event-driven architecture (EDA) that
+used vehicular ad hoc network and external data sources like
+weather conditions to detect trafﬁc congestions. Yang et al.
+[10] proposed a coupled Bayesian RPCA (BRPCA) model for
+detecting trafﬁc events that used multiple trafﬁc data streams.
+Kong et al. [11] proposed LoTAD to explore anomalous
+regions with long-term poor trafﬁc situations. To model the
+trafﬁc condition, crowd-sourced bus data is grouped into
+spatiotemporal segments. The segments with high anomaly
+indexes were combined to get anomalous regions. Wang et
+al. [20] proposed a two-stage solution to detect road trafﬁc
+anomalies: (1) a Collaborative Path Inference (CPI) model
+that performs path inference incorporating static and dynamic
+features into a Conditional Random Field (CRF); (2) a road
+Anomaly Test (RAT) model calculates the anomalous degree
+for each road segment.
+Congestion Cause Indication. Liu et al. [12] studied both
+known (planned) and unknown (unplanned) events behaving
+differently from daily network trafﬁcs as anomalies, and pro-
+posed algorithms that construct outlier causality trees based
+on temporal and spatial properties of detected outliers. Xu et
+al. [13] introduced an approach to identify urban congestion
+patterns based on the data cube. They proposed a multi-
+dimensional data analysis method for data cube. Chow et al.
+[14] presented an automatic number plate recognition technol-
+ogy to analyze urban trafﬁc congestions and introduced a linear
+regression model to indicate the causes of the congestions.
+Kwoczek et al. [16] proposed an Artiﬁcial Neural Network
+(ANN) based classiﬁer to detect the road segments affected by
+planned events. Mallah et al. [17] evaluated the performance
+of machine learning techniques for classifying congestions into
+different causes.
+A. Research Challenge 1: Representing Heterogeneous Trafﬁc
+Data and Event Labels Using Multi-Dimensional Images
+A feature vector is an n-dimensional vector and is the
+most popular representation of data objects. Besides numerical
+values, feature vectors can also represent texts and images.
+However, feature vectors may not be the best solutions for
+representing trafﬁc and corresponding event labels.
+Trafﬁc conditions are highly affected by different
+inﬂu-
+encing factors [21], such as incidents, sports games, road
+work, weather, etc. The events and their physical locations
+are used as the labels. But since feature vectors have ﬁxed
+length, it is not practical to manually encode the labels to
+a speciﬁc ﬁxed length feature vector. More importantly, in
+pattern recognition and machine learning, features matter the
+most. When converting an image to a feature vector, you
+can directly convert
+the two-dimensional pixels to a one-
+dimensional vector, or you can ﬁrst take the histogram of the
+image and then construct a feature vector that has several
+comparison metrics, such as mean, standard deviation, etc.
+Both methods will lose some relative spatial information in
+the original images.
+In contrast
+to feature vectors,
+images can preserve the
+original spatial relations by locating points on different pixels
+and can integrate multiple data sources by simply adding
+layers. Kwoczek et al. [16] showed a factor representation
+that integrates multiple features like event and weather into
+different layers in a data cube. However, though they men-
+tioned the idea as a possible future work, they did not present
+any concrete solution to it. Ma et al. [22] proposed a CNN-
+based approach for trafﬁc prediction. They represented the
+trafﬁc speed and time using a time-space matrix. The problem
+with the time-space matrix is that
+information
+between segments is lost, which is important in detecting trafﬁc
+patterns because nearby roads usually show similar or related
+patterns. Additionally, their model simply considered trafﬁc
+data, but there are many other factors affecting the future
+trafﬁc conditions. Thus representing heterogeneous trafﬁc and
+the spatial
+corresponding event labels using images remains a research
+gap.
+One of the key differences between our proposed approach
+and the existing ones is that we are trying to visualize the
+wide area sensor data distribution as Trafﬁc Condition Images
+(TCIs), so that we can use CNN and other deep learning
+techniques for analyses.
+B. Research Challenge 2: Training Deep Learning Models
+Using Limited Data Instances
+The performance of deep learning techniques highly relies
+on the quality of training data instances. However, the collected
+urban data may not provide enough data for training because of
+the data sampling rates. For example, our proposed model ﬁrst
+converts trafﬁc data to Trafﬁc Condition Images (TCIs) and
+then trains different models using these images. But the trafﬁc
+data we obtain from HERE [23] is requested every minute.
+So for a day that consists of 1440 minutes, we will only have
+1440 trafﬁc images, which are too few for effective training
+purposes. The availability issue of data instances becomes
+worse considering there is also limited label data. It remains
+a research challenge of getting more training data using the
+existing data.
+Traditional ways of solving this problem are: (1) waiting and
+collecting until enough training data is collected, (2) manually
+labeling the data, (3) adding data sources, e.g., collecting more
+data from social media. Our solution uses the idea of crossover
+from the genetic algorithm. We assume that trafﬁc conditions
+within a short time range are associated with the same events.
+So we can apply a crossover operator on the TCIs to generate
+more TCIs with the same event label.
+C. Research Challenge 3: Modeling Trafﬁc Patterns of Non-
+Recurring Events
+The existing work on trafﬁc event detection focused on
+analyzing trafﬁc videos or trafﬁc sensor data streams to detect
+events that are directly related to trafﬁc, such as vehicle
+stopping, car accidents, and road congestion. But few studies
+explored the contextual non-recurrent events whose impacts
+are also highly associated with certain trafﬁc patterns.
+Recently there has been an explosion in research of using
+deep neural networks. But still, few have applied deep learning
+on studying trafﬁc patterns. Deep learning techniques have
+gained great success in research ﬁelds like image processing,
+speech recognition, bioinformatics, etc. Convolutional neural
+networks are similar to original neural networks but convo-
+lutional layers are added in the front of the model to learn
+patterns in the original images. If trafﬁc and label data can be
+converted to images, then CNN can be employed to learn their
+labeled patterns. It is still a research gap of how to develop
+an effective and efﬁcient deep learning network for identifying
+and classifying trafﬁc patterns of non-recurring events.
+We formulate the problem of identifying the speciﬁc trafﬁc
+patterns associated with events in Section V-A, and then
+present the details of our proposed approach that uses con-
+volutional neural networks in Section V-C.
+Trafﬁc
+Format TMC
+Source HERE
+[23]
+API
+Sports Game
+JSON
+ESPN,
+hockey-
+reference.com
+Update Every Minute Manually
+28 Games
+Size
+10/2016
+Range
+12/2016
+155 GB
+10/2016
+Present
+TABLE I.
+DATA
+Accident
+JSON
+Fire
+Department
+Manually
+387 MB
+03/2014
+03/2017
+III. DATA AND MOTIVATING EXAMPLE
+This section ﬁrst
+introduces the datasets that we have
+integrated into the system, and then describes a motivating
+example in which we use the collected datasets to study the
+impact of football games on the trafﬁc congestion in the city.
+A. Datasets
+Since October 2016, we have been continuously collecting
+and storing real-time trafﬁc data from HERE API [23] for
+all major roads in the Nashville area. In order to explore the
+impact of contextual events on urban mobility, we also collect
+the data about incidents and sports games. We cooperate with
+the Nashville Fire Department [24] to access their incident
+datasets, and manually collect the information about sports
+games from the web. As illustrated in Table I, the details of the
+datasets that we have integrated into the system are as follows:
+• The trafﬁc dataset provides the real-time trafﬁc infor-
+mation on road segments, such as speed limit, real-time
+speed, jam factor (JF), etc. The dataset contains historical
+trafﬁc data for 3049 TMC road segments in the Nashville
+area.
+• The sports game dataset contains the operation informa-
+tion about sports games, such as game type, start and end
+time, attendance, location, etc.
+• The incident dataset provides the detailed records of
+incidents and the responding vehicles. For each incident,
+it provides the coordinates,
+time,
+vehicle arrival and departure time, weather condition, etc.
+type, alert
+incident
+B. Motivating Example
+The motivation for our research comes from a brief experi-
+ment, in which we study the impact of football games on the
+trafﬁc congestion in the city.
+During the studied period between Sept. 1, 2016 and Jan.
+1, 2017, there were eight football games (as listed in Table II)
+at the Nissan Stadium at downtown Nashville. During this
+time we collected data related to trafﬁc (speed limit, real-
+time speed) and the football games (date, start time, duration,
+location)1.
+To indicate the congestion condition, HERE [23] provides
+a jam factor (JF) that ranges between 0.0 and 10.0 for each
+1Our dataset is larger. However, in this study we are focusing on these 4
+months
+Fig. 1.
+2 hours, (c) from 2 hours to 1 hour, (d) from 1 hour to 0 hour.
+Impact of football games on trafﬁc congestion in four one-hour time windows before football games: (a) from 4 hours to 3 hours, (b) from 3 hours to
+TABLE II.
+Date
+1/1/17
+12/11/16
+11/13/16
+10/27/16
+10/23/16
+10/16/16
+9/25/16
+9/11/16
+3:11
+68780
+65205
+Stadium Attendance Duration
+THE INFORMATION OF THE EIGHT FOOTBALL GAMES
+STUDIED IN THE MOTIVATING EXAMPLE
+Start
+Time
+(CST)
+12:00
+PM
+12:00
+PM
+12:00
+PM
+7:26
+PM
+12:02
+PM
+12:02
+PM
+12:02
+PM
+12:05
+PM
+Nissan
+Stadium
+Nissan
+Stadium
+Nissan
+Stadium
+Nissan
+Stadium
+Nissan
+Stadium
+Nissan
+Stadium
+Nissan
+Stadium
+Nissan
+Stadium
+3:02
+3:36
+3:08
+3:21
+69116
+3:12
+3:03
+2:57
+61619
+65470
+60897
+62370
+63816
+TMC road segment. In this study we compare the JF between
+the days when there is a football game and the days when
+there is no football game, during four one-hour time window
+directly before the games: [−4,−3], [−3,−2], [−2,−1], and
+[−1, 0] relative to the time when the game was scheduled2.
+As shown in Figure 1, the results of the JF difference on road
+segments in different time windows are visualized using heat
+maps. In the ﬁgure, colors ranging from green to red are used
+to indicate the small and big JF differences. The results show
+that the impact of football games on trafﬁc congestion begins
+to increase from 4 hours before games. We have observed this
+pattern across several game events in the city. Our hypothesis
+is that every event has a unique pattern and we can learn that
+pattern over time and use it to identify if a current congestion
+pattern matches with the expected pattern. If the pattern does
+not match then we can classify it as an anomaly.
+2 Most football games are scheduled at 1 PM.
+IV. PROBLEM FORMULATION
+In this section, we ﬁrst provide a formal deﬁnition of the
+problem and then describe the assumptions for solving the
+problem.
+A. Deﬁnition
+The goal of this research is to model trafﬁc patterns around
+the locations of non-recurrent events so that we can use the
+model to identify non-recurring congestion and its causes. The
+trafﬁc pattern that we use here refers to the spatiotemporal
+relations of trafﬁc speeds on many road segments in an area,
+which can be modeled and detected by a classiﬁer. The
+deﬁnitions of all relative notions can be found in Table III.
+The inputs to the system are data about trafﬁc and events.
+Since the trafﬁc data that we collected from HERE API is
+deﬁned using Trafﬁc Message Channel Location Code [25]
+format (a standard for encoding geographic information), the
+road segments used in this study are also deﬁned using the
+same TMC location codes. Event data is categorized with
+labels for training and validating purposes. The labels used
+are as follows:
+• Event-related: event indicator levent, time window relative
+• Time-related: time in the day tday, weekday tweek
+One of the key differences between our approach and the
+existing ones is that we are trying to visualize the wide area
+sensor data distribution as Trafﬁc Condition Images (TCI), so
+that we can use CNN and other deep learning techniques to
+analyze and model the spatiotemporal relations. TCI is a Iw by
+Iw pixels image. Each pixel p corresponds to a road segment in
+the real world and the grayscale value of each pixel represents
+the real-time trafﬁc speed vr of the road segment r.
+to the event tevent,
+Formulation of the Non-recurring Congestion Identiﬁca-
+tion Problem. Given a set of trafﬁc data St that contains speed
+limit and real-time speed for a set of road segments Sr at a
+speciﬁc time tday on weekday tweek, and a set of event labels
+Se, the model should determine levent that indicates whether
+the given trafﬁc data contains congestion caused by a subset
+(cid:48)
+e of event set Se. If levent is true, the model should also
+TABLE III.
+SYMBOLS USED IN THE FORMULATED PROBLEM
+tday
+tweek
+tevent
+levent
+Se
+Sr
+St
+T M Ckey
+T CI
+Iw
+vr
+T H
+a timestamp
+time in the day in seconds
+weekdays encoded using integers (e.g., 0 for
+Sunday, 1 for Monday, etc.)
+time windows relative to events (e.g., 1 for
+the 1-hour time window before events)
+indicator of whether the current time is within
+a time window near the occurrence of an
+event
+a set of events in the city
+a road segment
+a set of road segments deﬁned by TMC
+location codes
+a set of trafﬁc data that contains speed limit
+and real-time speed for a set of road segments
+Sr
+a string representing a road segment in Sr
+trafﬁc Condition Image, a gray-scale image to
+represent trafﬁc conditions in a bounding box
+the width of a TCI
+a pixel in TCI. Its value shows the normalized
+trafﬁc speed on a road segment
+the real-time trafﬁc speed (miles per hour) on
+a road segment r
+a threshold for the classiﬁer to determine
+whether the input trafﬁc data contains recur-
+ring or non-recurring congestion
+provide the time window tevent relative to events (i.e. tevent
+can be used to estimate the event occurrence time).
+Figure 2 illustrates an example of the problem. Given raw
+the model should identify
+trafﬁc data at a speciﬁc time,
+the possible non-recurring congestion and also provide an
+estimation of the event occurrence time.
+B. Assumptions
+event information for the studied area and period.
+in a direction is the same anywhere on the segment.
+The following assumptions are made when we design and
+formulate the non-recurring trafﬁc congestion identiﬁcation
+system:
+• We assume the availability of both trafﬁc speed data and
+• We assume the trafﬁc condition on a short road segment
+• We assume that an event happening in the urban envi-
+ronment will affect the trafﬁc conditions of nearby road
+segments.
+• We assume that there is a robust correlation between the
+road segments affected by an event, and that the patterns
+can be identiﬁed by the image classiﬁcation techniques
+of deep learning.
+V. OUR APPROACH
+In order to identify the speciﬁc trafﬁc patterns associated
+with non-recurring events as deﬁned in Section IV, we present
+the details of our proposed approach in this section. The
+overall workﬂow of the system is shown in Figure 2. There
+are three key components in the system: (1) an algorithm that
+converts raw trafﬁc data to images, (2) a convolutional neural
+network that classiﬁes the trafﬁc condition images, (3) ROC
+analysis that tunes the classiﬁcation threshold to reduce the
+false positive and false negative rates.
+A. Feature Extraction by Mapping Trafﬁc Data to Images
+Research challenge 1 describes the problem that feature
+vectors have limitations when representing urban data. To solve
+this issue, the ﬁrst step is to convert the collected trafﬁc data
+into images. We have been collecting real-time trafﬁc data of
+Nashville area from Here Trafﬁc API [23] since Oct. 2016.
+The trafﬁc data is encoded in TMC location codes. Since the
+TMC database is not open to the public, here we present an
+algorithm to convert trafﬁc data for a speciﬁc time T coded by
+TMC locations to trafﬁc images. In order to project the trafﬁc
+conditions to the pixels of images, we ﬁrst initialize a gridded
+map and then re-sample the road segments deﬁned by TMC
+location codes to the grids. The algorithm’s input, output, and
+step details are as follows (for a set of road segments Sr, step
+1 and 2 will run only once, but step 3 will run once for each
+timestamp):
+Input: Trafﬁc dataset St, road segment set Sr, and times-
+tamp T . The raw trafﬁc data of road segments Sr for timestamp
+T is queried from Trafﬁc dataset St in the database.
+Output: A Trafﬁc Condition Image (TCI).
+Step 1: Map grid initialization. The map of the area
+containing the road segment set Sr is divided into a map grid
+of squares. The length of each square is about 8.97 meters, so
+each grid cell covers about 80.51 square meters on the map.
+Step 2: Road segment path re-sampling and smoothing.
+The points from road segments are re-sampled to the centers
+of grid cells if the points are covered by the cell. Also, if
+the distance between two original points is large enough that
+there are blank cells between the two cells projected by the two
+points, then points will be interpolated to ﬁll the blank cells.
+After this step, we get a two-dimensional array, in which each
+cell contains a list of TMC keys T M Ckey corresponding to
+points from road segments.
+Step 3: Trafﬁc data projection to the images. The two-
+dimensional array acts as a projecting table from original road
+segments to the image pixels. Now we can ﬁll the images with
+trafﬁc data by querying the trafﬁc data using segment keys
+T M Ckey and timestamp T . We use the following equation to
+convert a trafﬁc speed to a pixel value:
+(cid:40) (80−vt
+p =
+0,
+s)∗255
+80
+(cid:54) 80
+if 0 (cid:54) vt
+otherwise
+(1)
+where p denotes the pixel value (0-255) and vt
+real-time speed (miles per hour).
+s denotes the
+After getting initial projected TCI, simple image processing
+techniques are used to resize TCI to the desired size (Iw by
+Iw).
+Fig. 2. Overall workﬂow of the non-recurring congestion identiﬁcation system
+B. Data Augmentation by Crossover Operations
+C. Classifying Non-Recurring Congestion
+TCI is our image representation of trafﬁc speeds on road
+segments. Since trafﬁc data is collected every minute, without
+data augmentation we can only get 1440 (the number of
+minutes in a day) TCIs for one day, which is usually not
+enough for training deep learning image processing models.
+To address research challenge 2 (i.e., the lack of enough trafﬁc
+data with labels), we create a crossover operator to generate
+more labeled trafﬁc condition images for training deep learning
+models. Crossover is originally a genetic operator from genetic
+algorithms to vary the chromosomes of individuals from one
+generation to another. We are motivated by a similar idea and
+present the crossover operator for our system:
+1) Getting TCI candidates. For a given timestamp T , instead
+of only getting one TCI for T , we generate n TCIs for
+time range [T − t, T ] (t denotes a time length to extend
+T , e.g., 3 minutes). While these TCIs are the same in
+image size, they differ in the pixel values because they
+correspond to trafﬁc speeds at different times.
+2) Generating new labeled TCIs. While looping through the
+pixels in TCI, for each pixel row there is a probability
+pm that its values will mutate and randomly select a new
+row from the same corresponding pixels in other TCI
+candidates. After the second step, we get a new TCI.
+Because we assume trafﬁc conditions within a small time
+range are caused by the same events, we can give the new
+TCI the same event label.
+The crossover operator can be executed for many times to
+generate many new data instances. Through crossover, we not
+only have more labeled data, but also reduce the probability
+of over-ﬁtting in the training phase.
+In the previous section, we have described an algorithm
+that converts raw trafﬁc data to TCI. Since the inputs contain
+images, it makes sense to apply convolutional neural networks.
+This section introduces our CNN model to classify the TCI
+using event labels. CNN is a class of deep and feed-forward
+artiﬁcial neural networks that have shown great success in
+image analysis tasks. Here we apply CNN to our problem that
+assigns event and congestion labels to a TCI.
+CNN. The architecture of the proposed CNN is shown in
+Figure 3. Generally, the model consists of a stack of convolu-
+tional, fully-connected neural, dropout and max-pooling layers.
+Dropout layers are used throughout the model to prevent over
+ﬁtting. Max pooling layers are used for spatial down-sampling.
+In the middle of the CNN, feature vectors that represent
+time of day and day of week that correspond to the TCI
+are concatenated to be input into the CNN to help it make
+better decisions. Details of the layer conﬁguration, such as
+dimension, activation function, and dropout rate, can be found
+in the Figure 3. Since we use one-hot encoding and the vectors
+are in categorical format (i.e., dimensional vector is all-zeros
+except for a one at the index corresponding to the class of the
+sample), categorical cross entropy is used as the loss function
+to train the model.
+One-hot Encoding. In the proposed CNN model, the input
+feature vectors are time in the day and weekday, and output
+labels are (1) whether the congestion in input TCI is recurring
+or non-recurring (2) the relative time windows that the TCI
+belongs to if it is non-recurring congestion. We use one-hot
+encoding to convert both input and output vectors to binary
+class matrix. The input matrix has 31 classes, in which 24
+classes correspond to 24 hours and 7 classes correspond to
+7 days of the week. As illustrated in Figure 4, the output
+matrix has several classes, of which the ﬁrst class represents
+D. Tuning the Model Sensitivity by ROC Analysis
+Our approach uses receiver operating characteristic (ROC)
+analysis to tune the sensitivity of the CNN classiﬁer. ROC
+is a statistical plot that illustrates the diagnostic ability of a
+classiﬁer system [26]. The ROC curve is a fundamental tool for
+diagnostic test evaluation. In an ROC curve, the true positive
+rate (TPR) is plotted in a function of the false positive rate
+(FPR). In machine learning, TPR represents sensitivity, recall
+or probability of detection, and FPR represents fall-out or false
+alarm [27]. By choosing a point from the curve, corresponding
+classiﬁcation threshold can be decided.
+In our model, the non-recurring congestion is considered as
+positive output and the recurring congestion is negative output.
+We use the ROC analysis to tune the classiﬁcation threshold
+that decides whether the trafﬁc congestion in the input trafﬁc
+data is recurring congestion or non-recurring congestion. We
+choose thresholds that range from 0.01 to 1.00 and the corre-
+sponding FPR and TPR of the training dataset are plotted (an
+example is shown in Figure 5). The curve’s nearest point to
+the point (FPR: 0.0, TPR: 1.0) will be selected.
+Fig. 3. Our proposed convolutional neural network (CNN).
+Fig. 4. An example of the one-hot encoding format. Event labels are encoded
+using 9 classes: (1) ﬁrst digit represents whether the trafﬁc condition belongs
+to recurring congestion or non-recurring congestion, (2) if it’s non-recurring
+congestion, the next 8 digits represent 8 time windows before and after events.
+whether the trafﬁc condition belongs to recurring congestion or
+non-recurring congestion, and the next classes represent time
+windows before and after events. The ﬁrst class is tunable
+since it directly determines whether the input trafﬁc condition
+contains non-recurring congestion or not. If the value of the
+ﬁrst class output is higher than a predeﬁned threshold T H,
+then the classiﬁer will output that the input trafﬁc data does
+not contain non-recurring congestion (even if the values of
+other classes are higher than the ﬁrst class). The details of the
+tuning steps are presented in the following section.
+Fig. 5.
+prediction threshold.
+Receiver operating characteristics (ROC) curve analysis on the
+VI. EXPERIMENTS
+In this section, we evaluate the proposed deep neural net-
+work’s ability to identify non-recurring trafﬁc anomalies by
+using real-world data of three event types: football games,
+hockey games, and trafﬁc incidents. Keras [28] Python deep
+learning library is used to construct the models and TensorFlow
+[29] is selected as the tensor manipulation library.
+A. Scenarios
+As illustrated in Figure 6, we create three scenarios to test
+the performance of the proposed model. In each scenario, we
+consider one of the three event categories for training and
+validating the proposed model:
+• Football Games. Between Oct. 11, 2016, and Jan. 1, 2017,
+there were 8 NFL football games at the Nissan Stadium in
+Nashville. The trafﬁc data in the bounding box (latitude
+TABLE IV.
+EXPERIMENT RESULTS IN SCENARIO 1: TRAINING DXNAT
+FPR
+FOR IDENTIFYING NRC CAUSED BY FOOTBALL GAMES
+Accuracy
+FNR
+98.73% 1.57% 0.17%
+84.06% 6.25% 2.17%
+Random Forest
+DxNAT
+TABLE V.
+EXPERIMENT RESULTS IN SCENARIO 2: TRAINING DXNAT
+FOR IDENTIFYING NRC CAUSED BY HOCKEY GAMES
+DxNAT
+Accuracy
+FNR
+90.76% 8.11% 23.19%
+FPR
+over 60,000 people, which shows a great impact on causing
+non-recurring trafﬁc congestion. In the ﬁrst scenario, we use
+the trafﬁc data collected in 1-minute intervals between Oct. 11,
+2016 and Jan. 1, 2017. Trafﬁc data of 5 non-game days and two
+game days are used as the training dataset, and one non-game
+day and one game day are used as the validating dataset. As a
+comparison with the traditional machine learning techniques,
+we build a random forest model that uses the same training and
+validating dataset. Because random forests cannot use images
+directly as input, we ﬁrst convert the trafﬁc condition images
+to one-dimensional vectors, and then concentrate the trafﬁc
+vectors with time of the day and day of the week vectors, and
+ﬁnally use the combined feature vector as input to the random
+forest model.
+The accuracy, false positive rate (FPR) and false negative
+rate (FNR) of our model and the random forest model are
+shown in Table VI. Our model outperforms the random forest
+model with higher accuracy and lower FPR and FNR.
+C. Experiment 2: Identifying NRC Caused by Hockey Games
+Compared with NFL football games, NHL hockey games in
+Nashville usually have less attendance (NHL 10,000 v.s. NFL
+60,000). So we assume that an NHL hockey game has less
+impact on trafﬁc conditions and it will be more difﬁcult to
+detect the NRC related to hockey games.
+In Scenario 2, we use trafﬁc and hockey games data between
+Oct. 14, 2016, and Nov. 30, 2016, as the training dataset, and
+data of Dec. 15, 2016 (game day) and Dec. 16, 2016 (non-game
+day) as the validating dataset. The accuracy, FPR and FNR
+results are shown in Table V. Compared with the results in
+Scenario 1, the model has lower accuracy and higher FNR. Our
+assumption is validated that the NRC associated with hockey
+games with less attendance is harder to be detected.
+D. Experiment 3: Identifying NRC Caused by Trafﬁc Accidents
+In scenario 3, we explore the model’s ability to detect NRC
+caused by road accidents. For the selected block area, there
+were eight trafﬁc accidents on 7 different days between Oct.
+18, 2016, and Dec. 13, 2016. We use six days with accidents
+as the training dataset and one day with an accident as the
+validating dataset. The DxNet model archives an accuracy of
+86.59% with FPR of 13.71% and FNR of 4.44%
+Fig. 6. Experimental scenarios and their coverage areas: (1) detecting NRC
+caused by football games, (2) detecting NRC caused by hockey games, (3)
+detecting NRC caused by trafﬁc accidents.
+range: [36.1120, 36.2052], longitude range: [-86.8475, -
+86.7543]) is used.
+• Hockey Games. Between Oct. 14, 2016, and Jan. 03, 2017,
+there were 20 NHL hockey games at the Bridgestone
+Arena in Nashville. The trafﬁc data in the bounding box
+(latitude range: [36.1237, 36.1936], longitude range: -
+86.8359, -86.7660]) is used.
+• Trafﬁc Accidents. Between Oct. 15, 2016, and Mar. 10,
+2017,
+the selected
+block area. The trafﬁc data in the bounding box (latitude
+range: [36.1470, 36.1586], longitude range: [-86.8126, -
+86.8009]) is used.
+there were 23 trafﬁc accidents at
+The trafﬁc and event datasets are divided into two subsets
+for training and validation. The event and time information is
+encoded using one-hot encoding as described in Section V.
+An example of the output of our model is shown in Figure 4.
+Particularly, the following metrics are used to deﬁne if an
+output is positive or negative: (1) an output is considered to
+be positive if it determines that the input TCI contains non-
+recurring congestion, (2) an output is negative if it determines
+the input TCI only contains recurring congestion.
+B. Experiment 1: Identifying NRC Caused by Football Games
+As shown in the motivating example in Section III-B, the
+8 selected NFL football games have an average attendance of
+TABLE VI.
+EXPERIMENT RESULTS IN SCENARIO 3: TRAINING DXNAT
+FOR IDENTIFYING NRC CAUSED BY TRAFFIC ACCIDENTS
+DxNAT
+Accuracy
+FNR
+86.59% 13.71% 4.44%
+FPR
+and a TIPS grant from Vanderbilt University. We acknowledge
+the support provided by our partners from Nashville Metropoli-
+tan Transport Authority.
+TABLE VII.
+SUMMARY OF ARCHITECTURAL DECISIONS
+REFERENCES
+and
+Challenge
+Representing
+Heterogeneous
+Trafﬁc Data
+Event Labels
+Deep
+Training
+Learning
+Models
+Using Limited Data
+Instances
+Modeling
+Patterns
+Recurring Events
+Trafﬁc
+of Non-
+Approach
+Using
+Multi-
+dimensional Images
+Section
+II-A
+Developing
+crossover
+on original data
+operator
+Employing
+convolutional neural
+networks
+II-B
+II-C
+VII. CONCLUSION
+includes:
+In this paper, we propose a deep neural network model
+to identify non-recurring trafﬁc congestion and explain its
+causes. To our best knowledge, our work is one of the ﬁrst
+efforts to utilize deep learning techniques to study trafﬁc
+congestion patterns and explain non-recurring congestion using
+events. Our main contributions are listed in Table VII. We
+present an algorithm to efﬁciently convert trafﬁc data in Trafﬁc
+Message Channel (TMC) format
+to images, as well as a
+crossover operator as a data augmentation mechanism for
+class balancing. A convolutional neural network is proposed
+to identify non-recurring trafﬁc anomalies that are caused by
+events. We evaluate the proposed model by using three types
+of events (football games, hockey games, and trafﬁc incidents).
+The future work to extend the current proposed model
+• Integrating more contextual features. Existing work usu-
+ally focuses just on trafﬁc data, but there are many types
+of urban data available to help identify trafﬁc patterns,
+like real-time bus travel time, speed, and weather. Be-
+sides events, trafﬁc conditions are affected by multiple
+environmental factors. The current work only considers
+time of day and day of week as the environmental training
+features. In the next step, we will include various features
+about weather conditions (such as humidity, nearest storm
+distance, visibility, etc.).
+• Identifying sizes of block areas and length of time win-
+dows. For each event type (e.g., sports games, accidents),
+the size of impacting block areas as well as the number
+of impacting time windows in the experimental scenarios
+are selected arbitrarily. A mechanism is needed to au-
+tomatically select the best impacting area size and time
+windows for each event type.
+ACKNOWLEDGMENTS
+This work is supported by The National Science Foundation
+under the award numbers CNS-1528799 and CNS-1647015
+[1] D. Schrank, B. Eisele, T. Lomax, and J. Bak, “2015 urban mobility
+scorecard,” 2015.
+[2] R. W. Hall, “Non-recurrent congestion: How big is the problem? are
+traveler information systems the solution?” Transportation Research
+Part C: Emerging Technologies, vol. 1, no. 1, pp. 89–103, 1993.
+[3] S. Lockwood, “The 21st century operation oriented state dots, nchrp
+project 20–24,” Transportation research board, American Association
+of State Highway and Transportation Ofﬁcials, Washington, DC, 2006.
+[4] S. P. Robinson, “The development and application of an urban link
+travel time model using data derived from inductive loop detectors,”
+Ph.D. dissertation, University of London, 2006.
+[5] X.-Y. Lu, P. Varaiya, R. Horowitz, and J. Palen, “Faulty loop data
+analysis/correction and loop fault detection,” in 15th World Congress on
+Intelligent Transport Systems and ITS America’s 2008 Annual Meeting,
+2008.
+[6] N. Zygouras, N. Panagiotou, N. Zacheilas, I. Boutsis, V. Kalogeraki,
+I. Katakis, and D. Gunopulos, “Towards detection of faulty trafﬁc
+sensors in real-time.” in MUD@ ICML, 2015, pp. 53–62.
+[7] A. Ghafouri, A. Laszka, A. Dubey, and X. Koutsoukos, “Optimal
+detection of faulty trafﬁc sensors used in route planning,” in Proceedings
+of the 2nd International Workshop on Science of Smart City Operations
+and Platforms Engineering. ACM, 2017, pp. 1–6.
+[8] S. Kamijo, Y. Matsushita, K. Ikeuchi, and M. Sakauchi, “Trafﬁc
+monitoring and accident detection at intersections,” IEEE transactions
+on Intelligent transportation systems, vol. 1, no. 2, pp. 108–118, 2000.
+[9] H. Veeraraghavan, P. Schrater, and N. Papanikolopoulos, “Switching
+kalman ﬁlter-based approach for tracking and event detection at trafﬁc
+intersections,” in Intelligent Control, 2005. Proceedings of the 2005
+IEEE International Symposium on, Mediterrean Conference on Control
+and Automation.
+IEEE, 2005, pp. 1167–1172.
+[10] S. Yang, K. Kalpakis, and A. Biem, “Detecting road trafﬁc events by
+coupling multiple timeseries with a nonparametric bayesian method,”
+IEEE Transactions on Intelligent Transportation Systems, vol. 15, no. 5,
+pp. 1936–1946, 2014.
+[11] X. Kong, X. Song, F. Xia, H. Guo, J. Wang, and A. Tolba, “Lotad: long-
+term trafﬁc anomaly detection based on crowdsourced bus trajectory
+data,” World Wide Web, pp. 1–23, 2017.
+[12] W. Liu, Y. Zheng, S. Chawla, J. Yuan, and X. Xing, “Discovering spatio-
+temporal causal interactions in trafﬁc data streams,” in Proceedings
+of the 17th ACM SIGKDD international conference on Knowledge
+discovery and data mining. ACM, 2011, pp. 1010–1018.
+[13] L. Xu, Y. Yue, and Q. Li, “Identifying urban trafﬁc congestion pattern
+from historical ﬂoating car data,” Procedia-Social and Behavioral
+Sciences, vol. 96, pp. 2084–2095, 2013.
+[14] A. H. Chow, A. Santacreu, I. Tsapakis, G. Tanasaranond, and T. Cheng,
+“Empirical assessment of urban trafﬁc congestion,” Journal of advanced
+transportation, vol. 48, no. 8, pp. 1000–1016, 2014.
+[15] S. Kwoczek, S. Di Martino, and W. Nejdl, “Predicting and visualizing
+trafﬁc congestion in the presence of planned special events,” Journal of
+Visual Languages & Computing, vol. 25, no. 6, pp. 973–980, 2014.
+[16] ——, “Stuck around the stadium? an approach to identify road seg-
+ments affected by planned special events,” in Intelligent Transportation
+Systems (ITSC), 2015 IEEE 18th International Conference on.
+IEEE,
+2015, pp. 1255–1260.
+[17] R. Al Mallah, A. Quintero, and B. Farooq, “Distributed classiﬁcation
+of urban congestion using vanet,” IEEE Transactions on Intelligent
+Transportation Systems, 2017.
+[23]
+[24]
+“Here trafﬁc api,” https://developer.here.com/rest-apis/documentation/
+trafﬁc/topics v6.1/ﬂow.html.
+. M. G. of Nashville and D. County, “Nashville ﬁre department,”
+2017,
+[Online]. Available:
+http://www.nashville.gov/Fire-Department.aspx
+[Online; accessed 30-September-2017].
+[25] O. Wiki, “Tmc/location code list/location types,” 2017,
+12-September-2017].
+[Online]. Available:
+accessed
+openstreetmap.org/wiki/TMC/Location Code List/Location Types
+J. A. Hanley and B. J. McNeil, “The meaning and use of the area
+under a receiver operating characteristic (roc) curve.” Radiology, vol.
+143, no. 1, pp. 29–36, 1982.
+[Online;
+http://wiki.
+[18] P. Widhalm, H. Koller, and W. Ponweiser, “Identifying faulty trafﬁc
+detectors with ﬂoating car data,” in Integrated and Sustainable Trans-
+portation System (FISTS), 2011 IEEE Forum on.
+IEEE, 2011, pp.
+103–108.
+[19] F. Terroso-S´aenz, M. Vald´es-Vela, C. Sotomayor-Mart´ınez, R. Toledo-
+Moreo, and A. F. G´omez-Skarmeta, “A cooperative approach to trafﬁc
+congestion detection with complex event processing and vanet,” IEEE
+Transactions on Intelligent Transportation Systems, vol. 13, no. 2, pp.
+914–929, 2012.
+[21]
+[20] H. Wang, H. Wen, F. Yi, H. Zhu, and L. Sun, “Road trafﬁc anomaly
+detection via collaborative path inference from gps snippets,” Sensors,
+vol. 17, no. 3, p. 550, 2017.
+J. Kwon, M. Mauch, and P. Varaiya, “Components of congestion: Delay
+from incidents, special events, lane closures, weather, potential ramp
+metering gain, and excess demand,” Transportation Research Record:
+Journal of the Transportation Research Board, no. 1959, pp. 84–91,
+2006.
+[22] X. Ma, Z. Dai, Z. He, J. Ma, Y. Wang, and Y. Wang, “Learning
+trafﬁc as images: a deep convolutional neural network for large-scale
+transportation network speed prediction,” Sensors, vol. 17, no. 4, p. 818,
+2017.
+[26]
+[27] MathWorks,
+“Detector
+roc
+[On-
+curves,”
+line]. Available: https://www.mathworks.com/help/phased/examples/
+detector-performance-analysis-using-roc-curves.html
+using
+30-September-2017].
+performance
+accessed
+analysis
+2017,
+[Online;
+[28] Keras, “Keras: The python deep learning library,” 2017, [Online;
+accessed 30-September-2017]. [Online]. Available: https://keras.io/
+[29] M. Abadi, A. Agarwal, P. Barham, E. Brevdo, Z. Chen, C. Citro, G. S.
+Corrado, A. Davis, J. Dean, M. Devin et al., “Tensorﬂow: Large-scale
+machine learning on heterogeneous distributed systems,” arXiv preprint
+arXiv:1603.04467, 2016.

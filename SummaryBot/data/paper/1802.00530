@@ -1,0 +1,740 @@
+
+Gaussian processes (GPs) naturally give rise to a function space view of modelling, whereby we
+place a prior distribution over functions, and reason about the properties of likely functions under
+this prior (Rasmussen & Williams, 2006). Given data, we then infer a posterior distribution over
+functions to make predictions. The generalisation behavior of the Gaussian process is determined
+by its prior support (which functions are a priori possible) and its inductive biases (which functions
+are a priori likely), which are in turn encoded by a kernel function. However, popular kernels,
+and even multiple kernel learning procedures, typically cannot extract highly expressive hidden
+representations, as was envisaged for neural networks (MacKay, 1998; Wilson, 2014).
+To discover such representations, recent approaches have advocated building more expressive ker-
+nel functions. For instance, spectral mixture kernels (Wilson & Adams, 2013) were introduced for
+ﬂexible kernel learning and extrapolation, by modelling a spectral density with a scale-location mix-
+ture of Gaussians, with promising results. However, Wilson & Adams (2013) specify the number of
+mixture components by hand, and do not characterize uncertainty over the mixture hyperparameters.
+As kernel functions become increasingly expressive and parametrized, it becomes natural to also
+adopt a function space view of kernel learning—to represent uncertainty over the values of the
+kernel function, and to reﬂect the belief that the kernel does not have a simple form. Just as we
+use Gaussian processes over functions to model data, we can apply the function space view a step
+further in a hierarchical model—with a prior distribution over kernels.
+In this paper, we introduce a scalable distribution over kernels by modelling a spectral density, the
+Fourier transform of a kernel, with a L´evy process. We consider both scale-location mixtures of
+Gaussians and Laplacians as basis functions for the L´evy process, to induce a prior over kernels that
+31st Conference on Neural Information Processing Systems (NIPS 2017), Long Beach, CA, USA.
+gives rise to the sharply peaked spectral densities that often occur in practice—providing a powerful
+inductive bias for kernel learning. Moreover, this choice of basis functions allows our kernel func-
+tion, conditioned on the L´evy process, to be expressed in closed form. This prior distribution over
+kernels also has support for all stationary covariances—containing, for instance, any composition
+of the popular RBF, Mat´ern, rational quadratic, gamma-exponential, or spectral mixture kernels.
+And unlike the spectral mixture representation in Wilson & Adams (2013), this proposed process
+prior allows for natural automatic inference over the number of mixture components in the spectral
+density model. Moreover, the priors implied by popular L´evy processes such as the gamma process
+and symmetric α-stable process result in even stronger complexity penalties than (cid:96)1 regularization,
+yielding sparse representations and removing mixture components which ﬁt to noise.
+Conditioned on this distribution over kernels, we model data with a Gaussian process. To form a
+predictive distribution, we take a Bayesian model average of GP predictive distributions over a large
+set of possible kernel functions, represented by the support of our prior over kernels, weighted by
+the posterior probabilities of each of these kernels. This procedure leads to a non-Gaussian heavy-
+tailed predictive distribution for modelling data. We develop a reversible jump MCMC (RJ-MCMC)
+scheme (Green, 1995) to infer the posterior distribution over kernels, including inference over the
+number of components in the L´evy process expansion. For scalability, we pursue a structured kernel
+interpolation (Wilson & Nickisch, 2015) approach, in our case exploiting algebraic structure in the
+L´evy process expansion, for O(n) inference and O(1) predictions, compared to the standard O(n3)
+and O(n2) computations for inference and predictions with Gaussian processes. Flexible distri-
+butions over kernels will be especially valuable on large datasets, which often contain additional
+structure to learn rich statistical representations.
+The key contributions of this paper are summarized as follows:
+1. The ﬁrst fully probabilistic approach to inference with spectral mixture kernels — to incor-
+porate kernel uncertainty into our predictive distributions, for a more realistic coverage of
+extrapolations. This feature is demonstrated in Section 5.3.
+2. Spectral regularization in spectral kernel learning. The L´evy process prior acts as a sparsity-
+inducing prior on mixture components, automatically pruning extraneous components.
+This feature allows for automatic inference over model order, a key hyperparameter which
+must be hand tuned in the original spectral mixture kernel paper.
+3. Reduced dependence on a good initialization, a key practical improvement over the original
+spectral mixture kernel paper.
+4. A conceptually natural and interpretable function space view of kernel learning.
+2 Background
+We provide a review of Gaussian and L´evy processes as models for prior distributions over functions.
+2.1 Gaussian Processes
+A stochastic process f (x) is a Gaussian process (GP) if for any ﬁnite collection of inputs X =
+{x1,··· , xn} ⊂ RD, the vector of function values [f (x1),··· , f (xn)]T is jointly Gaussian.
+The distribution of a GP is completely determined by its mean function m(x), and covariance
+kernel k(x, x(cid:48)). A GP used to specify a distribution over functions is denoted as f (x) ∼
+GP(m(x), k(x, x(cid:48))), where E[f (xi)] = m(xi) and cov(f (x), f (x(cid:48))) = k(x, x(cid:48)). The general-
+ization properties of the GP are encoded by the covariance kernel and its hyperparameters.
+By exploiting properties of joint Gaussian variables, we can obtain closed form expressions for
+conditional mean and covariance functions of unobserved function values given observed function
+values. Given that f (x) is observed at n training inputs X with values f = [f (x1),··· , f (xn)]T ,
+the predictive distribution of the unobserved function values f∗ at n∗ testing inputs X∗ is given by
+(1)
+(2)
+(3)
+f∗|X∗, X, θ ∼ N (¯f∗, cov(f∗)),
+¯f∗ = mX∗ + KX∗,X K−1
+cov(f∗) = KX∗,X∗ − KX∗,X K−1
+X,X (f − mX ),
+X,X KX,X∗ .
+where KX∗,X for example denotes the n∗ × n matrix of covariances evaluated at X∗ and X.
+The popular radial basis function (RBF) kernel has the following form:
+kRBF(x, x(cid:48)) = exp(−0.5(cid:107)x − x(cid:48)(cid:107)2 /(cid:96)2).
+(4)
+GPs with RBF kernels are limited in their expressiveness and act primarily as smoothing interpo-
+lators, because the only covariance structure they can learn from data is the length scale (cid:96), which
+determines how quickly covariance decays with distance.
+Wilson & Adams (2013) introduce the more expressive spectral mixture (SM) kernel capable of ex-
+tracting more complex covariance structures than the RBF kernel, formed by placing a scale-location
+mixture of Gaussians in the spectrum of the covariance kernel. The RBF kernel in comparison can
+only model a single Gaussian centered at the origin in frequency (spectral) space.
+2.2 L´evy Processes
+A stochastic process {L(ω)}ω∈R+ is a L´evy process if it has stationary, independent increments and
+it is continuous in probability. In other words, L must satisfy
+1. L(0) = 0,
+2. L(ω0), L(ω1) − L(ω0),··· , L(ωn) − L(ωn−1) are independent ∀ω0 ≤ ω1 ≤ ··· ≤ ωn,
+3. L(ω2) − L(ω1) d= L(ω2 − ω1) ∀ω2 ≥ ω1,
+4.
+P(|L(ω + h) − L(ω)| ≥ ε) = 0 ∀ε > 0 ∀ω ≥ 0.
+lim
+h→0
+By the L´evy-Khintchine representation, the dis-
+tribution of a (pure jump) L´evy process is com-
+pletely determined by its L´evy measure. That
+is, the characteristic function of L(ω) is given
+by:
+log E[eiuL(ω)] =
+(cid:0)eiu·β − 1 − iu · β1|β|≤1
+(cid:1) ν(dβ).
+(cid:90)
+Rd\{0}
+where the L´evy measure ν(dβ) is any σ-ﬁnite
+measure which satisﬁes the following integra-
+bility condition
+(cid:90)
+(1 ∧ β2)ν(dβ) < ∞.
+Rd\{0}
+Figure 1: Annotated realization of a compound
+Poisson process, a special case of a L´evy process.
+The ωj represent jump locations, and βj represent
+jump magnitudes.
+A L´evy process can be viewed as a combination of a Brownian motion with drift and a superposition
+of independent Poisson processes with differing jump sizes β. The L´evy measure ν(dβ) determines
+the expected number of Poisson events per unit of time for any particular jump size β. The Brow-
+nian component of a L´evy process will not be considered for this model. For higher dimension
+input spaces ω ∈ Ω, one deﬁnes the more general notion of L´evy random measure, which is also
+characterized by its L´evy measure ν(dβdω) (Wolpert et al., 2011) . We will show that the sample
+realizations of L´evy processes can be used to draw sample parameters for adaptive basis expansions.
+2.3 L´evy Process Priors over Adaptive Expansions
+Suppose we wish
+over
+adaptive
+class
+prior
+expansions:
+Through a simple manipulation, we can rewrite
+the
+f : X → R(cid:12)(cid:12)(cid:12) f (x) =(cid:80)J
+(cid:110)
+j=1 βjφ(x, ωj)
+f (x) into the form of a stochastic integral:
+specify
+of
+to
+(cid:111)
+(cid:90)
+J(cid:88)
+J(cid:88)
+(cid:90)
+J(cid:88)
+(cid:124)
+j=1
+(cid:123)(cid:122)
+=dL(ω)
+(cid:125)
+f (x) =
+βjφ(x, ωj) =
+βj
+φ(x, ω)δωj (ω)dω =
+φ(x, ω)
+βjδωj (ω)dω
+j=1
+j=1
+Hence, by specifying a prior for the measure L(ω), we can simultaneously specify a prior for all
+of the parameters {J, (β1, ω1), ..., (βJ , ωJ )} of the expansion. L´evy random measures provide a
+0246810x-5051015f(x)β1β2β3ω1ω2ω3family of priors naturally suited for this purpose, as there is a one-to-one correspondence between
+the jump behavior of the L´evy prior and the components of the expansion.
+To illustrate this point, suppose the basis function parameters ωj are one-dimensional and consider
+the integral of dL(ω) from 0 to ω.
+(cid:90) ω
+We see in Figure 1 that(cid:80)J
+L(ω) =
+(cid:90) ω
+J(cid:88)
+j=1
+J(cid:88)
+j=1
+dL(ξ) =
+βjδωj (ξ)dξ =
+βj1[0,ω](ωj).
+j=1 βj1[0,ω](ωj) resembles the sample path of a compound Poisson pro-
+cess, with the number of jumps J, jump sizes βj, and jump locations ωj corresponding to the number
+of basis functions, basis function weights, and basis function parameters respectively. We can use a
+compound Poisson process to deﬁne a prior over all such piecewise constant paths. More generally,
+we can use a L´evy process to deﬁne a prior for L(ω).
+Through the L´evy-Khintchine representation, the jump behavior of the prior is characterized by a
+L´evy measure ν(dβdω) which controls the mean number of Poisson events in every region of the
+parameter space, encoding the inductive biases of the model. As the number of parameters in this
+framework is random, we use a form of trans-dimensional reversible jump Markov chain Monte
+Carlo (RJ-MCMC) to sample the parameter space (Green, 2003).
+Popular L´evy processes such as the gamma process, symmetric gamma process, and the symmetric
+α-stable process each possess desirable properties for different situations. The gamma process is
+able to produce strictly positive gamma distributed βj without transforming the output space. The
+symmetric gamma process can produce both positive and negative βj, and according to Wolpert et al.
+(2011) can achieve nearly all the commonly used isotropic geostatistical covariance functions. The
+symmetric α-stable process can produce heavy-tailed distributions for βj and is appropriate when
+one might expect the basis expansion to be dominated by a few heavily weighted functions.
+While one could dispense with L´evy processes and place Gaussian or Laplace priors on βj to obtain
+(cid:96)2 or (cid:96)1 regularization on the expansions, respectively, a key beneﬁt particular to these L´evy process
+priors are that the implied priors on the coefﬁcients yield even stronger complexity penalties than
+(cid:96)1 regularization. This property encourages sparsity in the expansions and permits scalability of
+our MCMC algorithm. Refer to the supplementary material for an illustration of the joint priors
+on coefﬁcients, which exhibit concave contours in contrast to the convex elliptical and diamond
+contours of (cid:96)2 and (cid:96)1 regularization. Furthermore, in the log posterior for the L´evy process there
+is a log(J!) complexity penalty term which further encourages sparsity in the expansions. Refer to
+Clyde & Wolpert (2007) for further details.
+3 L´evy Distributions over Kernels
+In this section, we motivate our choice of prior over kernel functions and describe how to generate
+samples from this prior distribution in practice.
+3.1 L´evy Kernel Processes
+By Bochner’s Theorem (1959), a continuous stationary kernel can be represented as the Fourier dual
+of a spectral density:
+S(s)e2πis(cid:62)τ ds, S(s) =
+k(τ )e−2πis(cid:62)τ dτ.
+(5)
+(cid:90)
+k(τ ) =
+RD
+(cid:90)
+RD
+Hence, the spectral density entirely characterizes a stationary kernel. Therefore, it can be desirable
+to model the spectrum rather than the kernel, since we can then view kernel estimation through the
+lens of density estimation. In order to emulate the sharp peaks that characterize frequency spectra
+of natural phenomena, we model the spectral density with a location-scale mixture of Laplacian
+components:
+φL(s, ωj) =
+e−λj|s−χj|, ωj ≡ (χj, λj) ∈ [0, fmax] × R+.
+Then the full speciﬁcation of the symmetric spectral mixture is
+λj
+(cid:104) ˜S(s) + ˜S(−s)
+(cid:105)
+S(s) =
+(6)
+(7)
+J(cid:88)
+j=1
+˜S(s) =
+βjφL(s, ωj).
+As Laplacian spikes have a closed form inverse Fourier transform, the spectral density S(s) repre-
+sents the following kernel function:
+J(cid:88)
+j=1
+k(τ ) =
+βj
+λ2
+j + 4π2τ 2 cos(2πχjτ ).
+λ2
+(8)
+The parameters J, βj, χj, λj can be interpreted through Eq. (8). The total number of terms to the
+mixture is J, while βj is the scale of the jth frequency contribution, χj is its central frequency, and λj
+governs how rapidly the term decays (a high λ results in conﬁdent, long-term periodic extrapolation).
+Other basis functions can be used in place of φL to model the spectrum as well. For example, if a
+Gaussian mixture is chosen, along with maximum likelihood estimation for the learning procedure,
+then we obtain the spectral mixture kernel (Wilson & Adams, 2013).
+As the spectral density S(s) takes the form of an adaptive expansion, we can deﬁne a L´evy prior
+over all such densities and hence all corresponding kernels of the above form. For a chosen basis
+function φ(s, ω) and L´evy measure ν(dβdω) we say that k(τ ) is drawn from a L´evy kernel process
+(LKP), denoted as k(τ ) ∼ LKP(φ, ν). Wolpert et al. (2011) discuss the necessary regularity
+conditions for φ and ν. In summary, we propose the following hierarchical model over functions
+f (x)|k(τ ) ∼ GP(0, k(τ )),
+τ = x − x(cid:48),
+k(τ ) ∼ LKP(φ, ν).
+(9)
+Figure 2 shows three samples from the L´evy
+process speciﬁed through Eq. (7) and their cor-
+responding covariance kernels. We also show
+one GP realization for each of the kernel func-
+tions. By placing a L´evy process prior over
+spectral densities, we induce a L´evy kernel pro-
+cess prior over stationary covariance functions.
+3.2 Sampling L´evy Priors
+We now discuss how to generate samples
+from the L´evy kernel process in practice.
+In
+short, the kernel parameters are drawn accord-
+ing to {J,{(βj, ωj)}J
+j=1} ∼ L´evy(ν(dβdω)),
+and then Eq. (8) is used to evaluate k ∼
+LKP(φL, ν) at values of τ.
+Recall from Section 2.3 that
+the choice of
+L´evy measure ν is completely determined by
+the choice of the corresponding L´evy process
+and vice versa. Though the processes men-
+tioned there produce sample paths with in-
+ﬁnitely many jumps (and cannot be sampled
+directly), almost all jumps are inﬁnitesimally
+small, and therefore these processes can be ap-
+proximated in L2 by a compound Poisson pro-
+cess with a jump size distribution truncated by
+ε.
+Once the desired L´evy process is chosen and the truncation bound is set, the basis expansion
+parameters are generated by drawing J ∼ Poisson(ν+
+samples
+β1,··· , βJ ∼ πβ(dβ), and J i.i.d. samples ω1,··· , ωJ ∼ πω(dω). Refer to the supplementary
+ε = νε(R × Ω) for the gamma, symmetric gamma,
+material for L2 error bounds and formulas for ν+
+and symmetric α-stable processes.
+The form of πβ(βj) also depends on the choice of L´evy process and can be found in the supplemen-
+tary material, with further details in Wolpert et al. (2011). We choose to draw χ from an uninformed
+uniform prior over a reasonable range in the frequency domain, and λ from a gamma distribution,
+λ ∼ Gamma(aλ, bλ). The choices for aλ, bλ, and the frequency limits are left as hyperparame-
+ters, which can have their own hyperprior distributions. After drawing the 3J values that specify
+Figure 2: Samples from a L´evy kernel mix-
+ture prior distribution.
+(top) Three spectra with
+Laplace components drawn from a L´evy process
+prior. (middle) The corresponding stationary co-
+variance kernel functions and the prior mean with
+two standard deviations of the model, as deter-
+mined by 10,000 samples. (bottom) GP samples
+with the respective covariance kernel functions.
+ε ), and then drawing J i.i.d.
+00.050.10.150.2Frequency024Power00.050.10.150.2Frequency00.51Power00.050.10.150.2Frequency00.511.5Power00.20.40.60.811.21.41.61.82τ-0.100.10.2K(τ)02468101214161820X-0.500.5f(X)a L´evy process realization, the corresponding covariance function can be evaluated through the an-
+alytical expression for the inverse Fourier transform (e.g. Eq. (8) for Laplacian frequency mixture
+components).
+4 Scalable Inference
+Given observed data D = {xi, yi}N
+x∗ for interpolation and extrapolation. We model observations y(x) with a hierarchical model:
+i=1, we wish to infer p(y(x∗)|D, x∗) over some test set of inputs
+y(x)|f (x) = f (x) + ε(x),
+f (x)|k(τ ) ∼ GP(0, k(τ )),
+k(τ ) ∼ LKP(φ, ν).
+(10)
+(11)
+(12)
+Computing the posterior distributions by marginalizing over the LKP will yield a heavy-tailed non-
+Gaussian process for y(x∗) = y∗ given by an inﬁnite Gaussian mixture model:
+ε(x)
+τ = x − x(cid:48),
+iid∼ N (0, σ2),
+p(y∗|D) =
+p(y∗|k,D)p(k|D)dk ≈ 1
+p(y∗|kh), kh ∼ p(k|D).
+(13)
+(cid:90)
+H(cid:88)
+h=1
+Initialization Considerations
+We compute this approximating sum using H RJ-MCMC samples (Green, 2003). Each sample
+draws a kernel from the posterior kh ∼ p(k|D) distribution. Each sample of kh enables us to draw a
+sample from the posterior predictive distribution p(y∗|D), from which we can estimate the predictive
+mean and variance.
+Although we have chosen a Gaussian observation model in Eq. (10) (conditioned on f (x)), all of the
+inference procedures we have introduced here would also apply to non-Gaussian likelihoods, such
+as for Poisson processes with Gaussian process intensity functions, or classiﬁcation.
+The sum in Eq. (13) requires drawing kernels from the distribution p(k|D). This is a difﬁcult dis-
+tribution to approximate, particularly because there is not a ﬁxed number of parameters as J varies.
+We employ RJ-MCMC, which extends the capability of conventional MCMC to allow sequential
+samples of different dimensions to be drawn (Green, 2003). Thus, a posterior distribution is not
+limited to coefﬁcients and other parameters of a ﬁxed basis expansion, but can represent a chang-
+ing number of basis functions, as required by the description of L´evy processes described in the
+previous section. Indeed, RJ-MCMC can be used to automatically learn the appropriate number
+of basis functions in an expansion. In the case of spectral kernel learning, inferring the number of
+basis functions corresponds to automatically learning the important frequency contributions to a GP
+kernel, which can lead to new interpretable insights into our data.
+4.1
+The choice of an initialization procedure is often an important practical consideration for machine
+learning tasks due to severe multimodality in a likelihood surface (Neal, 1996).
+In many cases,
+however, we ﬁnd that spectral kernel learning with RJ-MCMC can automatically learn salient fre-
+quency contributions with a simple initialization, such as a uniform covering over a broad range
+of frequencies with many sharp peaks. The frequencies which are not important in describing the
+data are quickly attenuated or removed within RJ-MCMC learning. Typically only a few hundred
+RJ-MCMC iterations are needed to discover the salient frequencies in this way.
+Wilson (2014) proposes an alternative structured approach to initialization in previous spectral ker-
+nel modelling work. First, pass the (squared) data through a Fourier transform to obtain an empirical
+spectral density, which can be treated as observed. Next, ﬁt the empirical spectral density using a
+standard Gaussian mixture density estimation procedure, assuming a ﬁxed number of mixture com-
+ponents. Then, use the learned parameters of the Gaussian mixture as an initialization of the spectral
+mixture kernel hyperparameters, for Gaussian process marginal likelihood optimization. We observe
+successful adaptation of this procedure to our L´evy process method, replacing the approximation
+with Laplacian mixture terms and using the result to initialize RJ-MCMC.
+4.2 Scalability
+As with other GP based kernel methods, the computational bottleneck lies in the evaluation of
+the log marginal likelihood during MCMC, which requires computing (KX,X + σ2I)−1y and
+log |KX,X + σ2I| for an n × n kernel matrix KX,X evaluated at the n training points X. A di-
+rect approach through computing the Cholesky decomposition of the kernel matrix requires O(n3)
+computations and O(n2) storage, restricting the size of training sets to O(104). Furthermore, this
+computation must be performed at every iteration of RJ-MCMC, compounding standard computa-
+tional constraints.
+However, this bottleneck can be readily overcome through the Structured Kernel Interpolation
+approach introduced in Wilson & Nickisch (2015), which approximates the kernel matrix as
+˜KX,X(cid:48) = MX KZ,ZM(cid:62)
+X(cid:48) for an exact kernel matrix KZ,Z evaluated on a much smaller set of
+m (cid:28) n inducing points, and a sparse interpolation matrix MX which facilitates fast computations.
+The calculation reduces to O(n + g(m)) computations and O(n + g(m)) storage. As described
+in Wilson & Nickisch (2015), we can impose Toeplitz structure on KZ,Z for g(m) = m log m,
+allowing our RJ-MCMC procedure to train on massive datasets.
+5 Experiments
+We conduct four experiments in total.
+In order to motivate our model for kernel learning in
+later experiments, we ﬁrst demonstrate the ability of a L´evy process to recover—through direct
+regression—an observed noise-contaminated spectrum that is characteristic of sharply peaked nat-
+urally occurring spectra.
+In the second experiment we demonstrate the robustness of our RJ-
+MCMC sampler by automatically recovering the generative frequencies of a known kernel, even
+in presence of signiﬁcant noise contamination and poor initializations.
+In the third experiment
+we demonstrate the ability of our method to infer the spectrum of airline passenger data, to per-
+form long-range extrapolations on real data, and to demonstrate the utility of accounting for un-
+certainty in the kernel.
+In the ﬁnal experiment we demonstrate the scalability of our method
+through training the model on a 100,000 data point sound waveform. Code is available at https:
+//github.com/pjang23/levy-spectral-kernel-learning.
+5.1 Explicit Spectrum Modelling
+We begin by applying a L´evy process di-
+rectly for function modelling (known as LARK
+regression), with inference as described in
+Wolpert et al. (2011), and Laplacian basis func-
+tions. We choose an out of class test function
+proposed by Donoho & Johnstone (1993) that
+is standard in wavelet literature. The spatially
+inhomogeneous function is deﬁned to represent
+spectral densities that arise in scientiﬁc and en-
+gineering applications. Gaussian i.i.d. noise is
+added to give a signal-to-noise ratio of 7, to be
+consistent with previous studies of the test func-
+tion Wolpert et al. (2011).
+The noisy test function and LARK regression ﬁt are shown in Figure 3. The synthetic spectrum
+is well characterized by the L´evy process, with no “false positive” basis function terms ﬁtting the
+noise owing to the strong regularization properties of the L´evy prior. By contrast, GP regression
+with an RBF kernel learns a length scale of 0.07 through maximum marginal likelihood training:
+the Gaussian process posterior can ﬁt the sharp peaks in the test function only if it also overﬁts to
+the additive noise.
+The point of this experiment is to show that the L´evy process with Laplacian basis functions forms
+a natural prior over spectral densities. In other words, samples from this prior will typically look
+like the types of spectra that occur in practice. Thus, this process will have a powerful inductive bias
+when used for kernel learning, which we explore in the next experiments.
+Figure 3: L´evy process regression on a noisy test
+function (black). The ﬁt (red) captures the lo-
+cations and scales of each spike while ignoring
+noise, but falls slightly short at its modes since
+the black spikes are parameterized as (1 + |x|)−4
+rather than Laplacian.
+012345678910x01020304050f(x)Figure 4: Ground truth recovery of known fre-
+quency components.
+(left) The spectrum of the
+Gaussian process that was used to generate the
+noisy training data is shown in black. From these
+noisy data and the erroneous spectral initialization
+shown in dashed blue, the maximum a posteriori
+estimate of the spectral density (over 1000 RJ-
+MCMC steps) is shown in red. A SM kernel also
+identiﬁes the salient frequencies, but with broader
+support, shown in magenta. (right) Noisy training
+data are shown with a scatterplot, with withheld
+testing data shown in green. The learned posterior
+predictive distribution (mean in black, with 95%
+credible set in grey) captures the test data.
+5.2 Ground Truth Recovery
+We next demonstrate the ability of our method
+to recover the generative frequencies of a
+known kernel and its robustness to noise and
+poor initializations. Data are generated from a
+GP with a kernel having two spectral Laplacian
+peaks, and partitioned into training and testing
+sets containing 256 points each. Moreover, the
+training data are contaminated with i.i.d. Gaus-
+sian noise (signal-to-noise ratio of 85%).
+Based on these observed training data (depicted
+as black dots in Figure 4, right), we estimate
+the kernel of the Gaussian process by inferring
+its spectral density (Figure 4, left) using 1000
+RJ-MCMC iterations. The empirical spectrum
+initialization described in section 4.1 results in
+the discovery of the two generative frequencies.
+Critically, we can also recover these salient fre-
+quencies even with a very poor initialization, as
+shown in Figure 4 (left).
+For comparison, we also train a Gaussian SM
+kernel, initializing based on the empirical spec-
+trum. The resulting kernel spectrum (Figure 4,
+magenta curve) does recover the salient frequencies, though with less conﬁdence and higher over-
+head than even a poor initialization and spectral kernel learning with RJ-MCMC.
+5.3 Spectral Kernel Learning for Long-Range Extrapolation
+We next demonstrate the ability of our method
+to perform long-range extrapolation on real
+data. Figure 5 shows a time series of monthly
+airline passenger data from 1949 to 1961 (Hyn-
+dman, 2005). The data show a long-term ris-
+ing trend as well as a short term seasonal wave-
+form, and an absence of white noise artifacts.
+As with Wilson & Adams (2013), the ﬁrst 96
+monthly data points are used to train the model
+and the last 48 months (4 years) are withheld as
+testing data, indicated in green. With an initial-
+ization from the empirical spectrum and 2500
+RJ-MCMC steps, the model is able to automat-
+ically learn the necessary frequencies and the
+shape of the spectral density to capture both the
+rising trend and the seasonal waveform, allow-
+ing for accurate long-range extrapolations with-
+out pre-specifying the number of model compo-
+nents in advance.
+This experiment also demonstrates the impact of accounting for uncertainty in the kernel, as the
+withheld data often appears near or crosses the upper bound of the 95% predictive bands of the SM
+ﬁt, whereas our model yields wider and more conservative predictive bands that wholly capture the
+test data. As the SM extrapolations are highly sensitive to the choice of parameter values, ﬁxing
+the parameters of the kernel will yield overconﬁdent predictions. The L´evy process prior allows us
+to account for a range of possible kernel parameters so we can achieve a more realistically broad
+coverage of possible extrapolations.
+Note that the L´evy process over spectral densities induces a prior over kernel functions. Figure 6
+shows a side-by-side comparison of covariance function draws from the prior and posterior distribu-
+tions over kernels. We see that sample covariance functions from the prior vary quite signiﬁcantly,
+but are concentrated in the posterior, with movement towards the empirical covariance function.
+Figure 5: Learning of Airline passenger data.
+Training data is scatter plotted, with withheld test-
+ing data shown in green. The learned posterior
+distribution with the proposed approach (mean in
+black, with 95% credible set in grey) captures the
+periodicity and the rising trend in the test data.
+The analogous 95% interval using a GP with a SM
+kernel is illustrated in magenta.
+00.20.4Frequency100200300400Power01020304050X-10-505f(X)Figure 6: Covariance function draws from the kernel prior (left) and posterior (right) distributions,
+with the empirical covariance function shown in black. After RJ-MCMC, the covariance distribution
+centers upon the correct frequencies and order of magnitude.
+Figure 7: Learning of a natural sound tex-
+ture. A close-up of the training interval is
+displayed with the true waveform data scat-
+ter plotted. The learned posterior distribu-
+tion (mean in black, with 95% credible set
+in grey) retains the periodicity of the signal
+within the corrupted interval. Three samples
+are drawn from the posterior distribution.
+5.4 Scalability Demonstration
+A ﬂexible and fully Bayesian approach to kernel
+learning can come with some additional computa-
+tional overhead. Here we demonstrate the scalability
+that is achieved through the integration of SKI (Wil-
+son & Nickisch, 2015) with our L´evy process model.
+We consider a 100,000 data point waveform, taken
+from the ﬁeld of natural sound modelling (Turner,
+2010). A L´evy kernel process is trained on a sound
+texture sample of howling wind with the middle
+10% removed. Training involved initialization from
+the signal empirical covariance and 500 RJ-MCMC
+samples, and took less than one hour using an In-
+tel i7 3.4 GHz CPU and 8 GB of memory. Four
+distinct mixture components in the model were au-
+tomatically identiﬁed through the RJ-MCMC proce-
+dure. The learned kernel is then used for GP inﬁlling
+with 900 training points, taken by down-sampling
+the training data, which is then applied to the origi-
+nal 44,100 Hz natural sound ﬁle for inﬁlling.
+The GP posterior distribution over the region of interest is shown in Figure 7, along with sample
+realizations, which appear to capture the qualitative behavior of the waveform. This experiment
+demonstrates the applicability of our proposed kernel learning method to large datasets, and shows
+promise for extensions to higher dimensional data.
+6 Discussion
+We introduced a distribution over covariance kernel functions that is well suited for modelling quasi-
+periodic data. We have shown how to place a L´evy process prior over the spectral density of a sta-
+tionary kernel. The resulting hierarchical model allows the incorporation of kernel uncertainty into
+the predictive distribution. Through the spectral regularization properties of L´evy process priors, we
+found that our trans-dimensional sampling procedure is suitable for automatically performing infer-
+ence over model order, and is robust over initialization strategies. Finally, we incorporated structured
+kernel interpolation into our training and inference procedures for linear time scalability, enabling
+experiments on large datasets. The key advances over conventional spectral mixture kernels are in
+being able to interpretably and automatically discover the number of mixture components, and in
+representing uncertainty over the kernel. Here, we considered one dimensional inputs and station-
+ary processes to most clearly elucidate the key properties of L´evy kernel processes. However, one
+could generalize this process to multidimensional non-stationary kernel learning by jointly infer-
+ring properties of transformations over inputs alongside the kernel hyperparameters. Alternatively,
+one could consider neural networks as basis functions in the L´evy process, inferring distributions
+over the parameters of the network and the numbers of basis functions as a step towards automating
+neural network architecture construction.
+0.0080.0090.010.0110.0120.0130.0140.015X (Seconds)-0.4-0.200.20.4f(X)Acknowledgements. This work is supported in part by the Natural Sciences and Engineering Re-
+search Council of Canada (PGS-D 502888) and the National Science Foundation DGE 1144153 and
+IIS-1563887 awards.
+References
+Bochner, S. Lectures on Fourier Integrals.(AM-42), volume 42. Princeton University Press, 1959.
+Clyde, Merlise A and Wolpert, Robert L. Nonparametric function estimation using overcomplete
+dictionaries. Bayesian Statistics, 8:91–114, 2007.
+Donoho, D. and Johnstone, J.M. Ideal spatial adaptation by wavelet shrinkage. Biometrika, 81(3):
+425–455, 1993.
+Green, P.J.
+Reversible jump monte carlo computation and bayesian model determination.
+Biometrika, 89(4):711–732, 1995.
+Green, P.J. Trans-dimensional Markov chain Monte Carlo, chapter 6. Oxford University Press,
+2003.
+Hyndman, R.J. Time series data library. 2005. http://www-personal.buseco.monash.
+edu.au/˜hyndman/TSDL/.
+MacKay, David J.C. Introduction to Gaussian processes. In Bishop, Christopher M. (ed.), Neural
+Networks and Machine Learning, chapter 11, pp. 133–165. Springer-Verlag, 1998.
+Neal, R.M. Bayesian Learning for Neural Networks. Springer Verlag, 1996. ISBN 0387947248.
+Rasmussen, C. E. and Williams, C. K. I. Gaussian processes for Machine Learning. The MIT Press,
+2006.
+Turner, R. Statistical models for natural sounds. PhD thesis, University College London, 2010.
+Wilson, Andrew Gordon. Covariance kernels for fast automatic pattern discovery and extrapolation
+with Gaussian processes. PhD thesis, University of Cambridge, 2014.
+Wilson, Andrew Gordon and Adams, Ryan Prescott. Gaussian process kernels for pattern discovery
+and extrapolation. International Conference on Machine Learning (ICML), 2013.
+Wilson, Andrew Gordon and Nickisch, Hannes. Kernel interpolation for scalable structured Gaus-
+sian processes (KISS-GP). International Conference on Machine Learning (ICML), 2015.
+Wolpert, R.L., Clyde, M.A., and Tu, C. Stochastic expansions using continuous dictionaries: L´evy
+adaptive regression kernels. The Annals of Statistics, 39(4):1916–1962, 2011.
+10
+7 Supplementary Materials
+7.1 Sampling Levy Process Priors
+The following formulas in this section are taken from Wolpert et al. (2011) for reference.
+Suppose the hyperparameters θ of the prior distributions for J, β, ω, are drawn from a hyperprior
+distribution, πθ(dθ). Then in order to sample the L´evy prior, the follow steps are taken:
+θ ∼ πθ(dθ)
+J|θ ∼ Po(ν+
+ε ),
+ε ≡ νε(R × Ω)
+ν+
+{(βj, ωj)}J
+j=1|J, θ
+i.i.d.∼ πβ(βj)dβjπω(dωj)
+ε and πβ are determined by the speciﬁc choice of L´evy process and are given
+The formulas for ν+
+below. For computational purposes, the βj’s are truncated at |βjη| > ε for a Poisson approximation
+to the true L´evy process, and E|L[φ] − Lε[φ]|2 represents the L2 error of the approximation for a
+given basis function φ. Below, E1(z) =(cid:82) ∞
+t−1e−tdt.
+7.1.1 Gamma Process
+J ∼ Po(ν+
+ε ),
+ε = γ|Ω|E1(ε)
+ν+
+i.i.d.∼ πβ(βj)dβj,
+βj
+πβ(βj) =
+β−1
+j e−βj η
+E1(ε)
+1{βjη>ε}
+E|L[φ] − Lε[φ]|2 = γη−2(cid:107)φ(cid:107)2
+2[1 − (1 + ε)e−ε]
+7.1.2 Symmetric Gamma Process
+J ∼ Po(ν+
+ε ),
+ε = 2γ|Ω|E1(ε)
+ν+
+i.i.d.∼ πβ(βj)dβj,
+βj
+πβ(βj) =
+|βj|−1e−|βj|η
+2E1(ε)
+1{|βjη|>ε}
+E|L[φ] − Lε[φ]|2 = 2γη−2(cid:107)φ(cid:107)2
+E|L[φ] − Lε[φ]|2 = 2γη−2(cid:107)φ(cid:107)2
+11
+7.1.3 Symmetric α-Stable Process
+J ∼ Po(ν+
+ε ),
+ε = γ|Ω| 2
+ν+
+i.i.d.∼ πβ(βj)dβj,
+βj
+πβ(βj) =
+2[1 − (1 + ε)e−ε]
+(cid:17)
+(cid:16) πα
+Γ(α)sin
+ε−α
+αεα
+2ηα |βj|−α−11{|βjη|>ε}
+(cid:21)
+(cid:20) Γ(α + 1)
+(cid:16) πα
+(cid:17)
+ε2−α
+π(2 − α)
+sin
+7.2 Sparsity Inducing Properties of L´evy Priors
+Figure 8 illustrates the contours of the joint distribution for two independent draws of β under
+different priors πβ(dβ). The contours for the gamma process would be taken from the upper-right
+quadrant of those for the symmetric gamma process.
+Gaussian and Laplace priors on β result in (cid:96)2 and (cid:96)1 regularization respectively. The L´evy processes
+in contrast yield inward curving contours, leading to a sparsity inducing effect similar to (cid:96)p regular-
+ization with p < 1. Intuitively, this discourages simultaneous large values of β more strongly than
+(cid:96)1 regularization unless the added basis functions signiﬁcantly improve the ﬁt.
+Figure 8: Contour plot of the joint probability density function of two β draws under different
+priors.
+Initialization and Hyperparameter Tuning
+7.3
+Initialization and hyperparameter tuning can be automated by ﬁtting the empirical spectrum of the
+data. It is done in the following steps:
+1. If needed, de-mean the training data by subtracting a deterministic mean function such as
+the sample mean or best ﬁt line. Doing so will eliminate large peaks at the origin which
+dominate the rest of the spectrum. The de-meaned training data {yj}n
+j=1 will be the input
+for RJ-MCMC.
+2. Compute the empirical spectral density Semp(s) = 2
+In MATLAB, this is calculated as the ﬁrst (cid:98) n
+2(cid:99) entries from 2*abs(fft(y)).ˆ2/n;
+3. Sample the empirical spectral density and ﬁt a Gaussian mixture with J0 components to the
+sampled data. A good initial guess for J0 can be done by examining the number of peaks
+in the empirical spectrum.
+, s ∈ [0, 0.5].
+j=1 yje−2πis(j−1)(cid:12)(cid:12)(cid:12)2
+(cid:12)(cid:12)(cid:12)(cid:80)n
+J0(cid:88)
+j=1
+1(cid:113)
+2πσ2
+− (s−χj )2
+2σ2
+SGaussian(s) =
+αj
+4. Keep the frequencies χj from the Gaussian ﬁt, and using least squares, ﬁt a Laplacian
+basis function to each individual Gaussian component. For each j, one could minimize the
+12
+following objective over a sample grid of points sk in [−3σj, 3σj]
+βj
+(cid:88)
+sk
+min
+λj ,βj
+e−λj|sk| − αj
+λj
+2
+1(cid:113)
+2πσ2
+− s2
+2σ2
+5. Form the initial spectrum with the ﬁtted parameters
+J0(cid:88)
+j=1
+Sinitial(s) =
+βj
+λj
+e−λj|s−χj|
+The initial spectrum ﬁt for the airline data is shown in Figure 9.
+6. Tune the hyperparameters:
+likelihood on the λ parameters of the initial spectrum.
+• λ is modelled with prior Gamma(aλ, bλ), so aλ and bλ can be estimated by maximum
+• η−1 ∼ Gamma(aη, bη) controls the expected value of coefﬁcients βj. For basis func-
+tions which integrate to 1, the sum of βj’s is equal to the total area underneath the
+spectrum, which by Parseval’s identity represents total variance of the data. Hence
+the sample variance of the training data can be used as an upper bound on coefﬁcient
+values, and aη and bη can be set accordingly.
+• γ ∼ Gamma(aγ, bγ) is proportional to the expected number of basis functions as
+shown in Section 7.1 and controls the sparsity of the expansions. aγ and bγ can be set
+to cover a range of values which encourage sparsity.
+• For the symmetric α-stable process, 0 < α < 2 controls the heaviness of the tails in
+the distribution for βj with smaller values of α yielding heavier tails. α can be set by
+maximum likelihood on the initial βj’s.
+• ε can be set based on L2 truncation errors as described in Section 7.1.
+Figure 9: Initial Spectrum Fit
+13

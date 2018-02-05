@@ -1,0 +1,468 @@
+
+In a wide range of ﬁelds, from music and advertising recommendations to healthcare
+and a wide range of other consumer applications, learning users’ personal tendencies and
+judgements is essential. Many current approaches demand centralized data storage and
+computation to aggregate and learn globally. Such central models, along with features
+known about a given user, make predictions appear personal to that user. While such
+global models have proven to be widely eﬀective, they bring with them inherent conﬂicts
+with privacy. User data must leave the device, and training a central model requires regular
+communication between a given user and the remote model. Further, if users are in some
+way truly unique, and exhibit diﬀerence preferences than seemingly similar users, large
+centralized models may have trouble quickly adapting to this behavior.
+With these disadvantages in mind, we present a deﬁnition of personalization that
+allows for no direct sharing or centralization of user data. We see personalization as the
+balance between generalization to global information and specialization to a given user’s
+quirks and biases.
+To make this deﬁnition concrete, we show how a simple baseline model’s performance
+changes on a sentiment analysis task as a function of user bias, and the way information is
+shared across models. We hope this work can contribute to framing the discussion around
+personalization and provide a metric for evaluating in what ways a model is truly providing
+a user personal recommendations.
+We also discuss related areas such as diﬀerential privacy, and federated learning, which
+have been motivated by similar considerations. Our work could easily ﬁt into the frameworks
+of federated learning or diﬀerential privacy.
+2.1. Personalized Models. There has been a long history of research into personalization
+within machine learning. There is a wealth of work on using Bayesian hierarchical models
+2. Related Work
+Date: February 1, 2018.
+2
+REUBEN BRASHER, NAT ROTH, JUSTIN WAGLE
+to learn mixes of user and global parameters from data. These works have achieved success
+in areas from health care [8], to recommendation systems [29], to generally dealing with a
+mix of implicit and explicit feedback [30]. There has also been increasing work on helping
+practitioners to integrate these Bayesian techniques with deep learning models [24].
+Many approaches to personalization within deep learning have relied on combining
+personal features, hand written or learned, with some more global features to make pre-
+dictions. For example, in deep recommender systems, a feature might whether a user is
+a certain gender, or has seen a certain movie. A deep model may learn to embed these
+features, and combine them with some linear model as in [5] in order to make recommenda-
+tions for a speciﬁc user. It is also common to learn some vector describing the user end to
+end for a task, rather than doing this featurization by hand. In such scenarios your input
+might be a sentence and a user id and the prediction would be the next sentence as in [2],
+in which the user is featurized via some learned vector. Similarly, Park et al [20], learn a
+vector representation of a user’s context to generate image captions that are personal to the
+user, and [4] learn a user vector alongside a language model to determine if a set of answers
+to a question will satisfy a user. These approaches have the beneﬁt of not requiring any
+manual description of the important traits of a user.
+Here, when we discuss personalization, we focus more on personalization work within
+deep learning. In general, deep learning models are large, complicated, and very non-linear.
+This makes it hard to reason about how incorporating a new user, or set of training examples
+will aﬀect the state of the model at large, a phenomenon known as “catastrophic forgetting”
+[9], a topic which itself has seen a large amount of research [12], [10], [3].
+In general,
+this means that if we add a new user whose behavior is very diﬀerent from our previous
+training examples, we need to take extra steps to preserve our performance on previous
+users. This makes online personalization of models to outlier users an open problem within
+deep learning.
+2.2. Federated Learning. Our other key personalization constraint is privacy related; to
+get users to trust a model with extremely personal data, it is our believe that it is becoming
+increasingly necessary, and even legally mandated, to guarantee them a degree of privacy
+[21], [19]. Research on federated learning has demonstrated that intelligence from users
+can be aggregated and centralized models trained without ever directly storing user data
+in a central location, alleviating part of these privacy concerns. This research focuses on
+training models when data is distributed on a very large number of devices, and further
+assumes each device does not have access to a representative sample of the global data [17],
+[13]. We therefore believe federating learning is a key part of any personalization strategy.
+Federated learning is concerned with training a central model that does well on users
+globally. However, the contribution from an individual user tends to be washed out after
+each update to the global model. Konecny et al., [13] admit as much, explicitly saying
+that the issues of personalization are separate from federated learning. Instead, much of
+the current research focus on improving communication speed [14] and how to maintain
+stability between models when communication completely drops or lags greatly [25].
+[16]
+comes closest to our concerns, as it hypothesizes a system in which each user has a personal
+set of knowledge and some more global mechanism aggregating knowledge from similar
+users. They do not propose an exact mechanism for how to do this aggregating and how
+to determine which users are similar. We hope to contribute to the conversation on how to
+best minimally compromise the privacy and decentralization of learning, while not enforcing
+all models to globally cohere and synchronize.
+Finally, it is important to note that federation itself does not guarantee privacy. While
+in practice this aggregation of gradients, in the place of storing of raw data, will often
+obscure some user behavior, it may still leak information about users. For example, if an
+attacker observes a non-zero gradient for a feature representing a location, it may be trivial
+to infer that some of the users in the group live in that location. Making strong guarantees
+SOMETIMES YOU WANT TO GO WHERE EVERYBODY KNOWS YOUR NAME
+about the extent to which data gives us information about individual users is the domain
+of diﬀerential privacy [7], [1]. In future work, we hope to incorporate these stronger notions
+of privacy into our discussion as well, but believe that federated learning is a good ﬁrst step
+towards greater user privacy.
+3. Personalization Definition
+With these problems in mind, we deﬁne personalization as the relative weighting
+between performance of a model on a large, multi-user, global dataset, and the performance
+of that model on data from a single user. This deﬁnition implies several things. In particular,
+the extent to which a model can be personalized depends both on the model itself, and
+the spread of user behavior. On a task in which users always behave the same, there is
+little room for personalization, as a global model trained on all user data will likely be
+optimal globally and locally. However, on any task where user behavior varies signiﬁcantly
+between individuals, it is possible a model trained on all users may perform poorly on any
+speciﬁc user. Nonetheless, a speciﬁc user may beneﬁt from some global data; for example,
+a user with less training data may see better performance if they use a model trained with
+some global data. Therefore, the best personalization strategy will have some ability to
+incorporate global knowledge, will minimally distorting the predictions for a given user.
+In addition, we add the constraint that user speciﬁc data be private to a user, and
+cannot be explicitly shared between models. In particular, this means that even if all user
+data is drawn from the same distribution, we cannot simply train on all the data. Instead
+we must determine other ways to share this knowledge, such as federating or ensembling
+user models.
+In this paper, we establish some simple benchmarks for evaluating how well a model
+respects this deﬁnition of personalization.
+Formally, suppose we have number of users, N , and for each user we have some user
+speciﬁc data, {Xi : i = 1 . . . N }, and user speciﬁc models, {Mi : i = 1 . . . N }. Let the global
+data be D = S Xi, and we suppose we have a loss function, L , which is a function of both
+Xi and Mi, Li = L (Xi, Mi). We deﬁne our success at personalization as:
+αL (Xi, Mi) + (1 − α) L (D, Mi) ,
+(1)
+where α is between 0 and 1, and determines how much we weight local user and global data
+performance. In the case where Xi follows the same distribution as all D, this deﬁnition
+trivially collapses to approximately optimizing L (D, Mi), the familiar, non personal objec-
+tive function on a dataset. However, as α increases and Xi diverges from D, we introduce a
+tension between optimizing for the speciﬁc user, while still not ignoring the whole dataset.
+Finally, to enforce our deﬁnition of privacy, each model, Mi, has access only to Xi, and the
+weights of all the other models, Mj for j = 1 . . . N , but does not have access to the other
+datasets, Mj, j = 1 . . . N , j 6= i.
+4. Personalization Motivation And Implications
+One question might be why we bother at all with adding global data to the equation,
+since it is more intuitive to think about personalization as just using the model that does
+best on a single user’s data, and that data alone. However, that intuition ignores the fact
+that we may have only observed a small amount of behavior from any given user. If we
+only ﬁt optimally to a speciﬁc user’s data, we risk overﬁtting and performing poorly on new
+data even from that same user.
+A Bayesian interpretation of our deﬁnition is to view the global data term as repre-
+senting our prior belief about user behavior. Another interpretation is to view α as how
+much “catastrophic forgetting” we will allow our model to do in order to personalize to a
+user.
+4
+REUBEN BRASHER, NAT ROTH, JUSTIN WAGLE
+From the Bayesian perspective, the global data serves as a type of regularization that
+penalizes the local model from moving too far away from prior user data in order to ﬁt to
+a new user. We can think about α as a hyperparameter representing the strength of our
+prior belief. The smaller α is, the less we allow the model to deviate from the global state.
+There may be no perfect rule for choosing α, as it may depend on task, and rate at which
+we want to adapt to the user.
+One strategy could be to slowly increase α for a given user as we observe more data
+from them. With this strategy, data rich users will have large α and data poor users will
+have small α. Thus data rich users will be penalized less for moving further away from
+the global state. This is close to treating our loss as the maximum a posteriori estimate
+of the users data distribution, as we observe more data. The rate of changing α could be
+chosen so as to minimize the loss of our approach on some held out user data, following the
+normal cross validation strategy for choosing hyperparameters. Alternatively, we may have
+domain speciﬁc intuition on how much personalization matters, and α provides an easy way
+to express this.
+From the catastrophic forgetting perspective, our deﬁnition is similar to the work in
+[3], which penalizes weights from moving away from what they were on a previous task.
+That work upweights the penalty for weights that have a high average gradient on the
+previous task, reasoning that such weights are likely to be most important. We directly
+penalize the loss of accuracy on other users, rather than indirectly penalizing that change,
+as the gradient based approach does. The indirect approach of [3] has the beneﬁts of being
+scalable, as it may be expensive to recalculate total global loss and potentially adapting to
+unlabeled data. Still, we see a common motivation, as in both cases, we have some weighting
+for how much we want to allow our model to change in response to new examples.
+To calculate L (D, Mi) we do not need to gather the data in a central location (which
+would violate our privacy constraint). It is enough to share Mi with each other user, or some
+sampling of other users, and gather summary statistics of how well the model performs. We
+could then aggregate these summary statistics to evaluate how well Mi does on D. However,
+sharing a user’s model with other users still compromises the original user’s privacy, since
+model weights potentially oﬀer insight into user behavior.
+In practice, we often have a subset of user data that we can centralize from users who
+have opted in, or a large public curated dataset that is relevant to our task of interest. We
+treat such a dataset as a stand in for how users will generally behave. This approach does
+not compromise user privacy. Alternately, since our L (D, Mi) is meant to regularize and
+stabilize our local models, there may be other approaches that achieve this global objective
+without directly measuring performance on global data. In future work, we will more deeply
+explore how best to measure this global loss without violating user privacy.
+5. Experiments
+We run an experiment with a simple model to demonstrate the trade-oﬀs between
+personal and global performance and how the choice of α might aﬀect the way we make
+future user predictions.
+5.1. Setup and Data. We use the Stanford Sentiment Treebank (SSTB) [26] dataset and
+evaluate how well we can learn models for sentiment. As a ﬁrst step, we take the 200
+most positive and 200 most negative words in the dataset, which we ﬁnd by training a
+simple logistic regression model on the train set. We then run experiments simulating the
+existence of 2, 5, or 8 users.
+In each experiment, these words are randomly partitioned
+amongst users, and users are assigned sentences containing those words for their validation,
+train, and test sets. Sentences that contain no words in this top 400 are randomly assigned,
+and sentences that contain multiple of these are randomly assigned to one of the relevant
+users. This results in a split of the dataset in which each model has a subset of words that
+are signiﬁcantly enriched for them, but are very underrepresented for all other models.
+SOMETIMES YOU WANT TO GO WHERE EVERYBODY KNOWS YOUR NAME
+This split is meant to simulate a pathological case of user style; we try to simulate
+users in our train set that are very biased and almost non-overlapping in terms of the word
+choice they use to express sentiment. While this may not be the case for this speciﬁc review
+dataset, in general there will be natural language tasks in which users have speciﬁc slang,
+inside jokes, or acronyms that they use that may not be used by others. For such users, an
+ideal setup would adapt to their personal slang, while still leveraging global models to help
+understand the more common language they use.
+5.2. Architecture. For each user we train completely separate models with the same archi-
+tecture. Roughly following the baseline from the original SSTB paper, we classify sentences
+using a simple two-layer neural network, and use an average of word embeddings as input
+and a tanh non-linearity. We use 35 dimensional word embeddings, dropout of 0.5 [27], and
+use ADAM to optimize [11]. We start with an initial learning rate of 0.001, which we slowly
+decay, by multiplying by 0.95, if the validation accuracy has not decreased after a ﬁxed
+number of batches, which is the same across all experiments. Finally, we use early stopping
+in the case validation accuracy does not decrease after a ﬁx number of batches, equivalent
+to 5 epochs on the full train set. Once trained we evaluate two ways of combining our ﬁxed
+models, averaging model predictions, and simply taking the most conﬁdent models, where
+conﬁdence is deﬁned as the absolute diﬀerence between 0.5 and the models prediction.
+5.3. Evaluation Metrics. To evaluate we use the train, validation, test splits as provided
+with the dataset, and use pytreebank [22] to parse the data. We only evaluate on the
+sentence level data for test and validation sets. This model is not state of the art. However,
+we have experience putting models of similar size on low powered and memory constrained
+devices, and believe this model could realistically be deployed. Nevertheless, the model is
+suﬃciently complicated to give us a sense of what happens as we try to combine separately
+trained models. In all tables, we report accuracy, and test accuracy for user speciﬁc data
+is evaluated solely on sentences that contain only their words and none of the other users’
+speciﬁc words. Global data scores represents the whole test set. We report all results
+averaged over 15 independent trials.
+6. Results and Analysis
+6.1. Single User Performance on User-Speciﬁc Data Vs. Single User Perfor-
+mance on Global Data. Unsurprisingly, as the second and third columns of Table 1
+show, single user models perform much better on their own heavily biased user-speciﬁc test
+set than on the global data. This makes sense as each model has purposely been trained
+on more words from their biased test set. Those words were also speciﬁcally selected to be
+polarizing, but the gap makes concrete the extent to which varying word usages can hurt
+model performance on this task.
+Num.
+Users
+Single user model
+(global dataset)
+0.797
+0.783
+0.739
+0.697
+Average aggregation
+(global dataset)
+0.816
+0.813
+0.794
+0.772
+Single
+user model
+(user-speciﬁc dataset)
+0.826
+0.824
+0.806
+0.795
+Conﬁdence aggregation
+(global dataset)
+0.803
+0.789
+0.746
+0.704
+Table 1. Accuracy by number of users. The second column reports accu-
+racy of the single user model on the user-speciﬁc datasets. The last three
+columns report performance on the global dataset for the single user model
+and the two ensemble models.
+6
+REUBEN BRASHER, NAT ROTH, JUSTIN WAGLE
+6.2. Single User Performance on User-Speciﬁc Data Vs. Ensembled Models on
+User-Speciﬁc Data. As the number of users increases, the single user model outperforms
+both aggregation methods on user-speciﬁc data (Table 2). This is particularly pronounced
+for the conﬁdence aggregation method: ensembling hurts performance across all experi-
+ments, with this eﬀect increasing as we add users. As the number of users increases, for any
+given prediction we are less likely to choose the speciﬁc user’s model, which performs best
+on their own dataset. The averaging aggregation method outperforms the conﬁdence aggre-
+gation method and is competitive with the single user model for up to ﬁve users. However,
+for more than ﬁve users, the averaging approach starts to perform worse on the user’s own
+data, again suggesting that we start to drown out much of the personal judgment and rely
+on global knowledge.
+Num. Users Diﬀerence (Average Aggregation) Diﬀerence (Conﬁdence Aggregation)
+-0.001
+-0.001
+0.005
+0.022
+0.013
+0.026
+0.059
+0.096
+Table 2. Comparison of ensemble model performance to single user model
+performance on user-speciﬁc data. “Diﬀerence” columns denote the single
+user model accuracy minus the ensemble model accuracy. As the number
+of users increases, user-speciﬁc models outperform ensemble models by in-
+creasingly wide margins.
+6.3. User Performance on Global Data Vs. Ensembled Models on Global Data.
+While it might be easy to conclude that we should just use a single user model, Table
+3 demonstrates that the average-aggregated ensembled models outperform the single user
+model on global data, particularly as the number of users increases. Again, this is what we
+would expect, since the aggregated models have collectively been trained on more words in
+more examples, and ought to generalize better to unbiased and unseen data. This global
+knowledge is still important, as it may contain insights about phrases a user has only used
+a few times. This may be especially true for a user who has little data. Recall we divide
+the whole dataset amongst all users, so as the number of users increases, each user-speciﬁc
+model is trained on less data. In this case the lack of a word in the training set may not
+indicate that a user will never use that word. It may be that the user has not interacted
+with the system enough for their individual model to have fully learned their language.
+Num. Users Diﬀerence (Average Aggregation) Diﬀerence (Conﬁdence Aggregation)
+-0.019
+-0.029
+-0.055
+-0.075
+-0.006
+-0.005
+-0.007
+-0.006
+Table 3. Comparison of ensemble model performance to single user model
+performance on global data. “Diﬀerence” columns denote single user model
+accuracy minus ensemble model accuracy. As the number of users increases,
+the average-aggregated ensemble model increasingly outperforms the single
+user model.
+6.4. Choosing an Approach Based on α. These experiments demonstrate the tensions
+between performing well on global and user data, the two terms in our loss in Equation
+1. We can apply Equation 1, vary α, and see at what point we should prefer diﬀerent
+strategies.
+SOMETIMES YOU WANT TO GO WHERE EVERYBODY KNOWS YOUR NAME
+Speciﬁcally, suppose we have two approaches we can choose from, with personalized
+If L0 − L1 < 0 the ﬁrst
+losses of p0 and p1, and global losses of g0 and g1 respectively.
+approach is superior. We can solve for the α such that L0 = L1, where our loss term again
+comes from Equation 1. Plugging our deﬁnition in, we see that
+αp0 + (1 − α)g0 = αp1 + (1 − α)g1,
+αp0 + (1 − α)g0 − αp1 − (1 − α)g1 = 0.
+or equivalently,
+Rearranging this yields
+α =
+g1 − g0
+(p0 − p1) − (g0 − g1)
+(2)
+as our break even personalization point. For this value of α, we ought to see our two models
+as equally valid solutions to the problem of personalization.
+L0−L1 is linear with respect to α, so if L0−L1 ≥ 0 for any α above our cutoﬀ, it will be
+greater everywhere above the cutoﬀ, and vice versa. This yields a rule for how to approach
+making a decision between multiple types of models.
+It only requires choosing a single
+hyperparameter α between 0 and 1, representing one’s belief on how much personalization
+matters to the task at hand.
+We illustrate how to apply these ideas to our experimental results. We see from Tables
+2 and 3 that when we compare using a single model to averaging predictions from 5 models,
+we have:
+gaverage − gsingle = −0.054
+psingle − paverage = −0.00523
+So, our cutoﬀ value of α, where the single model and averaged models yield equivalent
+losses and we are indiﬀerent between them, is −0.0545/(−0.0545 − 0.00523) = 0.9124. We
+can also compute the ranges of α where we should prefer each model. Because, as explained
+above, Lsingle − Laverage is linear in α, evaluating a single point above the cutoﬀ suﬃces: we
+choose α = 1 for computational convenience, and have Lsingle − Laverage = psingle − paverage =
+−0.00523 ≤ 0.0. Consequently, we prefer the single model for values of α above the cutoﬀ,
+and the averaged model for values of α below the cutoﬀ.
+7. Conclusion
+Our deﬁnition of personalization allows for a complete decoupling of models at train
+time, while only requiring aggregate knowledge of other models inference in order to po-
+tentially beneﬁt from this global knowledge. In addition, it gives a practitioner a simple,
+one parameter way, of deciding how to choose amongst models that may have diﬀerent
+strengths and weaknesses. Further, we have shown how this approach might look on a sim-
+pliﬁed dataset and model, and why the na¨ıve approach of using a single model, or always
+aggregating all models, may sometimes not be optimal.
+In the future, we will work to develop better methods for combining this aggregate
+global knowledge, while not hurting user performance. To better protect user privacy, we
+will also consider alternate methods for regularizing our models outside of the global loss
+term, L (D, Mi). We hope that this work will provide a useful framing for future work on
+personalization, learning in decentralized architectures, such as Ethereum and Bitcoin [18],
+[28], and serve as a guideline for situations in which the normal single loss and centralized
+server training paradigm cannot be used.
+8
+REUBEN BRASHER, NAT ROTH, JUSTIN WAGLE
+References
+1. Mart´ın Abadi, Andy Chu, Ian Goodfellow, H Brendan McMahan, Ilya Mironov, Kunal Talwar, and
+Li Zhang, Deep learning with diﬀerential privacy, Proceedings of the 2016 ACM SIGSAC Conference on
+Computer and Communications Security, ACM, 2016, pp. 308–318.
+2. Rami Al-Rfou, Marc Pickett, Javier Snaider, Yun-hsuan Sung, Brian Strope, and Ray Kurzweil, Con-
+versational contextual cues: The case of personalization and history for response ranking, arXiv preprint
+arXiv:1606.00372 (2016).
+3. Rahaf Aljundi, Francesca Babiloni, Mohamed Elhoseiny, Marcus Rohrbach, and Tinne Tuytelaars, Mem-
+ory aware synapses: Learning what (not) to forget, arXiv preprint arXiv:1711.09601 (2017).
+4. Zheqian Chen, Ben Gao, Huimin Zhang, Zhou Zhao, Haifeng Liu, and Deng Cai, User personalized
+satisfaction prediction via multiple instance deep learning, Proceedings of the 26th International Con-
+ference on World Wide Web, International World Wide Web Conferences Steering Committee, 2017,
+pp. 907–915.
+5. Heng-Tze Cheng, Levent Koc, Jeremiah Harmsen, Tal Shaked, Tushar Chandra, Hrishi Aradhye, Glen
+Anderson, Greg Corrado, Wei Chai, Mustafa Ispir, et al., Wide & deep learning for recommender systems,
+Proceedings of the 1st Workshop on Deep Learning for Recommender Systems, ACM, 2016, pp. 7–10.
+6. Jia Deng, Wei Dong, Richard Socher, Li-Jia Li, Kai Li, and Li Fei-Fei, Imagenet: A large-scale hierar-
+chical image database, Computer Vision and Pattern Recognition, 2009. CVPR 2009. IEEE Conference
+on, IEEE, 2009, pp. 248–255.
+7. Cynthia Dwork, Diﬀerential privacy: A survey of results, International Conference on Theory and
+Applications of Models of Computation, Springer, 2008, pp. 1–19.
+8. Kai Fan, Allison E Aiello, and Katherine A Heller, Bayesian models for heterogeneous personalized health
+data, arXiv preprint arXiv:1509.00110 (2015).
+9. Robert M French, Catastrophic forgetting in connectionist networks, Trends in cognitive sciences 3
+(1999), no. 4, 128–135.
+10. Ronald Kemker, Angelina Abitino, Marc McClure, and Christopher Kanan, Measuring catastrophic
+forgetting in neural networks, arXiv preprint arXiv:1708.02072 (2017).
+11. Diederik P Kingma and Jimmy Ba Adam, A method for stochastic optimization. 2014, arXiv preprint
+arXiv:1412.6980.
+12. James Kirkpatrick, Razvan Pascanu, Neil Rabinowitz, Joel Veness, Guillaume Desjardins, Andrei A
+Rusu, Kieran Milan, John Quan, Tiago Ramalho, Agnieszka Grabska-Barwinska, et al., Overcoming
+catastrophic forgetting in neural networks, Proceedings of the National Academy of Sciences (2017),
+201611835.
+13. Jakub Koneˇcn`y, H Brendan McMahan, Daniel Ramage, and Peter Richt´arik, Federated optimization:
+distributed machine learning for on-device intelligence, arXiv preprint arXiv:1610.02527 (2016).
+14. Jakub Koneˇcn`y, H Brendan McMahan, Felix X Yu, Peter Richt´arik, Ananda Theertha Suresh, and
+Dave Bacon, Federated learning: Strategies for improving communication eﬃciency, arXiv preprint
+arXiv:1610.05492 (2016).
+15. Tsung-Yi Lin, Michael Maire, Serge Belongie, James Hays, Pietro Perona, Deva Ramanan, Piotr Doll´ar,
+and C Lawrence Zitnick, Microsoft coco: Common objects in context, European conference on computer
+vision, Springer, 2014, pp. 740–755.
+16. Bernd Malle, Nicola Giuliani, Peter Kieseberg, and Andreas Holzinger, The more the merrier-federated
+learning from local sphere recommendations, International Cross-Domain Conference for Machine Learn-
+ing and Knowledge Extraction, Springer, 2017, pp. 367–373.
+17. H Brendan McMahan, Eider Moore, Daniel Ramage, and Blaise Aguera y Arcas, Federated learning of
+deep networks using model averaging, (2016).
+18. Satoshi Nakamoto, Bitcoin: A peer-to-peer electronic cash system, 2008.
+19. State of California Department of Justice Oﬃce of the Attorney General, Privacy laws — state of califor-
+nia - department of justice - oﬃce of the attorney general, https://oag.ca.gov/privacy/privacy-laws,
+Accessed:2018-01-22.
+20. Cesc Chunseong Park, Byeongchang Kim, and Gunhee Kim, Attend to you: Personalized image cap-
+21. The European Parliament
+tioning with context sequence memory networks, arXiv preprint arXiv:1704.06485 (2017).
+the Council Of The European Union,
+parliament
+(eu)
+http://eur-lex.europa.eu/legal-content/EN/TXT/PDF/?uri=CELEX:32016R0679&from=en,
+Accessed:2018-01-23.
+and
+european
+2016/679
+council
+of
+and
+of
+the
+of
+the
+27
+april
+Regulation
+2016,
+2016,
+22. Jonathan
+Raiman,
+Stanford
+sentiment
+treebank
+loader
+in
+python,
+https://github.com/JonathanRaiman/pytreebank, Accessed:2018-01-05.
+23. Olga Russakovsky, Jia Deng, Hao Su, Jonathan Krause, Sanjeev Satheesh, Sean Ma, Zhiheng Huang,
+Andrej Karpathy, Aditya Khosla, Michael Bernstein, et al., Imagenet large scale visual recognition chal-
+lenge, International Journal of Computer Vision 115 (2015), no. 3, 211–252.
+SOMETIMES YOU WANT TO GO WHERE EVERYBODY KNOWS YOUR NAME
+24. Jiaxin Shi, Jianfei Chen, Jun Zhu, Shengyang Sun, Yucen Luo, Yihong Gu, and Yuhao Zhou, Zhusuan:
+A library for bayesian deep learning, arXiv preprint arXiv:1709.05870 (2017).
+25. Virginia Smith, Chao-Kai Chiang, Maziar Sanjabi, and Ameet Talwalkar, Federated multi-task learning,
+arXiv preprint arXiv:1705.10467 (2017).
+26. Richard Socher, Alex Perelygin, Jean Wu, Jason Chuang, Christopher D Manning, Andrew Ng, and
+Christopher Potts, Recursive deep models for semantic compositionality over a sentiment treebank, Pro-
+ceedings of the 2013 conference on empirical methods in natural language processing, 2013, pp. 1631–
+1642.
+27. Nitish Srivastava, Geoﬀrey E Hinton, Alex Krizhevsky, Ilya Sutskever, and Ruslan Salakhutdinov,
+Dropout: a simple way to prevent neural networks from overﬁtting., Journal of machine learning re-
+search 15 (2014), no. 1, 1929–1958.
+28. Gavin Wood, Ethereum: A secure decentralised generalised transaction ledger, Ethereum Project Yellow
+Paper 151 (2014).
+29. Yi Zhang and Jonathan Koren, Eﬃcient bayesian hierarchical user modeling for recommendation system,
+Proceedings of the 30th annual international ACM SIGIR conference on Research and development in
+information retrieval, ACM, 2007, pp. 47–54.
+30. Philip Zigoris and Yi Zhang, Bayesian adaptive user proﬁling with explicit & implicit feedback, Proceed-
+ings of the 15th ACM international conference on Information and knowledge management, ACM, 2006,
+pp. 397–404.

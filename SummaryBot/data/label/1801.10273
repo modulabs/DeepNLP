@@ -1,0 +1,24 @@
+
+Gaussian processes (GPs) are ﬂexible models that
+can capture complex structure in large-scale dataset
+due to their non-parametric nature. However, the
+usage of GPs in real-world application is limited
+due to their high computational cost at inference
+time.
+In this paper, we introduce a new frame-
+work, kernel distillation, for kernel matrix approx-
+imation. The idea adopts from knowledge distilla-
+tion in deep learning community, where we approx-
+imate a fully trained teacher kernel matrix of size
+n × n with a student kernel matrix. We combine
+inducing points method with sparse low-rank ap-
+proximation in the distillation procedure. The dis-
+tilled student kernel matrix only cost O(m2) stor-
+age where m is the number of inducing points and
+m (cid:28) n. We also show that one application of
+kernel distillation is for fast GP prediction, where
+we demonstrate empirically that our approximation
+provide better balance between the prediction time
+and the predictive performance compared to the al-
+ternatives.
+1 

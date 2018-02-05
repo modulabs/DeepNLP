@@ -1,0 +1,16 @@
+
+Accurate, reliable sampling from fully-connected
+graphs with arbitrary correlations is a diﬃcult prob-
+lem. Such sampling requires knowledge of the prob-
+abilities of observing every possible state of a graph.
+As graph size grows, the number of model states be-
+comes intractably large and eﬃcient computation re-
+quires full sampling be replaced with heuristics and
+algorithms that are only approximations of full sam-
+pling. This work investigates the potential impact
+of adiabatic quantum computation for sampling pur-
+poses, building on recent successes training Boltz-
+mann machines using a quantum device. We inves-
+tigate the use case of quantum computation to train
+Boltzmann machines for predicting the 2016 Presi-
+dential election.

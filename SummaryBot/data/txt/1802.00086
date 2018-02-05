@@ -1,0 +1,996 @@
+Optimizing Non-decomposable Measures with Deep Networks
+Amartya Sanyal∗2,1, Pawan Kumar†2, Purushottam Kar‡2, Sanjay Chawla§3, and Fabrizio
+Sebastiani¶4
+1University of Oxford
+2IIT Kanpur
+3Qatar Computing Research Institute
+4Istituto di Scienza e Tecnologia dell’Informazione
+January 28, 2018
+Abstract
+We present a class of algorithms capable of directly training deep neural networks with respect to
+large families of task-speciﬁc performance measures such as the F-measure and the Kullback-Leibler
+divergence that are structured and non-decomposable. This presents a departure from standard deep
+learning techniques that typically use squared or cross-entropy loss functions (that are decomposable)
+to train neural networks. We demonstrate that directly training with task-speciﬁc loss functions yields
+much faster and more stable convergence across problems and datasets. Our proposed algorithms and
+implementations have several novel features including (i) convergence to ﬁrst order stationary points
+despite optimizing complex objective functions; (ii) use of fewer training samples to achieve a desired
+level of convergence, (iii) a substantial reduction in training time, and (iv) a seamless integration of our
+implementation into existing symbolic gradient frameworks. We implement our techniques on a variety
+of deep architectures including multi-layer perceptrons and recurrent neural networks and show that on
+a variety of benchmark and real data sets, our algorithms outperform traditional approaches to training
+deep networks, as well as some recent approaches to task-speciﬁc training of neural networks.
+1 Introduction
+As deep learning penetrates more and more application areas, there is a natural demand to adapt deep
+learning techniques to area and task-speciﬁc requirements and constraints. An immediate consequence of
+this is the expectation to perform well with respect to task-speciﬁc performance measures. However, this
+can be challenging, as these performance measures can be quite complex in their structure and be motivated
+by legacy, rather than algorithmic convenience. Examples include the F-measure that is popular in retrieval
+tasks, various ranking performance measures such as area-under-the-ROC-curve, and the Kullback-Leibler
+divergence that is popular in class-ratio estimation problems.
+Optimizing these performance measures across application areas has proved to be challenging even when
+learning linear models, as is evidenced by the recent surge in progress in optimizing “non-decomposable” loss
+functions for learning linear models, as we review in Section 2. The challenge becomes doubly hard when
+∗amartya18x@gmail.com
+†kpawan@cse.iitk.ac.in
+‡purushot@cse.iitk.ac.in
+§schawla@qf.org.qa
+¶fsebastiani@gmail.com
+trying to do so while training neural network architectures such as multi-layer perceptrons and convolutional
+or recurrent neural networks.
+The vast majority of training techniques used for neural network at present consist of using simple
+per-sample loss functions such as least-squares loss or cross-entropy. While their use has allowed research
+directions to focus more on developing more evolved network architectures, as well as developing highly
+optimized implementations of training routines on GPU architectures, we show that this is suboptimal and
+that a sound eﬀort towards training with task-speciﬁc loss functions pays oﬀ handsomely.
+Our Contributions Our work advances the state-of-the-art in training neural networks on a wide variety
+of non-decomposable performance measures.
+1. We show how to train neural networks directly with respect to performance measures that are concave,
+pseudolinear, or nested concave functions.
+2. Our algorithms are readily adapted to neural architectures such as multi-layered perceptrons and
+recurrent networks, as well be integrated into popular symbolic gradient frameworks such as Theano,
+TensorFlow, and PyTorch.
+3. Our methods oﬀer far superior performance than traditional cross-entropy based training routines –
+on an F-measure maximization task on a benchmark dataset a9a, our method achieves an F-measure
+of around 0.68 in less than 10 mini-batch iterations whereas it takes traditional cross-entropy based
+training more than 80 iterations to reach similar performance levels.
+4. Our methods also outperform recently proposed techniques for training deep networks with ranking
+performance [17]. On a benchmark dataset IJCNN, the technique of Song et al. is only able to oﬀer a
+min-TPR/TNR performance of around 0.55 whereas our technique is able to reach performance over
+0.95 in very few iterations.
+5. We apply our techniques to an end-to-end sentimental analysis quantiﬁcation network and achieve
+near perfect quantiﬁcation scores on a challenge dataset using a substantially less number of training
+iterations.
+6. We oﬀer formal stabilization guarantees for all our algorithms.
+2 Related Work
+The recent years have seen much interest, as well as progress, in training directly with task-speciﬁc per-
+formance measures in the ﬁeld of classiﬁcation and ranking. Some notable works include those of [10, 15]
+that investigate the statistical properties of plug-in classiﬁers for various non-decomposable objectives in-
+cluding F-measure, and [7, 8, 12, 13] which propose stochastic gradient-style algorithms for optimizing
+non-decomposable performance measures such as F-measure, KL-divergence, area under the ROC curve
+(AUC), precision recall curve (AUCPR), recall at ﬁxed precision (R@P), etc.
+However, all the works cited above focus only on training linear models. Although this allows for simple
+algorithms for which the works provide very detailed analyses and theoretical guarantees, the approaches do
+not directly extend to deep networks. Algorithms for deep learning which directly optimize non-decomposable
+performance measures are relatively unexplored. This can be attributed to the de-facto use of the backprop-
+agation algorithm for training neural networks which crucially depends on the loss function being decom-
+posable.
+We are aware of two signiﬁcant eﬀorts towards training deep networks with non-decomposable perfor-
+mance measures. Below we discuss both to put our contributions in perspective.
+1. Song et. al. [17] introduce an algorithm for training neural networks for ranking tasks with the average
+precision as the performance measure. The most key contribution of [17] is a result that shows that
+for nicely behaved non-decomposable loss functions, the expected gradient of the loss function with
+respect to the network weights can be expressed in terms of standard decomposable loss functions such
+as cross-entropy and least squares loss.
+2. Eban et. al. [3] introduce algorithms for optimizing ranking objectives e.g. area under the precision-
+recall curve and precision at a ﬁxed recall rate.
+Both the works above are focussed on ranking measures whereas our work addresses classiﬁcation and
+class-ratio estimation (quantiﬁcation) measures. The applications of classiﬁcation are various in machine
+learning and data analysis. The problem of quantiﬁcation expects accurate estimation of relative prevalence of
+class labels (e.g. fraction of positive vs negative reviews) and is useful in social engineering and epidemiology.
+The work of [17] only considers average precision as the performance measure and does not address
+performance measures we study such as F-meaure and KL divergence. Moreover, we adapted the method
+proposed in [17] to performance measures we study and our experiments show that our precise primal dual
+techniques far outperform the method of [17].
+Although the work of [3] does consider the F-measure which we also study, they do not report any exper-
+imentation with F-measure. A possible reason for this might be that their algorithm requires a constrained
+optimization problem to be solved that is challenging over deep networks. We, on the other hand, provide
+very generic methods for solving three classes of performance measures which include a large number of
+widely used measures e.g. H-mean, G-mean, Jaccard coeﬃcient, Q-measure etc which [3] cannot handle.
+Furthermore, neither of [17, 3] oﬀer any convergence guarantees for their proposed algorithms whereas
+we do oﬀer stabilization and ﬁrst order stationarity guarantees for our methods.
+As a concluding remark, we note that our methods do adapt techniques that were earlier proposed for
+training linear models, such as in [14]. However our work diﬀers from existing works, including [14], in a
+signiﬁcant manner and constitutes an independent contribution. Previous works, such as [14] only consider
+linear models which lead to convex problems. We note later in this paper, that a naive and direct application
+of existing techniques to deep networks yields poor results. The techniques in [14] cannot be integrated into
+modern deep learning frameworks like Theano, TensorFlow, PyTorch in scalable manner. Our techniques
+show how to do so. Moreover, we also provide formal stationarity guarantees for our algorithms when applied
+to deep networks that [14] cannot provide since they crucially assume convexity of their problems.
+3 Problem Setting
+For sake of simplicity, we restrict ourselves to binary classiﬁcation problems. Let X ⊂ Rd be the space of
+feature vectors and Y = {−1, +1} be the label set. The training data set S shall be sampled i.i.d. from some
+ﬁxed but unknown distribution D over X × Y. The proportion of positives in the population and sample S
+will be denoted by p = P
+(x,y)∼D [y = +1] and ˆpS respectively.
+In sharp contrast to most previous work in multivariate optimization that considers only linear models,
+we concentrate on non-linear models, especially those induced by deep neural networks. We will assume that
+the neural architecture (number of layers, nodes, activation functions and connectivity) has been ﬁxed and
+let W denote the space of all models (weights on the network edges).
+To perform learning, we will use a neural model, whose edge weights are indexed by w ∈ W, to assign a
+score to every data point x ∈ X (that can be converted into labels, class probability estimates etc). Linear
+models typically assign a score by simply computing (cid:104)w, x(cid:105). However, we will use a more general notation
+f (x; w) to denote the score given to the data point x by the neural model indexed by the weights w. The
+function f can be seen as encoding all the neural connections and activations. We stress that the function
+f is, in general, neither convex nor concave. We note that this lack of structure in the scoring function
+precludes a large body of work in linear multivariate optimization and quantiﬁcation from being applied to
+deep models.
+We will consider performance measures that can be expressed in terms of the true positive rate (TPR) and
+true negative rate (TNR) of the model. Since TPR and TNR are count-based measures, they are unsuitable
+for numerical optimization algorithms. For this reason, we consider the use of reward functions as surrogates
+Table 1: List of performance measures Ψ(P, N ) where p, n denote the TPR and TNR values obtained by the
+model.
+Name
+Type
+Min [18]
+Q-Mean [9]
+Concave
+Concave
+Fβ [11]
+KLD [1]
+Pseudolinear
+Nested Concave
+Expression (P, N )
+1 −(cid:113) (1−P )2+(1−N )2
+min{P, N}
+(1+β2)·P
+β2+n/p+P−n/p·N
+see text
+of the TPR and TNR values. A reward function r assigns a reward r(ˆy, y) when the true label is y ∈ Y but
+the prediction is ˆy ∈ R. Given a reward function r, a model w ∈ W, data point (x, y) ∈ X × Y, and scoring
+function f , we will use
+r+(w; x, y) =
+r−(w; x, y) =
+1 − p
+· r(f (x; w), y) · I{y = 1}
+· r(f (x; w), y) · I{y = −1}
+to calculate rewards on positive and negative points (I{·} denotes the indicator function). The expected
+value of these rewards will be treated as surrogates of TPR and TNR. Note that since E [r+(w; x, y)] =
+E [r(f (x; w), y)|y = 1], setting r0-1(ˆy, y) = I{y · ˆy > 0} i.e. classiﬁcation accuracy as the reward function
+yields E [r+(w; x, y)] = TPR(w). We will use the shorthand P (w) = E [r+(w; x, y)] to denote population
+averages of the reward function and, given a sample of n data points S = {(x1, y1), . . . , (xn, yn)}, denote the
+sample average as ˆPS(w) = 1
+i=1 r+(w; xi, yi) and similarly deﬁne N (w), ˆNS(w). Unlike previous work
+[7, 14], we will not restrict ourselves to concave surrogate reward functions. In particular we will utilize
+the sigmoidal reward, which is widely used as an activation function in neural networks is non-concave:
+rsigmoid(ˆy, y) = (1 + exp(−y · ˆy))−1
+(cid:80)n
+3.1 Performance Measures
+We will consider three general classes of performance measures, namely, (i) Concave Performance Measures,
+(ii) Pseudo-linear Performance Measures and (iii) Nested Concave Performance Measures. In our experi-
+ments, we present results on a selection of these performance measures which are listed in Table 1.
+Concave Performance Measures: These measures can be written as a concave function of the TPR and
+TNR values:
+PΨ(w) = Ψ (TPR(w), TNR(w))
+for some concave link function Ψ : R2 → R. These measures are frequently used for cost-sensitive classiﬁ-
+cation in cases with severe label imbalance, for example detection theory [18]. A popularly used member
+of this family is the so-called Min-function assigns the value min{TPR(w), TNR(w)} to a model w. Note
+that this compels the model to pay equal attention to both classes. Other examples include the Q-mean and
+H-mean measures.
+Pseudo-linear Performance Measures: These measures can be written as a ratio of two linear functions
+of the TPR and TNR values of the model, i.e. they have a fractional linear link function. More speciﬁcally,
+given given coeﬃcients a, b ∈ R3,
+P(a,b)(w) =
+a0 + a1 · TPR(w) + a2 · TNR(w)
+b0 + b1 · TPR(w) + b2 · TNR(w)
+The popularly used F-measure [11] is actually a pseudo-linear performance measure in terms of the TPR,
+TNR values of a model although it is more commonly represented as the harmonic mean of precision and
+recall. Other members include the Jaccard coeﬃcient and the Gower-Legendre measure.
+Nested Concave Performance Measures: Recent works e.g. [1, 7] in problem areas such as quantiﬁcation
+and class ratio estimation problems, have brought focus on performance measures that can be written
+as concave combinations of concave performance measures. More formally, given three concave functions
+Ψ, ζ1, ζ2 : R2 → R, we deﬁne a performance measure
+P(Ψ,ζ1,ζ2)(w) = Ψ(ζ1(w), ζ2(w)),
+where ζi(w) := ζi(TPR(w), TNR(w)), i = 1, 2. A widely used measure for quantiﬁcation tasks is the KLD:
+Kullback-Leibler Divergence [1, 5, 6] which can be shown to be a sum of concave functions of the TPR and
+TNR. If p ∈ R2 is the vector of true class priors for a binary classiﬁcation task and ˆp an estimate thereof,
+then
+KLD(p, ˆp) =
+p(y) log
+p(y)
+ˆp(y)
+(1)
+(cid:88)
+y∈Y
+KLD(p, ˆp) = 0 indicates perfect quantiﬁcation.
+We note that there are several other performance measures that our techniques can handle but which we
+do not discuss here due to lack of space. These include measures for class-imbalanced classiﬁcation such as
+H-mean, G-mean, Jaccard coeﬃcient (see [14]), as well as quantiﬁcation measures such as Q-measure, NSS
+and CQB (see [7]).
+4 Deep Optimization Algorithms
+The task of training deep models directly for quantiﬁcation performance measures requires us to address the
+problem of optimizing the concave, nested concave, and pseudolinear performance measures we discussed in
+Section 3.1 which is challenging due to several reasons: 1) these measures are non-decomposable and do not
+lend themselves to straightforward training methods such as gradient descent or backpropagation, 2) deep
+models oﬀer no convenience of convexity, and 3) existing methods for optimizing such measures e.g. [7, 13]
+fail to apply directly to deep models. In fact, we will see in Section 5 that direct application of traditional
+techniques yields poor results.
+This section will show how to overcome these challenges to arrive at scalable methods for training deep
+networks directly on complex non-decomposable measures. A very desirable trait of our methods is that
+they all enjoy local convergence guarantees. Our techniques also oﬀer far superior empirical performance as
+compared to typical training methods for deep models.
+In the following, the procedure NN-init(din, dout, conf) initializes a neural network with din input nodes,
+dout output nodes, and internal conﬁguration (hidden layers, number of internal nodes, connectivity) speciﬁed
+by conf.
+4.1 DUPLE: A Deep Learning Technique for Concave Performance Measures
+We present DUPLE (Algorithm 1), a highly scalable stochastic mini-batch primal dual algorithm for training
+deep models with concave performance measures. We shall ﬁnd it convenient to deﬁne the (concave) Fenchel
+conjugate of the link functions for our performance measures. For any concave function Ψ and α, β ∈ R,
+deﬁne
+Ψ∗(α, β) = inf
+By the concavity of Ψ, we have, for any u, v ∈ R,
+u,v∈R{αu + βv − Ψ(u, v)} .
+(2)
+(3)
+Ψ(u, v) = inf
+α,β∈R{αu + βv − Ψ∗(α, β)} .
+Algorithm 1 DUPLE: Dual UPdates for Learning dEep-models
+Require: Primal step sizes ηt, network conﬁguration {din, conf}, batch size b
+1: w0 ← NN-init(din, 1, conf)
+2: (cid:8)α0, β0, r+, r−, n+, n−(cid:9) ← 0
+3: for t = 1, 2, . . . , T do
+4:
+i )}i=1,...,b
+i, yt
+St ← SAMPLE mini-batch of b data points {(xt
+wt ← wt−1 + ηt · ∇wg(wt; St, αt−1, βt−1)
+r+ ← r+ + 1
+r− ← r− + 1
+n+ ← n+ + 1
+n− ← n− + 1
+(αt, βt) ← arg min
+(cid:80)b
+(cid:80)b
+(cid:80)n
+i=1 r+(wt; xt
+(cid:80)n
+i=1 r−(wt; xt
+(cid:20)
+− Ψ∗(α, β)
+i, yt
+i )
+i, yt
+i )
+i = +1}
+I{yt
+i = −1}
+I{yt
+r−
+r+
++ β
+n−
+n+
+(cid:21)
+i=1
+i=1
+5:
+6:
+7:
+8:
+9:
+10:
+(cid:46) Primal Step
+(cid:46) Tot. reward on +ves
+(cid:46) Tot. reward on -ves
+(cid:46) Total # positives
+(cid:46) Total # negatives
+(cid:46) Dual Step
+(α,β)
+11: end for
+12: return wT
+The motivation for DUPLE comes from a realization that by an application of the Danskin’s theorem, a
+gradient with respect to the Ψ function may be found out by obtaining the maximizer α, β values in (3).
+However since this may be expensive, it is much cheaper to update these “dual” variables using gradient
+descent techniques instead. This results in the DUPLE algorithm, a primal dual stochastic-gradient based
+technique that maintains a primal model w ∈ W and two dual variables α, β ∈ R and alternately updates
+both using stochastic gradient steps. At every time step it uses its current estimates of the dual variables to
+update the model, then ﬁx the model and update the dual variables.
+We note that DUPLE draws upon the SPADE algorithm proposed in [14]. However, its application to
+deep models requires non-trivial extensions.
+1. SPADE enjoys the fact that gradient updates are very rapid with linear models and is carefree in
+performing updates on individual data points. Doing so with neural models is too expensive.
+2. Deep model training frameworks are highly optimized to compute gradients over deep networks, espe-
+cially on GPU platforms. However, they assume that the objective function with respect to which they
+compute these gradients is static across iterations. SPADE violates this principle since it can be seen
+as taking gradients with respect to a diﬀerent cost-weighted classiﬁcation problem at every iteration.
+3. The theoretical convergence guarantees oﬀered by SPADE assume that the reward surrogate functions
+being used are concave functions with respect to the model. As noted in Section 3, for neural models,
+even the scoring function f (x; w) is not a concave/convex function of w.
+DUPLE addresses all of the above issues and makes crucial design changes that make it highly optimized
+for use with deep networks.
+1. DUPLE overcomes the issue of expensive gradients by amortizing the gradient computation costs over
+mini-batches. We found this to also improve the stability properties of the algorithm.
+2. To overcome the issue of changing objective functions, DUPLE works with an augmented objective
+function. Given a model w ∈ W, a set S of labeled data points, and scalars α, β, we deﬁne
+g(w; S, α, β) = α · ˆPS(w) + β · ˆNS(w).
+(see Section 3 for notation). At all time steps, DUPLE takes gradients with respect to this augmented
+objective function instead. We exploit symbolic computation capabilities oﬀered by frameworks such
+as Theano [2] to allow the scalars α, β to be updated dynamically and train the network eﬃciently on
+a diﬀerent objective function at each time step.
+3. Our analysis for DUPLE makes absolutely no assumptions on the convexity/concavity of the reward
+and scoring functions. It only requires both functions r+, r− to be diﬀerentiable almost-everywhere.
+Thus, DUPLE only assumes the bare minimum to allow itself to take gradients.
+We are able to show the following convergence guarantee for DUPLE (see Appendix A) assuming that the
+reward functions r(f (x; w), y) are L-smooth functions of the model w. This is satisﬁed by all reward functions
+we consider. Note, however, that nowhere will we assume that the reward functions are concave in the model
+parameters. We will use the shorthand ∇t = ∇wg(wt; St, αt, βt) and F (wt, αt) = g(wt; St, αt, βt). Notice
+that this result assures us that the DUPLE procedure will stabilize rapidly and not oscillate indeﬁnitely.
+Theorem 1. Consider a concave performance measure deﬁned using a link function Ψ that is concave
+and L(cid:48)-smooth. Then, if executed with a uniform step length satisfying η < 2
+L , then DUPLE -stabilizes
+within (cid:101)O(cid:0) 1
+(cid:1) iterations. More speciﬁcally, within T iterations, DUPLE identiﬁes a model wt such that
+(cid:18)(cid:113)
+(cid:19)
+2
+(cid:107)∇t(cid:107)2 ≤ O
+L(cid:48) log T
+4.2 DENIM: Deep Learning with Nested Concave Performance Measures
+We extend the DUPLE algorithm to performance measures that involve a nesting of concave functions. To
+reiterate, the KLD performance measure which is used extensively for quantiﬁcation, falls in this category.
+These measures are challenging to optimize using DUPLE due to their nested structure which prevents a
+closed form solution for the Fenchel conjugates.
+To address this challenge, we present DENIM (Algorithm 2) that itself nests its update to parallel the
+nesting of the performance measures. DENIM follows a similar principle as DUPLE and is based on the
+NEMSIS algorithm of [7]. However, the NEMSIS algorithm faces the same drawbacks as the SPADE
+algorithm and is unsuitable for training deep models. Due to the more complex nature of the performance
+measure, DENIM works with a slightly diﬀerent augmented objective function.
+h(w; S, α, β, γ) = (γ1α1 + γ2β1) · ˆPS(w) + (γ1α2 + γ2β2) · ˆNS(w)
+Note that DENIM performs inner and outer dual updates that are themselves nested. DENIM enjoys
+similar convergence results as DUPLE which we omit for lack of space.
+4.3 DAME: A Deep Learning Technique for Pseudolinear Performance Mea-
+sures
+We now present DAME (Algorithm 3), an algorithm to for training deep models on pseudolinear perfor-
+mance measures such as F-measure which are extremely popular in several areas and direct optimization
+routines are sought after. We recall that although the work of [3] does discuss F-measure optimization, we
+do not have access to any scalable implementations of the same. Our algorithm DAME, on the other hand,
+is based on an alternating strategy, is very scalable and gives superior performance across tasks and datasets.
+For sake of simplicity, we represent the pseudolinear performance measure as
+P(a,b)(w) =
+Pa(w)
+Pb(w)
+a0 + a1 · TPR(w) + a2 · TNR(w)
+b0 + b1 · TPR(w) + b2 · TNR(w)
+We now deﬁne the notion of a valuation function.
+Deﬁnition 1 (Valuation Function). The valuation of a pseudolinear measure P(a,b)(w) at any level v > 0,
+is deﬁned to be V (w, v) = Pa(w) − v · Pb(w)
+DAME makes use of two simple observations in its operation: 1) A model w has good performance i.e.
+P(a,b)(w) > v iﬀ it satisﬁes V (w, v) > 0, and 2) the valuation function itself is a performance measure but
+1r(wt; xt
+i, yt
+i ) = (r+(wt; xt
+i, yt
+i ), r−(wt; xt
+i, yt
+i ))
+Algorithm 2 DENIM: A DEep Nested prImal-dual Method
+Require: Primal step sizes ηt, network conﬁguration {din, conf}, batch size b
+1: w0 ← NN-init(din, 1, conf)
+2: (cid:8)r0, q0, α0, β0, γ0(cid:9) ← (0, 0)
+3: for t = 1, 2, . . . , T do
+4:
+i )}i=1,...,b
+i, yt
+St ← SAMPLE mini-batch of b data points {(xt
+wt ← wt−1 + ηt · ∇wh(wt; St, αt, βt, γt)
+qt ← (t − 1) · qt−1 + (αt−1
+qt ← qt + (αt−1
+, βt−1
+i=1 r−(wt; xt
+)(cid:80)b
+qt ← t−1(cid:0)qt − (ζ∗
+rt ← t−1(cid:16)
+)(cid:80)b
+2 (βt))(cid:1)
+(t − 1) · rt−1 +(cid:80)b
+, βt−1
+1 (αt), ζ∗
+(cid:17) 1
+i, yt
+i )
+i=1(r(wt; xt
+i, yt
+i ))
+i=1 r+(wt; xt
+i, yt
+i )
+αt = arg min
+βt = arg min
+γt = arg min
+1 (α)}
+{α · rt − ζ∗
+{β · rt − ζ∗
+2 (β)}
+{γ · qt − Ψ∗(γ)}
+5:
+6:
+7:
+8:
+9:
+10:
+11:
+12:
+(cid:46) Primal Step
+(cid:46) Inner Dual Step 1
+(cid:46) Inner Dual Step 2
+(cid:46) Outer Dual Step
+13: end for
+14: return wT
+a decomposable one, corresponding to a cost-weighted binary classiﬁcation problem with the costs given by
+the weights a, b and v.
+We will use the notation P(a,b),S(w) and VS(w, v) to denote respectively, the performance measure, and
+the valuation function as deﬁned on a data sample S. At every time step t, DAME looks at vt = P(a,b)(wt)
+and attempts to approximate the task of optimizing F-measure (or any other pseudolinear measure) using
+a cost weighted classiﬁcation problem described by the valuation function at level vt. After updating the
+model with respect to this approximation, DAME reﬁnes the approximation again, and so on.
+We note that similar alternating strategies have been studied in literature in the context of F-measure
+before [10, 14] and oﬀer provable convergence guarantees for linear models. However, a direct implementation
+of these methods gives extremely poor results as we shall see in the next section. The complex nature of
+these performance measures, that are neither convex nor concave, make it more challenging to train deep
+models.
+To solve this problem, DAME utilizes a two-stage training procedure, involving pretraining the en-
+tire network (i.e. both upper and lower layers) on a standard training objective such as cross-entropy or
+least squares, followed by ﬁne tuning of only the upper layers of the network to optimize F-measure. The
+pretraining is done using standard stochastic mini-batch gradient descent.
+For sake of simplicity we will let (w1, w2) denote a stacking of the neural networks described by the models
+w1 and w2. More speciﬁcally w2 denotes a network with input dimensionality din and output dimensionality
+dint whereas w1 denotes a network with input dimensionality dint and output dimensionality dout. To ensure
+diﬀerentiability, DAME uses valuation functions with appropriate reward functions replacing the TPR and
+TNR functions.
+We are able to show a stronger ﬁrst order stationary convergence guarantee for DAME. For sake of
+simplicity, we present the proof for the batch version of the algorithm in Appendix B. We only assume that
+the valuation functions are L-smooth functions of the upper model w1. It is also noteworthy that we present
+the guarantee only for the ﬁne-tuning phase since the pre-training phase enjoys local convergence guarantees
+by standard arguments. For this reason, we will omit the lower network in the analysis. We also assume
+that the performance measure satisﬁes Pa(w) ≤ M for all w ∈ W and ·Pb(w) ≥ m for all w ∈ cW . We
+note that these assumptions are standard [7, 14] and also readily satisﬁed by F-measure, Jaccard coeﬃcient
+etc for which we have m, M = Θ(1) (see [14]). Let κ = 1 + M/m. Then we have the following result.
+Theorem 2. If executed with a uniform step length satisfying η < 2
+Lκ , DAME discovers an -stable model
+lengths
+ηt,
+network
+conﬁguration
+, yt,t(cid:48)
+(cid:46) New features
+dataset
+Algorithm 3 DAME: A Deep Alternating Maximization mEthod
+Require: Training
+step
+1: w−1
+2: w−1
+3: (w0,0
+{din, dint, dout, conf1, conf2}, batch size b
+1 ← NN-init(dint, 1, conf1)
+2 ← NN-init(din, dint, conf2)
+1 , w0
+4: Create new dataset ˜T =(cid:8)(f (xi, w0
+2) ← Pre-train on cross-entropy on dataset T
+2), yi)(cid:9)n
+{(xi, yi)}n
+i=1,
+i=1
+5: for t = 1, 2, . . . , T do
+6:
+7:
+8:
+9:
+10:
+St,0 ← SAMPLE mini-batch of b data points (zt,t(cid:48)
+vt ← P(a,b),St,0 (wt−1
+for t(cid:48) = 1, 2, . . . , T (cid:48) do
+, w0
+2)
+St,t(cid:48) ← SAMPLE mini-batch of b data points (zt,t(cid:48)
+wt−1,t(cid:48)
+VSt,t(cid:48) ((wt−1,t(cid:48)−1
+end for
+1 ← wt−1,T (cid:48)
+wt
+← wt−1,t(cid:48)−1
++ ηt · ∇
+wt−1,t(cid:48)−1
+, yt,t(cid:48)
+, w0
+2), vt)
+11:
+12:
+13: end for
+14: return (wT
+1 , w0
+2)
+Data Set # Points Feat. Positives
+KDDCup08
+PPI
+CoverType
+Letter
+IJCNN-1
+Adult
+Twitter
+100K
+240K
+580K
+20K
+140K
+50K
+10K
+117
+85
+54
+16
+22
+123
+NA
+0.61%
+1.19%
+1.63%
+3.92%
+9.57%
+23.93%
+77.4%
+Source
+KDDCup08
+[16]
+UCI
+UCI
+UCI
+UCI
+SEMEVAL16
+(cid:1) inner iterations. More speciﬁcally, for t ≤ κ2
+within O(cid:0) 1
+that(cid:13)(cid:13)∇wP(a,b)(w)(cid:13)(cid:13) ≤ .
+2
+Table 2: Statistics of data sets used.
+η(1− Lκη
+2 )2 , DAME identiﬁes a model wt
+1 such
+5 Experimental Results
+We performed extensive evaluation of DUPLE, DENIM and DAME on benchmark and real-life challenge
+datesets and found it to outperform both traditional techniques for training neural networks, as well as the
+more nuanced task-driven training techniques proposed in the work of [17].
+Datasets: We use the datasets listed in Table 2. Twitter refers to the dataset revealed as a part of the
+SEMEVAL 2016 sentiment detection challenge [4].
+Competing Methods: We implemented and adapated several benchmarks from past literature in an
+attempt to critically assess the performance of our methods.
+1. ANN 0-1 refers to a benchmark multi-layer perceptron model trained using the cross-entropy loss
+functions to minimize the misclassiﬁcation rate.
+2. STRUCT-ANN refers to an adaptation of the structured optimization algorithm from [17] to various
+performance measures (implementation details in the Appendix C).
+3. ANN-PG refers to an implementation of a plug-in classiﬁer for F-measure as suggested in [10].
+4. DENIMS-NS refers to a variant of the NEMSIS algorithm that uses a count based reward instead
+of sigmoidal rewards. A similar benchmark was constructed for DUPLE as well.
+(a) PPI
+(b) KDD08
+(c) COVT
+(d) IJCNN
+Figure 1: Experiments on maximizing MinTPRTNR, a concave performance measure
+For lack of space, some experimental results for the DAME algorithm are included in Appendix B. All
+hyper-parameters including model architecture were kept the same for all algorithms. Learning rates were
+optimized to give best results.
+5.1 Experiments on Concave Measures
+The results with DUPLE (Figures 1 and 2) on optimizing the MinTPRTNR and the QMean performance
+measures, show that DUPLE oﬀers very fast convergence in comparison to ANN 0-1. It is to be noted
+that on MinTPRTNR, ANN 0-1 has a very hard time obtaining a non-trivial score. For the experiment on
+IJCNN1, we ran the experiment for a longer time to allow ANN 0-1 and STRUCT-ANN to converge
+and we observe that they are highly time intensive, when compared to DUPLE.
+These experiments show that DUPLE and its variant DUPLE-NS outperform the competitors both
+in terms of speed as well as accuracy. It is also to be noted that DUPLE not only takes lesser iterations
+than STRUCT-ANN but each iteration of DUPLE is at least 10X faster than that of STRUCT-ANN.
+(a) PPI
+(b) KDD08
+(c) IJCNN1
+(d) A9A
+Figure 2: Experiments on maximizing QMean, a concave performance measure
+(a) KDD08
+(b) COD-RNA
+(c) LETTER
+(d) A9A
+Figure 3: Experiments on maximizing F-measure, a pseudolinear performance measure
+10
+0510152025303540Iterations0.00.10.20.30.40.50.60.70.8Min TPR TNRppiDUPLEANN-0-1Struct-ANN0510152025303540Iterations0.00.10.20.30.40.50.60.70.80.9Min TPR TNRkdd08DUPLEANN-0-1Struct-ANN05101520Iterations0.00.10.20.30.40.50.60.70.80.9Min TPR TNRcovtypeDUPLEANN-0-1Struct-ANN0100200300400500Iterations0.00.20.40.60.81.0Min TPR TNRijcnn1DUPLEANN-0-1Struct-ANN0510152025303540Iterations0.20.30.40.50.60.70.8QMeanppiDUPLEDUPLE-NSANN-0-1Struct-ANN051015202530Iterations0.20.30.40.50.60.70.80.9QMeankdd08DUPLEDUPLE-NSANN-0-1Struct-ANN01020304050Iterations0.20.30.40.50.60.70.80.91.0QMeanijcnn1DUPLEDUPLE-NSANN-0-1Struct-ANN01020304050Iterations0.20.30.40.50.60.70.80.9QMeana9aDUPLEDUPLE-NSANN-0-1Struct-ANN05101520Iterations0.00.10.20.30.40.50.6F-Measurekdd08DAMEANN01ANN-PGStruct-ANN05101520Iterations0.00.10.20.30.40.50.60.70.80.9F-Measurecod-rnaDAMEANN01ANN-PGStruct-ANN05101520Iterations0.00.10.20.30.40.5F-MeasureletterDAMEANN01ANN-PGStruct-ANN020406080100Iterations0.00.10.20.30.40.50.60.7F-Measurea9aDAMEANN01ANN-PGStruct-ANN5.2 Experiments with Nested Performance Measures
+In Figure 4, we can see the results obtained by DENIM while optimizing the KLD performance measure. It
+shows rapid convergence to near-perfect quantiﬁcation (class ratio estimation) scores. The experiments also
+show that DENIM and DENIMS-NS require far less iterations than its competitor ANN 0-1 (whenever
+ANN 0-1 is successful at all). The STRUCT-ANN benchmark is not shown for these experiments since
+it always got a value close to 0 by trivially predicting every data point as negative as the datasets are highly
+biased.
+(a) PPI
+(b) Letter
+(c) COVT
+(d) IJCNN
+Figure 4: Experiments on minimizing Kullback Leibler divergence, a nested concave performance measure
+5.3 Experiments with Pseudolinear Measures
+Figure 7 (in the Supplementary material) shows the performance of DAME on optimizing the F1-Measure.
+A naive training with misclassiﬁcation loss yields extremely poor F-measure performance. Moreover, plug-in
+methods such as those proposed in [10] linear models also perform very poorly. DAME on the other hand
+is able to rapidly oﬀer very good F-measure scores after looking at a fraction of the total data.
+As, it can be seen, STRUCT-ANN oﬀers a consistently poor performance whereas it seems to perform
+well in the linear case. This is because our implementation of the Struct ANN is a minibatch method
+and the gradient obtained from the structual method has almost no real information due to this. In other
+variants of the application [17] of the STRUCT-ANN algorithm, full batch methods were used. We would
+like to point out that the use of the entire training dataset for every update is extremely expensive with
+respect to memory and computation time, especially when working with GPU architectures.
+5.4 Case Study: Quantiﬁcation for Sentiment Analysis
+We report the results of experiments comparing the performance of the DENIM on a Twitter sentiment
+detection challenge problem. The task in this challenge was to ascertain correctly the fraction of tweets
+exhibiting various sentiments. The performance was measured using the Kullback-Leibler divergence (see
+(1)). We trained an end-to-end DeepLSTM model trained using DENIM. We also trained an attention-
+enabled network for the same task using the DENIM. Our models accepted raw text in the standard
+one-hot encoding format and performed task speciﬁc optimization and generated task speciﬁc vocabulary
+embeddings. Our representations were 64-dimensional and were learnt jointly with other network parameters.
+Implementation details: All our LSTM models used a single hidden layer with 64 hidden nodes, which
+gave rise to 64-dimensional hidden state representations. For the LSTM model, the ﬁnal label was obtained
+by applying a linear model with a logistic wrapper function. For the attention models (referred to as AM),
+the decoder hidden states were set to be 64-dimensional as well. The alignment model was set to be a
+feed-forward model with a softmax layer. Step lengths were tuned using standard implementations of the
+ADAM method. Training was done by adapting the DENIM method.
+DENIM is able to obtain near perfect quantiﬁcation on both LSTM (KLD = 0.007) as well as AM
+(KLD = 0.00002) models (see Figure 5(a)). In contrast, the classical cross-entropy method with attention
+model (AM-CE) is unable to obtain satisfactory performance. DENIM converges to optimal test KLD
+11
+0510152025303540Iterations0.500.450.400.350.300.250.200.150.100.05NegKLDppiDENIMDENIM-NSANN-0-10510152025Iterations2.01.51.00.50.0NegKLDletterDENIMDENIM-NSANN-0-10510152025303540Iterations0.400.350.300.250.200.15NegKLDcovtypeDENIMDENIM-NSANN-0-10510152025303540Iterations2.52.01.51.00.50.0NegKLDijcnn1DENIMDENIM-NSANN-0-1performance in not only far lesser iterations, but also by using far less data samples. Also note that the AM
+models trained with DENIM give KLD losses that are 2 orders of magnitude smaller than what LSTMs
+oﬀer when trained with DENIM.
+(a) Convergence to optimal test
+KLD performance for diﬀerent RNN
+models.
+(b) Change in Quantiﬁcation performance with dis-
+tribution drift.
+Figure 5: Results on the Twitter Sentiment Analysis Task
+We also experiment with artiﬁcially changing the fraction of positive and negative examples in order to
+see the performance of our model under distribution drift (see Figure 5(b)). The fraction of negatives and
+positives in the test set was distorted from their original values by resampling. As the test distribution priors
+are distorted more and more, AM-CE (Attention Model trained with Cross Entropy) performs extremely
+poorly. DENIM with LSTMs displays some degree of robustness to drift but succumbs at extremely high
+level of drift. DENIM with AM models on the other hand, remains extremely robust to even high degree
+of distribution drift, oﬀering near-zero KLD error.
+The beneﬁts of the attention models employed by DENIM allow it to identify critical words in a tweet
+that clearly signal its polarity. The highlighted words (see Figure 6) are those for which DENIM assigned
+an attention score α ≈ 1.
+TGIF!! Make it a great day, Robbie!!
+Monsanto’s Roundup not good for you
+I may be in love with Snoop
+anyone having problems with Windows 10? may be coincidental
+but since i downloaded, my WiFi keeps dropping out.
+@NariahCFC against barca pre season stand out player 1st half..
+@alias8818 Hey there! We’re excited to have you as part of the
+T-Mobile family!
+listening to Fleetwood Mac and having my candles lit is the
+perfect Sunday evening
+Figure 6: Figuring where the attention is. Highlighted words got high attention scores. A red (green)
+highlight indicates that the tweet was tagged with a negative (positive) sentiment.
+References
+[1] Barranquero, J., D´ıez, J., del Coz, J.J.: Quantiﬁcation-oriented learning based on reliable classiﬁers.
+Pattern Recognition 48(2), 591–604 (2015)
+[2] Bergstra, J., Breuleux, O., Bastien, F., Lamblin, P., Pascanu, R., Desjardins, G., Turian, J., Warde-
+Farley, D., Bengio, Y.: Theano: A CPU and GPU math compiler in Python. In: Proceedings of the
+9th Python in Science Conference (SciPy 2010), pp. 1–7. Austin, USA (2010)
+[3] Eban, E., Schain, M., Mackey, A., Gordon, A., Saurous, R., Elidan, G.: Scalable Learning of Non-
+Decomposable Objectives. In: Proceedings of the 20th International Conference on Artiﬁcial Intelligence
+and Statistics (AISTATS) (2017)
+12
+051015202530354045Iterations876543210NegKLDTwitterLSTM-DENIMAM-CEAM-DENIM[4] Esuli, A.: ISTI-CNR at SemEval-2016 Task 4: Quantiﬁcation on an ordinal scale. In: Proceedings of
+the 10th International Workshop on Semantic Evaluation (SemEval 2016). San Diego, US (2016)
+[5] Esuli, A., Sebastiani, F.: Optimizing text quantiﬁers for multivariate loss functions. ACM Transactions
+on Knowledge Discovery and Data 9(4), Article 27 (2015)
+[6] Gao, W., Sebastiani, F.: Tweet sentiment: From classiﬁcation to quantiﬁcation. In: Proceedings of the
+7th International Conference on Advances in Social Network Analysis and Mining (ASONAM 2015),
+pp. 97–104. Paris, FR (2015)
+[7] Kar, P., Li, S., Narasimhan, H., Chawla, S., Sebastiani, F.: Online Optimization Methods for the
+In: Proceedings of the 22nd ACM International Conference on Knowledge
+Quantiﬁcation Problem.
+Discovery and Data Mining (SIGKDD 2016), pp. 1625–1634. San Francisco, USA (2016)
+[8] Kar, P., Sriperumbudur, B.K., Jain, P., Karnick, H.: On the Generalization Ability of Online Learning
+Algorithms for Pairwise Loss Functions. In: 30th International Conference on Machine Learning (ICML)
+(2013)
+[9] Kennedy, K., Namee, B.M., Delany, S.J.: Learning without default: a study of one-class classiﬁca-
+tion and the low-default portfolio problem. In: International Conference on Artiﬁcial Intelligence and
+Cognitive Science (ICAICS), Lecture Notes in Computer Science, vol. 6202, pp. 174–187 (2010)
+[10] Koyejo, O.O., Natarajan, N., Ravikumar, P.K., Dhillon, I.S.: Consistent binary classiﬁcation with
+generalized performance metrics. In: Proceedings of the 28th Annual Conference on Neural Information
+Processing Systems (NIPS 2014), pp. 2744–2752. Montreal, CA (2014)
+[11] Manning, C.D., Raghavan, P., Sch¨utze, H.: Introduction to Information Retrieval. Cambridge University
+Press (2008)
+[12] Narasimhan, H., Agarwal, S.: SVMtight
+pAUC: A New Support Vector Method for Optimizing Partial AUC
+Based on a Tight Convex Upper Bound. In: ACM SIGKDD Conference on Knowledge, Discovery and
+Data Mining (KDD) (2013)
+[13] Narasimhan, H., Kar, P., Jain, P.: Optimizing non-decomposable performance measures: A tale of two
+classes. In: Proceedings of the 32nd International Conference on Machine Learning (ICML 2015), pp.
+199–208. Lille, FR (2015)
+[14] Narasimhan, H., Kar, P., Jain, P.: Optimizing Non-decomposable Performance Measures: A Tale of
+Two Classes. In: Proceedings of the 32nd International Conference on Machine Learning (ICML 2015),
+pp. 199–208. Lille, FR (2015)
+[15] Narasimhan, H., Vaish, R., Agarwal, S.: On the Statistical Consistency of Plug-in Classiﬁers for Non-
+decomposable Performance Measures. In: 28th Annual Conference on Neural Information Processing
+Systems (NIPS) (2014)
+[16] Qi, Y., Bar-Joseph, Z., Klein-Seetharaman, J.: Evaluation of diﬀerent biological data and computational
+classiﬁcation methods for use in protein interaction prediction. Proteins 63, 490–500 (2006)
+[17] Song, Y., Schwing, A.G., Zemel, R.S., Urtasun, R.: Training Deep Neural Networks via Direct Loss
+In: Proceedings of the 33rd International Conference on Machine Learning (ICML)
+Minimization.
+(2016)
+[18] Vincent, P.: An Introduction to Signal Detection and Estimation. Springer-Verlag New York, Inc.
+(1994)
+13
+A Proof of Theorem 1
+Theorem 3. Consider a concave performance measure deﬁned using a link function Ψ that is concave
+and L(cid:48)-smooth. Then, if executed with a uniform step length satisfying η < 2
+L , then DUPLE -stabilizes
+within (cid:101)O(cid:0) 1
+(cid:1) iterations. More speciﬁcally, within T iterations, DUPLE identiﬁes a model wt such that
+(cid:18)(cid:113)
+(cid:19)
+2
+(cid:107)∇t(cid:107)2 ≤ O
+L(cid:48) log T
+Proof. Recall that we assume that the reward functions r(f (x; w), y) are L-smooth functions of the model
+w. This is satisﬁed by all reward functions we consider. Note, however, that nowhere will we assume that the
+reward functions are concave in the model parameters. We will use the shorthand ∇t = ∇wg(wt; St, αt, βt)
+and F (wt, αt) = g(wt; St, αt, βt). We will prove this result for the batch version of the DUPLE algorithm for
+the sake of simplicity and to present the key ideas. The extension to the mini-batch version is straightforward
+and will introduce an additional error of the order of 1√
+The batch version of DUPLE makes the following model update wt+1 = wt + η · ∇t. Using the
+where b is the batch size.
+smoothness of the reward functions, we get
+F (wt+1, αt) ≥ F (wt, αt) +(cid:10)∇t, wt+1 − wt(cid:11) − L
+(cid:13)(cid:13)wt+1 − wt(cid:13)(cid:13)2
+2 ,
+which, upon rearranging, give us (cid:107)∇t(cid:107)2
+(cid:13)(cid:13)∇t(cid:13)(cid:13)2
+2 ≤
+T(cid:88)
+t=1
+(cid:16)
+1 − ηL
+η(1− ηL
+2 )
+2 ≤ F (wt+1,αt)−F (wt,αt)
+T(cid:88)
+F (wT +1, αT ) +
+(cid:17)(cid:32)
+t=2
+, which, upon summing up, gives us
+(cid:33)
+F (wt, αt−1) − F (wt, αt)
+However, by a forward regret-analysis of the dual updates which execute the follow-the-leader algorithm and
+the fact that due to the L(cid:48)-smoothness of Ψ, the functions F (w, α) are 1
+L(cid:48) strongly convex,
+T(cid:88)
+F (wt, αt−1) − F (wt, αt) ≤ O (L(cid:48) log T ) .
+This completes the proof upon applying an averaging argument.
+t=2
+B DAME: A Deep Learning Technique for Pseudolinear Perfor-
+mance Measures
+We present an algorithm for training deep models on pseudolinear performance measures such as F-measure.
+These are extremely popular in several areas and direct optimization routines are sought after. We know
+of only one proposed algorithm for training deep models with F-measure in the work of [3]. However, their
+algorithm involves constrained optimization routines over deep models and the authors do not discuss the
+details of implementing the same.
+Our algorithm DAME, on the other hand, is based on an alternating strategy, is very scalable and
+gives superior performance across tasks and datasets. For sake of simplicity, we represent the pseudolinear
+performance measure as
+P(a,b)(w) =
+Pa(w)
+Pb(w)
+a0 + a1 · TPR(w) + a2 · TNR(w)
+b0 + b1 · TPR(w) + b2 · TNR(w)
+Given the above, we deﬁne the notion of a valuation function.
+14
+(a) CT
+(b) IJCNN
+(c) IJCNN1
+(d) IJCNN1
+(e) IJCNN1
+(f) IJCNN1
+Figure 7: Experiments with DAME
+Deﬁnition 2 (Valuation Function). The valuation of a pseudolinear measure P(a,b)(w) at any level v > 0,
+is deﬁned as
+V (w, v) = Pa(w) − v · Pb(w)
+We will use the notation P(a,b),S(wt) and VS(w, v) to denote respectively, the performance measure, and
+the valuation function as deﬁned on a data sample S. At every time step t, DAME looks at vt = P(a,b)(wt)
+and attempts to approximate the task of optimizing F-measure (or any other pseudolinear measure) using a
+cost weighted classiﬁcation problem described by the valuation function at level vt. After making updates
+to the model with respect to this approximation, DAME reﬁnes the approximation again, and so on.
+We note that similar alternating strategies have been studied in literature in the context of F-measure
+before [10, 14] and oﬀer provable convergence guarantees for linear models. However, a direct implementation
+of these methods gives extremely poor results as we shall see in the next section. The complex nature of
+these performance measures, that are neither convex nor concave, make it more challenging to train deep
+models.
+To solve this problem, DAME utilizes a two-stage training procedure, involving pretraining the en-
+tire network (i.e. both upper and lower layers) on a standard training objective such as cross-entropy or
+least squares, followed by ﬁne tuning of only the upper layers of the network to optimize F-measure. The
+pretraining is done using standard stochastic mini-batch gradient descent.
+The details of the algorithm are given in Algorithm 3. For sake of simplicity we will let (w1, w2) denote
+a stacking of the neural networks described by the models w1 and w2. More speciﬁcally w2 denotes a
+network with input dimensionality din and output dimensionality dint whereas w1 denotes a network with
+input dimensionality dint and output dimensionality dout. To ensure diﬀerentiability, DAME uses valuation
+functions with appropriate reward functions replacing the TPR and TNR functions.
+We are able to show stronger local convergence guarantees for DAME. Due to lack of space, we present
+only a sketch of the proof for the batch version i.e. St,i = ˜T for all time steps t, i, with constant step lengths.
+We will continue to assume that the valuation functions are L-smooth functions of the upper model. It is
+also noteworthy that we present the guarantee only for the ﬁne-tuning phase since the pre-training phase
+15
+05101520Iterations0.000.050.100.150.200.25F-MeasurecovtypeDAMEANN01ANN-PGStruct-ANN05101520Iterations0.00.10.20.30.40.50.6F-Measurekdd08DAMEANN01ANN-PGStruct-ANN05101520Iterations0.00.10.20.30.40.50.60.70.8F-Measureijcnn1DAMEANN01ANN-PGStruct-ANN05101520Iterations0.00.10.20.30.40.50.60.70.80.9F-Measurecod-rnaDAMEANN01ANN-PGStruct-ANN05101520Iterations0.00.10.20.30.40.5F-MeasureletterDAMEANN01ANN-PGStruct-ANN020406080100Iterations0.00.10.20.30.40.50.60.7F-Measurea9aDAMEANN01ANN-PGStruct-ANNenjoys local convergence guarantees by standard arguments. For this reason, we will omit the lower network
+in the analysis.
+We will assume that the performance measure satisﬁes Pa(w) ≤ M for all w ∈ W and ·Pb(w) ≥ m for
+all w ∈ cW . We note that these assumptions are standard [7, 14] and also readily satisﬁed by F-measure,
+Jaccard coeﬃcient etc for which we have m, M = Θ(1) (see [14]). Let κ = 1 + M/m.
+∇wV (w,P(a,b))
+To prove Theorem 2, we ﬁrst show the following result. Since we have ∇wP(a,b)(w) =
+Pb(w)
+model within O(cid:0) 1
+and Pb(w) ≥ m, Theorem 2 will follow
+Theorem 4. If executed with a uniform step length satisfying η < 2
+(cid:1) inner iterations. More speciﬁcally, within κ2
+(cid:13)(cid:13)(cid:13)∇wt
+V ˜St((wt
+≤ .
+2
+(cid:13)(cid:13)(cid:13)2
+1 such that
+2), vt−1)
+1, wt
+model wt
+Proof. It is easy to see that V (wt−1
+, vt) = 0 and that V (w1, v) is a Lκ-smooth function of the model
+parameter w1 for any realizable valuation i.e. v = P(a,b)(w) for some w ∈ W. Now, the batch version of
+the DAME algorithm makes the following model updates within the inner loop
+Lκ , then DAME discovers an -stable
+2 )2 iterations, DAME identiﬁes a
+η(1− Lκη
+where ∇(t−1,t(cid:48)) = ∇
+V (wt−1,t(cid:48)−1
+wt−1,t(cid:48)−1
+V (wt−1,t(cid:48)
+, vt) ≥ V (wt−1,t(cid:48)−1
+wt−1,t(cid:48)
+= wt−1,t(cid:48)−1
++ η · ∇(t−1,t(cid:48)),
+= V (wt−1,t(cid:48)−1
+(cid:69)
+− Lκ
+, vt). Using the smoothness of the reward functions, we get
+(cid:68)∇(t−1,t(cid:48)), wt−1,t(cid:48)
+(cid:18)
+(cid:13)(cid:13)(cid:13)2
+, vt) +
+wt−1,t(cid:48)−1
+wt−1,t(cid:48)−1
+(cid:13)(cid:13)(cid:13)wt−1,t(cid:48)
+(cid:13)(cid:13)(cid:13)∇(t−1,t(cid:48))(cid:13)(cid:13)(cid:13) > , the valuation of the model θ(t+1,i) goes up by
+(cid:19)(cid:13)(cid:13)(cid:13)∇(t−1,t(cid:48))(cid:13)(cid:13)(cid:13)2
+1 − Lκη
+, vt) + η
+1, vt) ≥ c then P(wt
+1) ≥ P(wt−1
+M . Since the
+m , putting these results together tell us that
+such
+2 )2 inner iterations without encountering a model wt,t(cid:48)
+≤ 
+(cid:13)(cid:13)(cid:13)∇wP(wt,t(cid:48)
+m as
+) + c
+(cid:13)(cid:13)(cid:13)2
+Now this shows that at each step where
+2.
+at least η
+maximum value of the performance measure for any model is M
+DAME cannot execute more than M 2
+It is easy to see that if V (wt
+η(1− Lκη
+(cid:17)
+1 − Lκη
+(cid:16)
+(cid:13)(cid:13)(cid:13)∇(t−1,t(cid:48))(cid:13)(cid:13)(cid:13)2
+that
+well.
+≤ . An easy calculation shows that for such a model we also have
+The following experiments Figure:[7] show the performance of DAME on the F1-Measure. A naive training
+with misclassiﬁcation loss yields extremely poor F-measure performance. Moreover, a naive implementation
+of methods proposed for linear models such as the plug-in method also performs very poorly. DAME on the
+other hand is able to rapidly oﬀer very good F-measure scores after looking at a fraction of the total data.
+As, it can be seen, struct ANN provides a consistent poor performance whereas it seems to perform well
+in the linear case. This is because our implementation of the Struct ANN is a minibatch method and the
+gradient obtained from the structual method has almost no real information due to this. In other variants
+of the application[17] of the structual ANN, people have usually used full batch methods. We would like to
+point out that such a case is almost intractable with respect to memory and computation time.
+C Details of implementation of the Structual ANN from [17]
+Here assume that ∆ is the loss function we are looking at and its input is the two dimensional confusion
+matrix. Keeping this is mind, we deﬁne the following functions.
+a(ˆy, y) =
+I{yi = 1}I{ˆyi = 1}
+(cid:88)
+16
+(cid:88)
+(cid:88)
+(cid:88)
+b(ˆy, y) =
+c(ˆy, y) =
+d(ˆy, y) =
+I{yi = 1}I{ˆyi = 0}
+I{yi = 0}I{ˆyi = 1}
+I{yi = 0}I{ˆyi = 0}
+Finally, m(·) is the artiﬁcial neural network
+(cid:40)
+f (w) = max
+ˆy
+∆ (a(ˆy, y), b(ˆy, y), c(ˆy, y), d(ˆy, y)) +
+(cid:41)
+(ˆyi − yi)m(xi)
+n(cid:88)
+i=1
+If
+then
+˜y ∈ arg max
+ˆy
+Hence, to ﬁnd ˜y, we need to solve the following
+g(w) = ∂m(xi) + C · f (w)
+∂g(w) (cid:51) w + ∂f (w)
+min
+(cid:40)
+n(cid:88)
+∆ (a(ˆy, y), b(ˆy, y), c(ˆy, y), d(ˆy, y)) +
+(ˆyi − yi)m(xi)
+i=1
+(˜yi − yi)∂m(xi) ∈ ∂f (w)
+n(cid:88)
+i=1
+(cid:40)
+∆ (p, q, r, s) +
+(cid:41)
+(cid:41)
+(cid:41) ,
+(cid:41) ,
+(ˆyi − yi)m(xi)
+i=1
+n(cid:88)
+(cid:40) n(cid:88)
+(cid:40) n(cid:88)
+i=1
+arg max
+ˆy such that
+a(ˆy,y)=p,b(ˆy,y)=q,c(ˆy,y)=r,d(ˆy,y)=s
+(ˆyi − yi)si
+arg max
+(p,q,r,s)
+arg max
+(p,q,r,s)
+a(ˆy,y)=p,b(ˆy,y)=q,c(ˆy,y)=r,d(ˆy,y)=s
+arg max
+ˆy such that
+∆ (p, q, r, s) +
+∆ (p, q, r, s) +
+n(cid:88)
+(˜yi − yi)∂m(xi)
+arg max
+(p,q,r,s)
+arg max
+ˆy such that
+ˆyisi
+i=1
+a(ˆy,y)=p,b(ˆy,y)=q,c(ˆy,y)=r,d(ˆy,y)=s
+This is very amiable to a symbolic gradient operation, as we need to ﬁnd the gradient which looks like
+i=1
+However, by linearity, this is the same as
+n(cid:88)
+i=1
+(˜yi − yi)m(xi)
+Therefore , we need to do a forward pass over the symbolic graph to get the value of m(xi) and then feed
+to our solver for the most violated constraint, which will give us ˜yi and then we deﬁne the symbolic gradient
+as
+n(cid:88)
+(˜yi − yi)m(xi)
+i=1
+17

@@ -1,0 +1,621 @@
+
+The world is dynamic, in a constant state of ﬂux. Traditional learning systems
+that learn static models from historical data are unable to adjust to concept
+drift — changes in the distributions from which data are drawn. A growing
+body of experimental machine learning research investigates incremental learn-
+ers that seek to adjust models as appropriate when confronted with concept
+drift (Gaber et al, 2005; Gama and Rodrigues, 2009; Aggarwal, 2009; ˇZliobaite,
+2010; Bifet et al, 2011; Nguyen et al, 2014; Brzezinski and Stefanowski, 2014;
+Krempl et al, 2014; Gama et al, 2014; Ditzler et al, 2015). This paper seeks
+to inform this line of research by identifying relationships between types of
+Nayyar A. Zaidi, Geoﬀrey I. Webb, Francois Petitjean, Germain Forestier
+Faculty of Information Technology, Monash University, Clayton, VIC 3800, Australia
+E-mail: {ﬁrstname.lastname}@monash.edu
+2
+Nayyar A. Zaidi et al.
+Fig. 1: An illustration of the hypothesized sweet path, a four way interaction among drift
+rate, forgetting rate, learner’s bias and variance and expected error.
+concept drift and the properties of the learners that will best handle those
+forms of drift. Speciﬁcally, we propose and investigate two hypotheses —
+1. The drift-rate/forgetting-rate nexus. As the rate of concept drift increases,
+model accuracy will in general be maximized by increasing forgetting rates,
+and conversely, as the drift rate decreases, model accuracy will in general
+be maximized by decreasing forgetting rates. Here increasing forgetting
+rates means focusing on more recent evidence by reducing window sizes
+or increasing decay rates. Decreasing forgetting rates means focusing on
+longer term evidence by increasing window sizes or decreasing decay rates.
+2. The forgetting-rate/bias-variance-proﬁle nexus. As forgetting rates increase,
+model accuracy will in general be maximized by altering the bias/variance
+proﬁle of a learner to decrease variance, and conversely, as forgetting rates
+increase, model accuracy will in general be maximized by decreasing bias.
+The ﬁrst of these hypotheses is intuitive. The faster the world is changing,
+the less relevance older information will have. In consequence, more aggressive
+forgetting mechanisms, speciﬁcally smaller windows or higher decay rates, will
+be required to exclude older examples for which the trade-oﬀ between provid-
+ing additional information that is relevant to the current state-of-the-world
+and that which is misleading is weighted too heavily to the latter.
+The second hypothesis derives from the hypothesis that when learning from
+smaller quantities of data, lower variance learners will maximize accuracy due
+to their ability to avoid overﬁtting, whereas when learning from larger datasets
+lower bias learners will maximize accuracy, due to their ability to model the
+details present in large data (Brain and Webb, 1999). The more past data
+we forget, the smaller the eﬀective data quantity from which we learn and,
+therefore, with high-forgetting rate, low-variance models are more desirable
+and low-bias models with low-forgetting rate.
+Drift RateSlowFastModel  Forgetting  RateSlowFastModel Bias- VarianceLow BiasHigh BiasLow VarianceHigh VarianceThe Sweet PathTitle Suppressed Due to Excessive Length
+Put together these hypothesized eﬀects imply the sweet path for concept
+drift illustrated in Figure 1, whereby the lowest error for a low drift rate will
+be achieved by a low bias learner with a low forgetting rate and the lowest
+error for a high drift rate will be achieved by a low variance learner with a
+high forgetting rate.
+The bulk of this paper (Section 2 to Section 5) comprises detailed experi-
+ments that investigate the two hypotheses and the hypothesized sweet path.
+We discuss implications and directions for future research in Section 6.
+2 Background
+In supervised machine learning we seek to learn a model M that can predict
+the value (or probability of each value) y of a target variable Y for an example
+x = (cid:104)x1, . . . , xa(cid:105) of an input variable X = (cid:104)X1, . . . , Xa(cid:105). We learn M from a
+training set T = {(cid:104)x1, y1(cid:105), . . . ,(cid:104)xs, ys(cid:105)}. In incremental learning, the training
+set is presented to the learner as a sequence over a period of time and the
+learner updates M in light of each new example or set of examples as it is
+encountered.
+Concept drift occurs when the distribution Pt(X, Y ) from which the data
+are drawn at time t diﬀers from that at subsequent time u, Pu(X, Y ).1
+We can measure the magnitude of drift from time t to u, D(t, u), by a mea-
+sure of distance between the probability distributions Pt(X, Y ) and Pu(X, Y )
+and the rate of drift at time t by:
+Ratet = lim
+n→∞ nD (t−0.5/n, t+0.5/n)
+(1)
+(Webb et al, 2016). The observations in this paper hold for any distance mea-
+sure that is a metric, such as the Total Variation Distance (Levin et al, 2008).
+Forgetting mechanisms are a standard strategy for dealing with concept
+drift. The two main forgetting mechanisms are windowing, in which a sliding
+window is maintained containing only the W most recent examples; and decay
+or weighting, in which greater weight is placed on more recent examples and
+lesser weight on older ones (Gama et al, 2014).
+3 Experimental setup
+To explore the drift-rate/forgetting-rate/bias-variance-proﬁle nexus, we re-
+quire an incremental learner that can learn from sliding windows or with decay.
+Of course, we also require means of varying the learner’s bias/variance proﬁle.
+For our experiments, we use the semi-naive Bayesian method AnDE (Webb
+et al, 2012), as it satisﬁes these requirements. First, the model has a tuneable
+1 Note that some papers (Gama et al, 2014) distinguish real concept drift in which P (Y |
+X) changes, from virtual concept drift in which P (X) changes. For the purposes of this
+paper we do not distinguish between these, as the distinction does not appear pertinent.
+4
+Nayyar A. Zaidi et al.
+parameter n that controls the representation bias and variance. When n = 0
+(in AnDE), one gets a naive Bayes classiﬁer which is highly biased but has low
+variance. Higher values of n decrease bias at the cost of an increase in variance
+and lower values decrease variance at a cost of increased bias. Second, the
+AnDE model can be represented using counts of observed marginal frequencies,
+the dimensionality of each of which is controlled by n. As described below,
+these can readily be incrementally updated to reﬂect a sliding window or
+incremental decay without need for relearning the entire model.
+The goal of Bayesian methods is to factorize the joint distribution: P(y, x).
+The AnDE model factorizes the joint distribution as:
+(cid:88)
+a(cid:89)
+i=1
+δ(xs)ˆP(y, xs)
+
+(cid:1) indicates the set of all size-n subsets of {1, . . . a} and δ(xα) is a
+s∈(A
+n)
+ˆPA(n-1)DE(y, x)
+ˆP(xi | y, xs)/
+(cid:88)
+s∈(A
+n)
+(cid:88)
+s∈(A
+n)
+: otherwise
+(2)
+δ(xs) :
+δ(xs) > 0
+ˆPAnDE(y, x) =
+where (cid:0)A
+function that is 1 if the training data contains an object with the value xα,
+otherwise 0.
+3.1 Window-based Adaptation
+A sliding window that supports learning only from the last W data points can
+be achieved simply with a queue-based data structure. At each time step t,
+when a new data point (cid:104)x, y(cid:105) arrives:
+– Increment relevant count statistics based on (cid:104)x, y(cid:105)
+– Push (cid:104)x, y(cid:105) onto the queue
+– If queue length exceeds W
+– (cid:104)˜x, ˜y(cid:105) = De-queue.
+– Decrement relevant count statistics based on (cid:104)˜x, ˜y(cid:105)
+It can be seen that parameter W controls the forgetting rate. Large W
+means large windows, hence slow forgetting and small W means small windows,
+hence fast forgetting.
+3.2 Decay-based Adaptation
+To support incremental exponential decay, before adding the count statistics
+of the data point x at step t, all that is required is that the counts in the
+count table are decayed. For example if Nxi,y denotes the stored count of the
+number of times attribute i takes value xi and class attribute takes the value
+y, it is decayed as:
+Nxi,y = Nxi,y ∗ exp(−D),
+Title Suppressed Due to Excessive Length
+Fig. 2: Simple illustration of the structure of superparent k-DB classiﬁers. (Left) super-
+parent 1-DB, each variable takes one more parent other than the class, (Right) superparent
+2-DB, each variable takes two more parents other than the class.
+where D is the decay parameter.
+Like W in window-based adaptation, it can be seen that parameter D
+controls the model adaptation rate. Large D means large decay, and hence
+fast model adaptation-rate, and, small D means small decay, and hence a slow
+model adaptation-rate.
+4 Data Generation
+To test our hypotheses, we require data streams with varying drift rates. To
+this end we create a framework where we can generate synthetic data for which
+we can systematically manipulate the rate of drift.
+We represent the probability distribution using the most common formal-
+ism for doing so, a Bayesian network. Because changing the probability dis-
+tribution at a node may change all of the probability distributions of all its
+children and their descendant nodes, in order to allow systematic manipula-
+tion of the drift rate we minimize the number of parent nodes. Speciﬁcally, we
+sample from superparent k-DB (Keogh and Pazzani, 1999) distributions. We
+show the structure of superparent 1 and 2-DB in Figure 2. In a superparent k-
+DB model, each attribute Xi other than the ﬁrst k attributes takes X1, . . . Xk
+and Y as its parents. In a superparent 1-DB structure every attribute Xi other
+than X1 takes Y and X1 as its parents and in a superparent 2-DB structure
+every attribute other than X1 and X2 takes Y , X1 and X2 as its parents.
+These structures are shown in Figure 2.
+Specifying such networks is simple – the standard process is:
+1. Specify the (possibly empty) set πXi of parents for each node Xi.
+0-DB1-DB2-DBP(xi|y)P(xi|y,xj)P(xi|y,xi,xk)yx1x2x3xayx1x2x3xayx1x2x3xa6
+Nayyar A. Zaidi et al.
+2. Fill the Conditional-Probability-Table (CPT) for each node. This speciﬁes
+a probability distribution over the values of the attribute for each combi-
+nation of values of the parents.
+Once the network is speciﬁed, one can use Ancestral Sampling (Bishop, 2006),
+to generate data therefrom.
+We use the following simple (heuristic) procedure to generate the network:
+– All attributes including the class are binary.
+– Set the initial number of attributes to 100.
+– We aim for half of these attributes to have three parents, and the remaining
+half to have two parents in order that the resulting distributions do not too
+closely ﬁt the biases of a single AnDE learner. Note, however, that as we are
+creating superparent k-DB structures, X1 can only have Y as a parent and
+that X2 must have X1 and Y as parents. Therefore, in practice, we have
+1 attribute with 1 parent, 49 attributes with 2 parents and 50 attributes
+with 3 parents.
+– To allow direct control over the rate of drift, we do not allow parent at-
+tributes to drift. To maximize diversity, we thus wish to minimize the
+number of parent attributes, which is why we use superparent 1-DB and
+2-DB structures instead of more general k-DB structures. To this end, for
+X3 to X50, we uniformly at random select either X1 or X2, together with
+Y as parents. For X51 to X100, all of Y , X1 and X2 are assigned as parents.
+– Once the structure is speciﬁed, we randomly initialize the CPTs. Note, we
+have to fulﬁll the sum-to-one constraint that P(Xi = 0 | πXi) + P(Xi =
+1 | πXi) = 1. To this end, for each combination of values for the parent
+attributes, we randomly select a value between 0 and 1 for P(Xi = 0 | πXi),
+and set P(Xi = 1 | πXi) = 1 − P(Xi = 0 | πXi).
+– Next, we add 100 more binary attributes which have no parents and hence
+represent noise. The CPTs for these nodes are also initialized randomly as
+above. In total, we now have 200 attributes.
+To sample from the distribution deﬁned by this network, we:
+– Choose the class y by uniformly at random selecting either 0 or 1.
+– For i = 1 to 100 sample xi from the distribution deﬁned by P (Xi
+y, x1, . . . , xi−1).
+Introducing Drift To introduce drift we want to change the CPTs in a
+controlled manner. We need to strictly control the change because we need to
+systematically increase and decrease the rate of drift. To this end we ensure
+that —
+– Y , X1 and X2 (the three nodes that are parents to the other nodes) do
+not drift, therefore, their CPTs will not be changed through-out the data
+generation process.
+– Drift occurs only after every T steps.
+– Drift only inﬂuences X% of the attributes.
+Title Suppressed Due to Excessive Length
+The ﬁrst constraint is necessary because changing parent probabilities will
+indirectly change all the child probabilities in a complex manner that is diﬃcult
+to manage. The second and third constraints ensure that there is short term
+directionality in the drift. Simply randomly drifting every attribute 1/10th
+of the drift rate every step results in half the steps simply canceling out the
+previous step for the attribute. However, if only some attributes are drifted at
+each step and drift occurs only every T steps it ensures that non-trivial drift
+lasts for a non-trivial period of time.
+Throughout the experiments, we will set T to 10 and X is set to 50. That
+is, half of the attributes are randomly selected after every 10-th step and are
+drifted.
+The drifting process is controlled by a single parameter ∆. The method is
+designed to ensure that a higher value of ∆ leads to a fast drift, and a smaller
+value of ∆ will lead to a slow drift. When a node is drifted, ∆ is either added or
+subtracted from each of its CPT values in a manner to ensure that the values
+sum to 1.0 and no value exceeds 1.0 or falls below 0.0, hence maintaining a
+valid probability distribution.
+5 Experimental Analysis
+We have seen how parameter n controls the bias/variance proﬁle of the model,
+how parameters W and D control the forgetting rate, and how parameter
+∆ controls the rate of the drift. In this section, we present experiments that
+systematically study the interaction among these factors.
+We use ∆ = 0.05 to represent fast drift, ∆ = 0.01 for medium drift and
+∆ = 0.0005 for slow drift. We select these from a wider range of values explored
+as exemplars that demonstrate clear diﬀerences in outcomes. As an example of
+the rates not presented, for ∆ = 0.02 it is less clear which out of our fast and
+medium forgetting rates provides lower error, as our ﬁrst hypothesis predicts.
+We generate data streams of 5,000 successive time steps, at each time step
+drawing one example randomly from the probability distribution for that step
+and drifting the distribution every 10 steps.
+We use prequential evaluation, whereby at each time step the current model
+is applied to classify the next example in the data stream and then the example
+is used to update the model. We plot the resulting error rates, where each
+point in the plot is the average error over 50 successive time steps. We run
+each experiment 150 times for NB and A1DE and 100 times for A2DE (due
+to there being insuﬃcient time to complete more runs). We present averages
+over all runs.
+We ﬁrst present results for fast drift. Figure 3 presents results using win-
+dows for forgetting and Figure 4 presents results using decay for forgetting.
+The average prequential error for the window size or decay rate that achieves
+the lowest such error is listed for each of the three classiﬁers (Figures 3d
+and 4d). Here we see that for NB, as predicted, the lowest error is achieved
+with fast forgetting (window size 20; decay rate 0.15).
+8
+Nayyar A. Zaidi et al.
+(a)
+(b)
+(c)
+(d)
+Fig. 3: Windowing with Fast Drift (∆ = 0.05) – Variation in prequential loss of NB
+(Figure 3a), A1DE (Figure 3b) and A2DE (Figure 3c) with window sizes of 20, 50 and 500.
+Figure 3d: Comparison of NB (error = 0.253), A1DE (error = 0.337) and A2DE (error =
+0.361) with best window size.
+However, contrary to our expectations, A1DE and A2DE achieve their
+lowest error with slower forgetting. This is because these models eﬀectively
+fail in the face of such rapid drift. Recall that A1DE must estimate for every
+attribute Xi and attribute Xj both P(Y, Xi) and P(Xj | Y, Xi). A2DE must
+estimate for every attribute Xi, attribute Xj and attribute Xk – P(Y, Xi, Xj)
+and P(Xk | Y, Xi, Xj). The distributions for Y , X1 and X2 are not drifting, but
+all others are drifting at a rapid rate. Larger window sizes allow these classiﬁers
+to produce more accurate estimates of the unvarying probabilities, P(Y, X1),
+P(Y, X2), P(X1 | Y, X2), P(X2 | Y, X1) and P(Y, X1, X2), whereas no window
+size provides accurate estimates of the remaining probabilities because either
+they are too small to provide accurate estimates or the distributions change
+too much over the duration of the window for the estimate to be accurate.
+Thus, the relative error is dominated by the ability to accurately estimate
+the invariant probabilities and the performance approximates learning from a
+stationary distribution when the majority of attributes are noise attributes.
+At an intermediate drift rate (∆ < 0.25), the intermediate bias learner
+A1DE starts to outperform NB. Figures 5 and 6 show prequential 0-1 Loss
+010002000300040005000Time Step (t)0.20.30.40.50.6ErrorNB (0.05)W = 20W = 50W = 500010002000300040005000Time Step (t)0.20.30.40.50.6ErrorA1DE (0.05)W = 20W = 50W = 500010002000300040005000Time Step (t)0.20.30.40.50.6ErrorA2DE (0.05)W = 20W = 50W = 500010002000300040005000Time Step (t)0.20.30.40.50.6ErrorNB vs. A1DE vs. A2DENBA1DEA2DETitle Suppressed Due to Excessive Length
+(a)
+(b)
+(c)
+(d)
+Fig. 4: Decay with Fast Drift (∆ = 0.05) – Variation in prequential loss of NB (Figure 4a),
+A1DE (Figure 4b) and A2DE (Figure 4c) with decay rates of 0.15, 0.05 and 0.005. Figure 4d:
+Comparison of NB (error = 0.186), A1DE (error = 0.283) and A2DE (error = 0.408) with
+best decay rate.
+with diﬀerent window sizes and decay rates with a drift delta of size 0.01. It is
+apparent that for this intermediate drift rate the intermediate window size (50)
+and intermediate decay rate (0.05) attain the lowest error and that the learner
+with intermediate bias (A1DE) minimizes overall error. Figures 5d and 6d,
+shows the comparison of NB, A1DE and A2DE with their best respective
+window size and decay rate, and it can be seen that A1DE results in best
+performance.
+Figures 7 and 8 show prequential error with a slow drift rate, ∆ = 0.0005,
+with varying window sizes and decay rates. Figure 7d, compares the perfor-
+mance of the three models with their respective best window size and Figure 8d
+with their best decay rate. In both cases it is apparent that A2DE achieves
+the lowest error.
+Thus, in all three scenarios of fast, intermediate and slow drift we ﬁnd the
+relationship predicted by the sweet path between drift rate, forgetting rate
+and bias/variance proﬁle.
+010002000300040005000Time Step (t)0.10.20.30.40.50.6ErrorNB (0.05)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)0.20.30.40.50.6ErrorA1DE (0.05)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)0.20.30.40.50.6ErrorA2DE (0.05)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorNB vs. A1DE vs. A2DENBA1DEA2DE10
+Nayyar A. Zaidi et al.
+(a)
+(b)
+(c)
+(d)
+Fig. 5: Windowing with Medium Drift (∆ = 0.01) – Variation in prequential loss of NB
+(Figure 5a), A1DE (Figure 5b) and A2DE (Figure 5c) with window sizes of 20, 50 and 500.
+Figure 5d: Comparison of NB (error = 0.0531), A1DE (error = 0.047) and A2DE (error =
+0.083) with best window size.
+5.1 Exploiting the insights of the sweet path for designing practical learners
+We have demonstrated that a generalizable and falsiﬁable hypothesis is consis-
+tent with experimental outcomes. This raises the question of how the resulting
+insights might be used to create new eﬀective learners that can respond to con-
+cept drift. Unfortunately, doing so appears to be far from trivial. If we allow
+that drift rates may vary over time, the sweet path suggests that we need
+learners that can adapt to changes in drift rates with corresponding adapta-
+tion in their forgetting rates and bias/variance proﬁles. We are yet to devise
+a practical algorithmic solution to the complex problem.
+To assess the practical implications of our hypotheses for designing prac-
+tical learning algorithms, we compare the performance on real-world drifting
+data of our AnDE classiﬁers with diﬀering forgetting rates and bias/variance
+proﬁles against a range of state of the art concept drift classiﬁers. We use 4
+standard benchmark drift datasets, whose details are given in Table 1. Nu-
+010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorNB (0.01)W = 20W = 50W = 500010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorA1DE (0.01)W = 20W = 50W = 500010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorA2DE (0.01)W = 20W = 50W = 500010002000300040005000Time Step (t)0.020.040.060.080.10.120.14ErrorNB vs. A1DE vs. A2DENBA1DEA2DETitle Suppressed Due to Excessive Length
+11
+(a)
+(b)
+(c)
+(d)
+Fig. 6: Decay with Medium Drift (∆ = 0.01) – Variation in prequential loss of NB (Fig-
+ure 6a), A1DE (Figure 6b) and A2DE (Figure 6c) with varying decay rates of 0.15, 0.05 and
+0.005. Figure 6d: Comparison of NB (error = 0.0599), A1DE (error = 0.0498) and A2DE
+(error = 0.0629) with best decay rates.
+#Instances #Attributes #Classes
+PowerSupply
+Airlines
+ElectricNorm
+Sensor
+29928
+539383
+45312
+2219803
+58
+Table 1: Details of datasets.
+meric attributes are discretized using IDAW discretization (Webb, 2014) with
+5 intervals.
+We compare the performance with 12 standard learning techniques:
+1. AccuracyUpdatedEnsemble (Brzezinski and Stefanowski, 2014),
+2. AccuracyWeightedEnsemble (Wang et al, 2003),
+3. DriftDetectionMethodClassiﬁer (Gama et al, 2004),
+4. DriftDetectionMethodClassiﬁerEDDM (Baena-Garcıa et al, 2006),
+5. HoeﬀdingAdaptiveTree (Bifet and Gavald`a, 2009),
+6. HoeﬀdingOptionTree (Pfahringer et al, 2007),
+010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorNB (0.01)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorA1DE (0.01)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.10.20.30.40.50.6ErrorA2DE (0.01)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.020.040.060.080.1ErrorNB vs. A1DE vs. A2DENBA1DEA2DE12
+Nayyar A. Zaidi et al.
+(a)
+(b)
+(c)
+(d)
+Fig. 7: Windowing with Slow Drift (∆ = 0.0005) – Variation in prequential loss of NB
+(Figure 7a), A1DE (Figure 7b) and A2DE (Figure 7c) with window sizes of 20, 50 and 500.
+Figure 7d: Comparison of NB (error = 0.0289), A1DE (error = 0.0156) and A2DE (error =
+0.0151) with best window size.
+7. HoeﬀdingTree (Hulten et al, 2001),
+8. LeveragingBag (Bifet et al, 2010),
+9. OzaBag (Oza and Russell, 2001),
+10. OzaBagAdwin (Bifet et al, 2009),
+11. OzaBoost (Oza and Russell, 2001),
+12. OzaBoostAdwin (Oza and Russell, 2001; Babcock et al, 2002).
+It can be seen from Table 2 that AccWeightedEns (AccuracyWeightedEnsem-
+ble) achieved the lowest error on PowerSupply, AccUpdatedEn (AccuracyUp-
+dateEnsemble) the lowest on Airlines, whereas LeveregingBag (Levereg-
+ingBagging) achieved the lowest error on ElectricNorm and Sensor. In the
+following, we will use these (best) results as benchmarks and see how adaptive
+AnDE with decay and window based adaptation can perform relative to these
+results.
+We compare the performance of adaptive AnDE with window-based adap-
+tation in Figure 9, depicting results with various window sizes. The low-
+est error obtained on the dataset by one of 12 standard techniques, is also
+010002000300040005000Time Step (t)00.10.20.30.4ErrorNB (0.0005)W = 20W = 50W = 500010002000300040005000Time Step (t)00.10.20.30.4ErrorA1DE (0.0005)W = 20W = 50W = 500010002000300040005000Time Step (t)00.10.20.30.4ErrorA2DE (0.0005)W = 20W = 50W = 500010002000300040005000Time Step (t)00.010.020.030.04ErrorNB vs. A1DE vs. A2DENBA1DEA2DETitle Suppressed Due to Excessive Length
+13
+(a)
+(b)
+(c)
+(d)
+Fig. 8: Decay with Slow Drift (∆ = 0.0005) – Variation in 0-1 Loss of NB (Figure 8a),
+A1DE (Figure 8b) and A2DE (Figure 8c) with varying decay rates of 0.15, 0.05 and 0.005.
+Figure 8d: Comparison of NB (error = 0.0290), A1DE (error = 0.0153) and A2DE (error =
+0.0148) with best decay size.
+plotted as a horizontal blue line for comparison. It can be seen that except
+for PowerSupply, adaptive AnDE can achieve lower error than the lowest of
+any of the twelve state-of-the-art techniques. For Airlines, A1DE achieves
+the lowest error of 0.3309 and for ElectricNorm and Sensors, A2DE achieves
+errors of: 0.1124 and 0.2250.
+A comparison of adaptive AnDE with decay-based adaptation is given in
+Figure 10. Similar to window-based results, adaptive AnDE achieved lower er-
+ror than the lowest achieved by any of the state-of-the-art techniques on all but
+the PowerSupply dataset. On Airlines and ElectricNorm, A1DE achieved
+error of 0.3267 and 0.1061 respectively, and on Sensor, A2DE achieved error
+of 0.2268.
+Note that we are not suggesting that our learners are currently suited
+for practical use. There is still need to ﬁnd eﬀective mechanisms to dynami-
+cally select forgetting rates and bias/variance proﬁles. Also, while our learners
+outperformed the best of the state-of-the-art, many of those learners could
+010002000300040005000Time Step (t)00.10.20.30.4ErrorNB (0.0005)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.10.20.30.4ErrorA1DE (0.0005)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.10.20.30.4ErrorA2DE (0.0005)D = 0.15D = 0.05D = 0.005010002000300040005000Time Step (t)00.010.020.030.04ErrorNB vs. A1DE vs. A2DENBA1DEA2DE14
+Nayyar A. Zaidi et al.
+AccUpdatedEns OzaBagAdwin DriftDetClassiﬁer DriftDetClassiﬁerEDDM
+(1)
+0.8599
+0.3335
+0.2219
+0.3102
+(2)
+0.8692
+0.3448
+0.167
+0.2874
+ASHoeﬀdingTree HoeﬀdingTree
+(5)
+0.864
+0.3552
+0.2007
+0.7153
+(6)
+0.864
+0.3552
+0.2007
+0.7153
+(3)
+0.8634
+0.3534
+0.1984
+0.3206
+OzaBag
+(7)
+0.8655
+0.3575
+0.1982
+0.7067
+(4)
+0.8615
+0.3511
+0.149
+0.3159
+HoeﬀdingAdaptiveTree
+(8)
+0.8661
+0.3632
+0.1759
+0.3718
+OzaBoost
+AccWeightedEns LeveragingBag
+OzaBoostAdwin
+(9)
+0.9583
+0.3719
+0.1781
+0.9514
+(10)
+0.8579
+0.3751
+0.2471
+0.3596
+(11)
+0.8717
+0.3769
+0.1303
+0.2395
+(12)
+0.9584
+0.3888
+0.143
+0.407
+PowerSupply
+Airlines
+ElectricNorm
+Sensor
+PowerSupply
+Airlines
+ElectricNorm
+Sensor
+PowerSupply
+Airlines
+ElectricNorm
+Sensor
+Table 2: Comparison of 0-1 Loss performance of 12 standard concept drift techniques on
+four real-world datasets: PowerSupply, Airlines, ElectricNorm, Sensor. The best results
+are highlighted in bold font.
+also have performed better if a sweep had been performed over their meta-
+parameters.
+6 Conclusions
+We have proposed novel, generalizable and falsiﬁable hypotheses about the
+inter-relationships between drift rates, forgetting mechanisms, bias/variance
+proﬁles and error. Our experiments with the AnDE learners have been con-
+sistent with the predictions of the hypotheses, that there will be a sweet path
+whereby as the drift rate increases the optimal forgetting rates will also in-
+crease; and as forgetting rates increase the optimal model variance proﬁle will
+decrease.
+The AnDE classiﬁers are well suited to this study due to their eﬃcient
+support of incremental learning with both windowing and decay and the range
+of bias/variance proﬁles that they provide.
+Our studies with real-world data show that this framework can result in
+prequential accuracies that are highly competitive with the best of the state-
+of-the-art. Development of practical techniques for dynamically selecting and
+adjusting forgetting rates and bias/variance proﬁles as drift rates vary remains
+a promising avenue for future research.
+Another intriguing insight that invites further investigation arises from the
+observation that for fast drift the lowest bias learner achieved lowest error with
+the slowest forgetting rate, in apparent disagreement with our hypotheses. As
+we discuss in Section 5, this is due to its failure to learn from the fast drift-
+ing attributes and hence its performance being dominated by the attribute
+Title Suppressed Due to Excessive Length
+15
+Fig. 9: Comparison of adaptive NB, A1DE and A2DE based on window-based adaptation
+on four real world datasets: PowerSupply, Airlines, ElectricNorm, Sensor. Horizontal
+blue line depicts the best performance out of 12 standard techniques.
+subspace that is stationary (Y , X1 and X2). This gives support to our argu-
+ment elsewhere (Webb et al, in press) that it is important to analyze drift
+in marginal distributions as well as at the course global level. It invites the
+development of learners that bring diﬀerent forgetting rates and bias/variance
+proﬁles to bear on diﬀerent attribute sub-spaces at diﬀerent times as their
+rates of drift vary.
+We hope that our hypotheses will provide insights into how to optimize a
+wide range of mechanisms for handling concept drift and will stimulate future
+research.
+7 Acknowledgments
+This material is based upon work supported by the Air Force Oﬃce of Scientiﬁc
+Research, Asian Oﬃce of Aerospace Research and Development (AOARD)
+under award number FA2386-17-1-4033.
+100101102103104105Window Size (W)0.90.951ErrorPowerSupplyNBA1DEA2DEBest Method100101102103104105Window Size (W)0.340.360.380.40.42ErrorAirlinesNBA1DEA2DEBest Method100101102103104105Window Size (W)0.120.140.160.180.20.22ErrorElectricNormNBA1DEA2DEBest Method100101102103104105Window Size (W)0.30.40.50.60.70.80.9ErrorSensorNBA1DEA2DEBest Method16
+Nayyar A. Zaidi et al.
+Fig. 10: Comparison of adaptive NB, A1DE and A2DE based on decay-based adaptation
+on four real world datasets: PowerSupply, Airlines, ElectricNorm, Sensor. Horizontal
+blue line depicts the best performance out of 12 standard techniques.
+A Code
+The code used in this work can be downloaded from repository: https://github.com/
+nayyarzaidi/SweetPathVoyager.
+References
+Aggarwal C (2009) Data Streams: An Overview and Scientiﬁc Applications, Springer Berlin
+Heidelberg, pp 377–397. DOI 10.1007/978-3-642-02788-8 14
+Babcock B, Datar M, Motwani R (2002) Sampling from a moving window over streaming
+data. In: Proceedings of the Thirteenth Annual ACM-SIAM Symposium on Discrete
+Algorithms, Society for Industrial and Applied Mathematics, pp 633–634
+Baena-Garcıa M, del Campo- ´Avila J, Fidalgo R, Bifet A, Gavalda R, Morales-Bueno R
+(2006) Early drift detection method. In: Fourth International Workshop on Knowledge
+Discovery from Data Streams, vol 6, pp 77–86
+Bifet A, Gavald`a R (2009) Adaptive learning from evolving data streams. In: Advances in
+Intelligent Data Analysis VIII, Springer, pp 249–260
+Bifet A, Holmes G, Pfahringer B, Kirkby R, Gavald`a R (2009) New ensemble methods for
+evolving data streams. In: Proceedings of the 15th ACM SIGKDD international confer-
+ence on Knowledge discovery and data mining, ACM, pp 139–148
+Bifet A, Holmes G, Pfahringer B (2010) Leveraging bagging for evolving data streams. In:
+Machine Learning and Knowledge Discovery in Databases, Springer, pp 135–150
+10-610-410-2100Decay Rate (D)0.90.951ErrorPowerSupplyNBA1DEA2DEBest Method10-610-410-2100Decay Rate (D)0.340.360.380.40.42ErrorAirlinesNBA1DEA2DEBest Method10-610-410-2100Decay Rate (D)0.120.140.160.180.20.22ErrorElectricNormNBA1DEA2DEBest Method10-610-410-2100Decay Rate (D)0.30.40.50.60.70.80.9ErrorSensorNBA1DEA2DEBest MethodTitle Suppressed Due to Excessive Length
+17
+Bifet A, Gama J, Pechenizkiy M, Zliobaite I (2011) Handling concept drift: Importance,
+challenges and solutions. PAKDD-2011 Tutorial, Shenzhen, China
+Bishop C (2006) Pattern Recognition and Machine Learning (Information Science and Statis-
+tics). Springer-Verlag New York, Inc., Secaucus, NJ, USA
+Brain D, Webb G (1999) On the eﬀect of data set size on bias and variance in classiﬁcation
+learning. In: Richards D, Beydoun G, Hoﬀmann A, Compton P (eds) Proceedings of the
+Fourth Australian Knowledge Acquisition Workshop (AKAW-99), The University of New
+South Wales, Sydney, pp 117–128
+Brzezinski D, Stefanowski J (2014) Reacting to diﬀerent types of concept drift: The accuracy
+updated ensemble algorithm. Neural Networks and Learning Systems, IEEE Transactions
+on 25(1):81–94
+Ditzler G, Roveri M, Alippi C, Polikar R (2015) Learning in nonstationary environments: A
+survey. IEEE Computational Intelligence Magazine 10(4):12–25
+Gaber MM, Zaslavsky A, Krishnaswamy S (2005) Mining data streams: a review. ACM
+Sigmod Record 34(2):18–26
+Gama J, Rodrigues P (2009) An Overview on Mining Data Streams, Studies in Compu-
+tational Intelligence, vol 206, Springer Berlin / Heidelberg, pp 29–45. DOI 10.1007/
+978-3-642-01091-0 2
+Gama J, Medas P, Castillo G, Rodrigues P (2004) Learning with drift detection. In:
+SBIA 2004, Lecture
+Bazzan A, Labidi S (eds) Advances in Artiﬁcial Intelligence
+Notes in Computer Science, vol 3171, Springer Berlin Heidelberg, pp 286–295, DOI
+10.1007/978-3-540-28645-5 29
+Gama J, ˇZliobaite I, Bifet A, Pechenizkiy M, Bouchachia A (2014) A survey on concept
+drift adaptation. ACM Computing Surveys 46(4):44:1–44:37, DOI 10.1145/2523813
+Hulten G, Spencer L, Domingos P (2001) Mining time-changing data streams. In: Proceed-
+ings of the Seventh ACM SIGKDD International Conference on Knowledge Discovery
+and Data Mining, KDD-01, ACM, pp 97–106
+Keogh E, Pazzani M (1999) Learning augmented Bayesian classiﬁers: A comparison of
+distribution-based and classiﬁcation-based approaches. In: Proceedings of the Interna-
+tional Workshop on Artiﬁcial Intelligence and Statistics, pp 225–230
+Krempl G, Zliobaite I, Brzezinski D, Hullermeier E, Last M, Lemaire V, Noack T, Shaker
+A, Sievi S, Spiliopoulou M, Stefanowski J (2014) Open challenges for data stream mining
+research. In: ACM SIGKDD Explorations Newsletter, Springer, vol 16–1, pp 1–10
+Levin D, Peres Y, Wilmer E (2008) Markov Chains and Mixing Times. American Mathe-
+matical Soc.
+Nguyen H, Woon Y, Ng W (2014) A survey on data stream clustering and classiﬁcation.
+Knowledge and Information Systems pp 1–35
+Oza N, Russell S (2001) Online bagging and boosting. In: Artiﬁcial Intelligence and Statistics
+2001, Morgan Kaufmann, pp 105–112
+Pfahringer B, Holmes G, Kirkby R (2007) New options for Hoeﬀding trees. In: Orgun M,
+Thornton J (eds) AI 2007: Advances in Artiﬁcial Intelligence, Lecture Notes in Computer
+Science, vol 4830, Springer, pp 90–99, DOI 10.1007/978-3-540-76928-6 11
+Wang H, Fan W, Yu PS, Han J (2003) Mining concept-drifting data streams using ensem-
+ble classiﬁers. In: Proceedings of the Ninth ACM SIGKDD International conference on
+Knowledge Discovery and Data Mining, KDD-03, ACM, pp 226–235
+Webb G (2014) Contrary to popular belief incremental discretization can be sound, compu-
+tationally eﬃcient and extremely useful for streaming data. In: Proceedings of the 14th
+IEEE International Conference on Data Mining, pp 1031–1036, DOI 10.1109/ICDM.2014.
+123
+Webb G, Boughton J, Zheng F, Ting K, Salem H (2012) Learning by extrapolation from
+marginal to full-multivariate probability distributions: Decreasingly naive Bayesian clas-
+siﬁcation. Machine Learning 86(2):233–272, DOI 10.1007/s10994-011-5263-6
+Webb G, Hyde R, Cao H, Nguyen H, Petitjean F (2016) Characterizing concept drift. Data
+Mining and Knowledge Discovery 30(4):964–994, DOI 10.1007/s10618-015-0448-4
+Webb G, Lee L, Goethals B, Petitjean F (in press) Analyzing concept drift and shift from
+sample data. Data Mining and Knowledge Discovery
+ˇZliobaite I (2010) Learning under concept drift: an overview. CoRR abs/1010.4784, URL
+http://arxiv.org/abs/1010.4784, 1010.4784

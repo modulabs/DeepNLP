@@ -1,0 +1,17 @@
+
+The backpropagation algorithm, which had been originally introduced
+in the 1970s, is the workhorse of learning in neural networks. This back-
+propagation algorithm makes use of the famous machine learning algo-
+rithm known as Gradient Descent, which is a ﬁrst-order iterative opti-
+mization algorithm for ﬁnding the minimum of a function. To ﬁnd a local
+minimum of a function using gradient descent, one takes steps propor-
+tional to the negative of the gradient (or of the approximate gradient)
+of the function at the current point. In this paper, we develop an alter-
+native to the backpropagation without the use of the Gradient Descent
+Algorithm, but instead we are going to devise a new algorithm to ﬁnd the
+error in the weights and biases of an artiﬁcial neuron using Moore-Penrose
+Pseudo Inverse. The numerical studies and the experiments performed on
+various datasets are used to verify the working of this alternative algo-
+rithm.
+Index Terms – Machine Learning, Artiﬁcial Neural Network (ANN), Back-
+propagation, Moore-Penrose Pseudo Inverse.

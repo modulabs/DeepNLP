@@ -1,0 +1,21 @@
+
+Systematic reviews are essential to summarizing the results
+of diﬀerent clinical and social science studies. The ﬁrst step
+in a systematic review task is to identify all the studies rel-
+evant to the review. The task of identifying relevant studies
+for a given systematic review is usually performed manually,
+and as a result, involves substantial amounts of expensive
+human resource. Lately, there have been some attempts to
+reduce this manual eﬀort using active learning. In this work,
+we build upon some such existing techniques, and validate by
+experimenting on a larger and comprehensive dataset than
+has been attempted until now. Our experiments provide in-
+sights on the use of diﬀerent feature extraction models for
+diﬀerent disciplines. More importantly, we identify that a
+naive active learning based screening process is biased in
+favour of selecting similar documents. We aimed to improve
+the performance of the screening process using a novel active
+learning algorithm with success. Additionally, we propose a
+mechanism to choose the best feature extraction method for
+a given review.
+1.

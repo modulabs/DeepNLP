@@ -1,0 +1,17 @@
+—In this paper, we present a new approach of
+distributed clustering for spatial datasets, based on an innovative
+and efﬁcient aggregation technique. This distributed approach
+consists of two phases: 1) local clustering phase, where each
+node performs a clustering on its local data, 2) aggregation
+phase, where the local clusters are aggregated to produce global
+clusters. This approach is characterised by the fact that the local
+clusters are represented in a simple and efﬁcient way. And The
+aggregation phase is designed in such a way that the ﬁnal clusters
+are compact and accurate while the overall process is efﬁcient
+in both response time and memory allocation. We evaluated the
+approach with different datasets and compared it to well-known
+clustering techniques. The experimental results show that our
+approach is very promising and outperforms all those algorithms.
+Keywords—Big Data, spatial data, clustering, distributed min-
+ing, data analysis, k-means, DBSCAN, balance vector.
+I.

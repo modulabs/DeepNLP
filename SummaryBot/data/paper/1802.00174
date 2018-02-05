@@ -1,0 +1,405 @@
+
+Since the early work of Legendre and Gauss in the late XVIII
+century, linear or nonlinear regression has employed the space
+deﬁned by the input data to project the target or desired re-
+sponse and ﬁnd, in a training set, the optimal set of model
+parameters through mean square error minimization. This ap-
+proach has been totally embraced by the adaptive signal pro-
+cessing [1], control theory, pattern recognition and machine
+learning communities [2], and has become the de facto stan-
+dard to perform function approximation.
+The pursuit of this alternative is based on theoretic rea-
+sons, i.e.
+to expand the horizon of function approximation
+theory, but its impact on current machine learning applica-
+tions is perhaps even higher. In the conventional modeling
+approach, when the system that created the input-desired data
+pairs is nonlinear, the linear model must be substituted by
+a nonlinear model (e.g. artiﬁcial neural networks), which
+means that optimization becomes nonlinear in the parameters.
+Thanks to XYZ agency for funding.
+This implies that local minima exist in the performance sur-
+face, and gradient search techniques become slow, cumber-
+some and there is no guarantee of ﬁnding the optimal solution.
+This is one of the current bottlenecks of nonlinear modeling
+and machine learning. All these methods, meanwhile, ignore
+the error after training the parameter, but the available error
+information can be better utilized to provide a novel approach
+to function approximation, as we will demonstrate here.
+Our vision is to create universal learning systems that are
+easy to train and guarantee to converge to the optimum, which
+we called convex universal learning machines (CULMs) [3].
+CULMs are universal mappers with architectures that either
+do not have a hidden layer or do not need to train the hidden
+layer weights. One distinctive class of CULMs are Kernel
+Adaptive Filters (KAFs) which project the input data into a
+Reproducing Kernel Hilbert Space (RKHS) by using a strictly
+positive deﬁnite kernel function and use linear methods to
+train parameters [4]. The difﬁculty is that when employing the
+representer theorem in RKHS, the ﬁlter output is computed
+from all past data, so the ﬁlter computation grows linearly or
+super-linearly with respect to the sample number n, which is
+unrealistic for real word applications without sparseness pro-
+cedures [5]. The other class, including reservoir computing,
+uses stochastic approaches based on random hidden param-
+eters exempliﬁed by the Extreme Learning Machine (ELM),
+and it suffers from incomplete theoretic understanding and re-
+quires many tricks to achieve useful and reproducible results
+[6].
+In spite of these shortcomings, ELMs are surprisingly
+very popular, which means that the need to achieve fast uni-
+versal processing with generalization capacity in function ap-
+proximation is still unmet.
+Here we propose a new solution to design CULMs based
+on the conventional Finite Impulse Response (FIR) linear
+model extended with a table lookup.
+Instead of using the
+input to span the projection space, we use the full joint space
+as the projection space, hence this approach is named Aug-
+mented Space Linear Model (ASLM). Augmented with the
+desired signal, the framework of ASLM expends the data
+input space, assumed of dimension L, to L + 1 dimensional
+space. Then the L + 1 independent bases can span any L + 1
+space, which means the training set error can be as small as
+the adaptation method can achieve using a linear approach.
+There are two difﬁculties that need to be addressed in
+Fig. 1. The application and the geometric structure of ASLM
+the ASLM. The ﬁrst is that all the weights go to zero af-
+ter training except the one that is connected to the desired,
+which approaches one. This means we need regularization
+during the adaptation process. The second difﬁculty is we
+don’t have the desired signal in the test phase! To address
+these issues here, we use the difference between the outputs
+in the input space and the desired in the joint space during
+the training phase (the training error) to augment the input
+space instead of expanding the input by the desired. Then,
+we store all the training errors in a table indexed by the input
+data. Our novel solution takes advantage of the extra infor-
+mation contained in training errors, which are wasted in con-
+ventional least squares, to approach nonlinear relationships
+with a linear model and a table. Since ASLM is an adaptive
+linear architecture with convex optimization, and the train-
+ing error is orthogonal to the bases, the adaptation process
+no longer needs to be regularized. Meanwhile, the computa-
+tional complexity of training and testing is much lower than
+nonlinear methods, which is well suited for online learning
+algorithms. As a matter of fact, ASLM is an intermediate so-
+lution in the complexity-accuracy design space between the
+linear model (easy but not very accurate) and fully nonlin-
+ear models (complex but can be much more accurate). Dif-
+ferent from the traditional linear and nonlinear models, the
+augmented space model framework makes full use of training
+errors, which may improve others models (linear and nonlin-
+ear) as well.
+2. AUGMENTED SPACE LINEAR MODEL
+The simplest implementation of the ASLM is presented be-
+low. The left part of Fig.1 shows the conceptual least square
+solution of ﬁnding the best approximation (y) of the desired
+response (d) by projecting d in the space spanned by the mul-
+tidimensional input x. The minimum error is achieved when
+y is the orthogonal projection of d in the input subspace. It is
+sufﬁcient to add the error e to the output y to obtain exactly
+the desired response d in the training set, because it is by def-
+inition perpendicular to the input space. When computing the
+output of the ASLM, obviously, we are using the joint space
+to evaluate the desired.
+Consider a set of N pairs of training input vectors with
+desired output {xi, di}N
+i=1, where i denotes discrete time in-
+stant. We ﬁrst compute the weights of the linear model in the
+input space with all the training data, which can be evaluated
+by the Least Squares (LS) solution in (1)
+w =(cid:0)δI + XT X(cid:1)−1
+XT d
+(1)
+where X = [x1,··· , xN ]T , d = [d1,··· , dN ] and δ is a small
+value to prevent rank deﬁciency. Then we create a table ad-
+dressed by the input which relates the input with the training
+error, and store this table. The size of this table will be the
+training set size if no quantization is introduced. In the test
+phase, we use the current input to ﬁnd the closest entry in the
+table, and then read back the corresponding training set error
+to approximate the desired response, i.e. equation (2)
+ˆyi = yi + e∗ = wT xi + e∗
+(2)
+where yi is the current output of LS solution, and e∗ is the er-
+ror obtained from the training set, which is corresponding to
+the closest xi in index as we show in right part of Fig.1. The
+l2 norm is used to measure the distance of transformed sam-
+ples produced by Hadamard product w◦x. Considering the
+inputs of the whole training set, this Hadamard metric can get
+more reasonable results when ﬁnding the closest sample. The
+error e∗ in equation (2) will be a good approximation for the
+desired under two conditions: (1): e∗ is a good approximation
+for the current test sample xi from the training error; (2): the
+error in the test set for a given input remains stationary from
+training and testing. The second assumption also must be im-
+posed in conventional functional approximation, although in
+ASLM, the requirement applies to instantaneous errors which
+is more demanding in practical noisy conditions. In realistic
+application cases, we can use a quantization approach to cut
+the noise in the training data while also decreasing the table
+size.
+ASLM is the simplest model in the augmented space,
+actually, we can also use it to augment the KAF nonlinear
+model. Although KAFs are universal nonlinear models, it is
+Input SpaceAugmented SpaceTrainTeste*xdifﬁcult to achieve a good approximation to the desired by
+linear combination of Gaussian kernel, because of the rattling
+and insufﬁcient training data. In order to compute the training
+error in the augmented space, we ﬁrst train a nonlinear model
+as usual, ﬁxed the weights, and compute the training errors
+all at once. Then we create a table addressed by the input and
+store this table as mentioned before. In the test phase, we use
+the current input to ﬁnd the closest entry in the table, and then
+read back the corresponding training error to approximate the
+desired response, i.e. equation (2). Since we don’t have w in
+the nonlinear models, we measure the distance between input
+samples by l2 norm directly.
+In order to improve the efﬁciency of ﬁnding the nearest
+neighbor, we use a kd tree to store the data in the table with
+searching complexity of O(log(N )) [7]. Hence, the testing
+computational complexity in the augmented space model con-
+sists of 2 parts. One is the complexity of the algorithm (lin-
+ear or nonlinear) to compute the system output, and the other
+is the complexity of searching for the best error of the aug-
+mented space model. The testing computational complexity
+of ASLM, for example, is O(L+log(N )). As for the training,
+ASLM is very fast, since it only needs to create the table after
+the least squares algorithm, which is much faster than train-
+ing a nonlinear model. We will compare the performance and
+computational complexity of the proposed ASLM with sev-
+eral linear or nonlinear models in the next section.
+3. SIMULATION RESULTS
+3.1. Prediction Without Noise
+In order to evaluate the role of ASLM within the current
+methodologies for function approximation and system identi-
+ﬁcation, we select three competing models: the Least Squares
+(LS) as an example of the optimal linear projection, the Near-
+est Neighbor (KNN) algorithm [8] as a memory based ap-
+proach and the Kernel Least Mean Square (KLMS), using
+a Gaussian kernel, as a CULM that rivals in performance
+with the best nonlinear networks for prediction. We also
+include KLMS with Augmented space model (KLMS-AM),
+as an extra comparison, to show the general capabilities of
+the Augmented space model. All the hyper parameters were
+validated to get the best possible results including the kernel
+size σ, the step size η and the regularization factor δ. For
+simplicity, we choose K = 1 for the KNN algorithm and all
+the parameters are showed in the last column of table 1. The
+inclusion of the memory based method is judged important
+because ASLM also uses a table lookup that is similar in spirit
+to the memory based approaches for modeling. The problem
+we selected is the prediction of the of the x component of the
+Lorenz system [4], which has been well studied in the liter-
+ature (order L=7 according to Takens embedding theorem)
+[9]. The Lorenz data set is generated from the differential
+equation with the parameters β = 8/3, δ = 1, ρ = 28. A
+ﬁrst order approximation is used with a step size parameter
+0.01. Segments of 2000 samples are used as the train set and
+the following 400 samples are the testing set. We normalize
+the time series to zero-mean with unit variance. Performance
+is measured as the power of the error. Results are averaged
+over 50 independent training-test runs obtained by sliding the
+window over the generated data by 50 samples each time.
+Table 1. The performance comparison of linear and nonlinear
+algorithm
+Algorithm
+Testing MSE
+Parameter
+Training
+MSE
+KLSM-AM 5.71×10−4 ± 2.83×10−4
+2.74×10−3 ± 8.43×10−4
+3.13×10−3 ± 6.97×10−4
+1.02×10−2 ± 2.79×10−3
+2.64×10−1 ± 1.20×10−2
+KLMS
+ASLM
+KNN
+LS
+2.22×10−3 σ = 1, η = 0.7
+K = 1
+2.65×10−1
+K = 1
+K = 1
+δ = 0.1
+We also show the testing MSE and training MSE in ta-
+ble 1. Since KLMS is an online algorithm while the other
+algorithms are batch based, the testing MSE of KLMS is cal-
+culated from the last 100 points of the converged learning
+curve.
+In terms of performance, we see that the LS is the
+worst performer. Even KNN is better, but we notice that
+ASLM always improves KNN performance for the same stor-
+age. KLMS is a little better than ASLM, which can be further
+improved by the augmented space model as well. However,
+when we take into consideration accuracy and computation
+time, ASLM appears as a very good compromise between the
+performance of the nonlinear and the linear model. Fig. 2
+Fig. 2. The computation time and storage comparison of lin-
+ear and nonlinear algorithm
+shows the computation time and storage in the test phase of
+the compared algorithms. In terms of simplicity of resources,
+the LS solution is unbeatable both in terms of storage and
+computation time. Compared with KLMS and KLMS-AM,
+ASLM is much faster with comparable performance, which
+is much better than the performance of LS algorithm. The
+bottleneck of ASLM is the search for the best candidate in
+the table look up, which is very similar to KNN. The general
+locations of linear and nonlinear model with respect to stor-
+age and computational time in this simulation are plotted as
+100102104Storage10-610-410-2100Computation timeLSKNNASLMKLMSKLMS-AMan ellipsoid cloud around points. It is obvious that ASLM is a
+linear model with nonlinear regression capacity, and its loca-
+tion in the Fig. 2 deviates from the diagonal linking the two
+linear and nonlinear models, which shows its efﬁciency. In
+this simulation, the augmented space model also shows sur-
+prising potential to improve different models, which can make
+full use of the training error or desired in the augmented space
+to increase the performance. Meanwhile, the computational
+complexity of searching in the table is much smaller than that
+of KLMS, so the performance improvement won’t bring a big
+computational burden and explains Fig. 2.
+3.2. Prediction With Noise
+In this section, the data are the same as the last experiment
+and the desired signal of training data are corrupted by 20 dB
+zero mean Gaussian noise. Performance is measured again
+as the power of the error. Results are averaged over 50 in-
+dependent training-test runs obtained by sliding the window
+over the generated data by 50 samples each time. The pur-
+pose of the experiment is to compare the performance when
+the training set is not clean. It is obvious that the performance
+of ASLM will suffer when the noise is added in the table.
+Therefore, we use a simple (sequential) Vector Quantization
+(VQ) method to cut the noise, which can build a small size
+codebook with a small threshold  instead of the original in-
+put values in the table. Depending on the Euclidean distance,
+VQ is computationally simple (linear complexity in terms of
+the codebook size) [10, 5]. The error of one center in the
+codebook is computed by averaging the training errors whose
+indexes are quantized into the same center. This method is
+ﬁrst used in KLMS to constrain the network size. In ASLM,
+VQ not only decreases the table size and computational com-
+plexity, but also improves the performance by averaging the
+local training errors. Three extra comparisons are added to
+show the improvements of algorithms brought by VQ, which
+is QKLMS, KLMS-QAM and QASLM. To be fair, the ﬁnal
+size of codebooks are set to 500, and all the hyper parame-
+ters are validated to get the best possible results (kernel size
+σ, step size η, quantization radium  and regularization factor
+δ).
+Table 2. The performance comparison of linear and nonlinear
+algorithm
+Training
+MSE
+KNN
+LS
+Testing MSE
+Algorithm
+KLMS
+Parameter
+8.24×10−3 ± 1.66×10−2 1.65×10−3 σ = 1, η = 0.7
+8.28×10−3 ± 1.26×10−3 1.70×10−2 σ = 1, η = 0.7
+ = 0.085
+σ = 1, η = 0.7
+QKLMS
+KLSM-AM 1.04×10−2 ± 7.27×10−4
+KLSM-QAM 4.42×10−3 ± 6.48×10−4 8.42×10−3 σ = 1, η = 0.7
+K=1,= 0.085
+1.32×10−2 ± 1.25×10−3
+1.03×10−2 ± 1.20×10−3 1.10×10−2 K=1,= 0.032
+2.02×10−2 ± 8.85×10−4
+2.64×10−1 ± 1.52×10−2 2.74×10−1
+ASLM
+QASLM
+K = 1
+δ = 0.1
+K = 1
+K = 1
+We show the testing MSE, training MSE and the corre-
+sponding parameters in the table 2. It is easy to notice that the
+linear model shows powerful robustness in this comparison,
+since the performance of all the algorithms except LS are
+affected compared with the last result. ASLM can beat KNN
+and both algorithms get better results than LS algorithm.
+Without the quantization method, KLMS is the best predictor
+in this experiment, which is more robust than KLMS-AM
+and ASLM, because the sum of weighted Gaussian kernel
+can remove the noise to some extent. VQ reduces the storage
+for KLMS, KLMS-AM and ASLM algorithms, while it im-
+proves the performance of KLMS-AM and ASLM by cutting
+the noise in the table. However, noise removal by of VQ
+is not obvious for KLMS algorithm. Hence, KLMS-QAM
+shows the best performance with the help of VQ. QKLMS
+shows similar result with KLMS, which is still better than
+QASLM.
+4. CONCLUSION AND DISCUSSION
+We presented a new solution to the functional approximation
+problem, by taking advantage of the linear solution, and cor-
+recting this estimate with the training error from the input
+sample that is in the neighborhood of the current test phase
+input. In essence, we combine the computational efﬁciency of
+the linear solution with a memory block encoding the training
+errors originating from the nonlinearity of the data generation
+process, which produce a nonlinear response. In conventional
+nonlinear function approximation, one needs to ﬁnd appro-
+priate parameters of nonlinear mappers, which is full of dif-
+ﬁculties and also computationally expensive. This is the rea-
+son ASLM displays an interesting compromise in the space
+of accuracy and computation complexity between the con-
+ventional linear and nonlinear solutions. However, noticing
+that the ASLM only models the linear error in this case, we
+have also shown that the same approach can improve upon the
+modeling of the nonlinear error with the KLMS-AM.
+ASLM is a member of the CULM family that has not been
+investigated in the past. Conceptually, we are proposing to
+augment the input projection space with the desired response,
+so this opens the door to study many different implementa-
+tions of the simple ASLM discussed in this paper. The thrust
+of research should focus on ways to improve the table look up
+performance which is very rudimentary. In noisy situations,
+we can think of PCA to obtain a better deﬁnition of the input
+space, and ﬁlter the training error by local modeling. In fact,
+It is very interesting to interpret the training errors as a sensi-
+tivity to the unknown desired response that can be exploited
+for Bayesian modeling. Since we have an implicit model of
+the input, we can also speed up the search to ﬁnd the closest
+neighbor of the current input. These simple modiﬁcations will
+improve ASLM performance and lead to new applications be-
+yond functional approximation. We therefore believe that this
+will be a vibrant line of research for years to come.
+5. REFERENCES
+[1] Simon S Haykin, Adaptive ﬁlter theory, Pearson Edu-
+cation India, 2008.
+[2] Richard O Duda, Peter E Hart, and David G Stork, Pat-
+tern classiﬁcation, John Wiley & Sons, 2012.
+[3] Jose C Principe and Badong Chen, “Universal approx-
+imation with convex optimization: Gimmick or real-
+ity?[discussion forum],” IEEE Computational Intelli-
+gence Magazine, vol. 10, no. 2, pp. 68–77, 2015.
+[4] Weifeng Liu, Jose C Principe, and Simon Haykin, Ker-
+nel adaptive ﬁltering: a comprehensive introduction,
+vol. 57, John Wiley & Sons, 2011.
+[5] Weifeng Liu, Puskal P Pokharel, and Jose C Principe,
+“The kernel least-mean-square algorithm,” IEEE Trans-
+actions on Signal Processing, vol. 56, no. 2, pp. 543–
+554, 2008.
+[6] Guang-Bin Huang, Qin-Yu Zhu, and Chee-Kheong
+Siew, “Extreme learning machine:
+theory and appli-
+cations,” Neurocomputing, vol. 70, no. 1, pp. 489–501,
+2006.
+[7] Hanan Samet, The design and analysis of spatial data
+structures, vol. 199, Addison-Wesley Reading, MA,
+1990.
+[8] T. Cover and P. Hart, “Nearest neighbor pattern classiﬁ-
+cation,” IEEE Transactions on Information Theory, vol.
+13, no. 1, pp. 21–27, 1967.
+[9] Edward N Lorenz, “Deterministic nonperiodic ﬂow,”
+Journal of the atmospheric sciences, vol. 20, no. 2, pp.
+130–141, 1963.
+[10] Badong Chen, Songlin Zhao, Pingping Zhu, and Jos´e C
+“Quantized kernel least mean square algo-
+IEEE Transactions on Neural Networks and
+Pr´ıncipe,
+rithm,”
+Learning Systems, vol. 23, no. 1, pp. 22–32, 2012.

@@ -1,0 +1,12 @@
+. The present work shows the application of transfer learning for
+a pre-trained deep neural network (DNN), using a small image dataset (≈
+12,000) on a single workstation with enabled NVIDIA GPU card that takes
+up to 1 hour to complete the training task and archive an overall average
+accuracy of 94.7%. The DNN presents a 20% score of misclassiﬁcation for an
+external test dataset. The accuracy of the proposed methodology is equivalent
+to ones using HSI methodology (81%-91%) used for the same task, but with the
+advantage of being independent on special equipment to classify wheat kernel
+for FHB symptoms.
+Keynotes. Deep Learning, Fusarium Damaged Kernels, ImageNet, TensorFlow,
+Transfer Learning.
+1. 

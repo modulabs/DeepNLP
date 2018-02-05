@@ -1,0 +1,29 @@
+ 
+Our purpose was to develop a deep learning angiography (DLA) method to generate 3D 
+cerebral angiograms from a single contrast-enhanced acquisition.  
+Material and Methods 
+Under an approved IRB protocol 105 3D-DSA exams were randomly selected from an 
+internal database. All were acquired using a clinical system (Axiom Artis zee; Siemens 
+Healthineers) in conjunction with a standard injection protocol. More than 150 million 
+labeled voxels from 35 subjects were used for training. A deep convolutional neural 
+network was trained to classify each image voxel into three tissue types (vasculature, 
+bone and soft tissue). The trained DLA model was then applied for tissue classification 
+in a validation cohort of 8 subjects and a final testing cohort consisting of the remaining 
+62 subjects. The final vasculature tissue class was used to generate the 3D-DLA 
+images. To quantify the generalization error of the trained model, accuracy, sensitivity, 
+precision and F1-scores were calculated for vasculature classification in relevant 
+anatomy. The 3D-DLA and clinical 3D-DSA images were subject to a qualitative 
+assessment for the presence of inter-sweep motion artifacts. 
+Results 
+Vasculature classification accuracy and 95% CI in the testing dataset was 98.7% ([98.3, 
+99.1] %). No residual signal from osseous structures was observed for all 3D-DLA 
+testing cases except for small regions in the otic capsule and nasal cavity compared to 
+37% (23/62) of the 3D-DSAs. 
+Conclusion 
+ DLA accurately recreated the vascular anatomy of the 3D-DSA reconstructions without 
+mask. DLA reduced mis-registration artifacts induced by inter-sweep motion.  DLA 
+reduces radiation exposure required to obtain clinically useful 3D-DSA.  
+Abbreviations 
+DLA – Deep learning angiography 
+CNN – Convolutional Neural Network 
+

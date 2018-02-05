@@ -1,0 +1,24 @@
+
+Clustering is inherently ill-posed: there often ex-
+ist multiple valid clusterings of a single dataset,
+and without any additional information a cluster-
+ing system has no way of knowing which clus-
+tering it should produce. This motivates the use
+of constraints in clustering, as they allow users to
+communicate their interests to the clustering sys-
+tem. Active constraint-based clustering algorithms
+select the most useful constraints to query, aim-
+ing to produce a good clustering using as few con-
+straints as possible. We propose COBRA, an active
+method that ﬁrst over-clusters the data by running
+K-means with a K that is intended to be too large,
+and subsequently merges the resulting small clus-
+ters into larger ones based on pairwise constraints.
+In its merging step, COBRA is able to keep the
+number of pairwise queries low by maximally ex-
+ploiting constraint transitivity and entailment. We
+experimentally show that COBRA outperforms the
+state of the art in terms of clustering quality and
+runtime, without requiring the number of clusters
+in advance.
+1 

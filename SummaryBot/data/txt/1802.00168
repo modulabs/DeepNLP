@@ -1,0 +1,926 @@
+Deep Neural Networks with Data Dependent Implicit Activation Function
+Bao Wang 1 Xiyang Luo 1 Zhen Li 2 Wei Zhu 3 Zuoqiang Shi 2 Stanley Osher 1
+Abstract
+Though deep neural networks (DNNs) achieve
+remarkable performances in many artiﬁcial intel-
+ligence tasks, the lack of training instances re-
+mains a notorious challenge. As the network goes
+deeper, the generalization accuracy decays rapidly
+in the situation of lacking massive amounts of
+training data. In this paper, we propose novel
+deep neural network structures that can be inher-
+ited from all existing DNNs with almost the same
+level of complexity, and develop simple training
+algorithms. We show our paradigm successfully
+resolves the lack of data issue. Tests on the CI-
+FAR10 and CIFAR100 image recognition datasets
+show that the new paradigm leads to 20% to 30%
+relative error rate reduction compared to their base
+DNNs. The intuition of our algorithms for deep
+residual network stems from theories of the par-
+tial differential equation (PDE) control problems.
+Code will be made available.
+1. Introduction
+Over the last few decades, many initialization, optimiza-
+tion, regularization, and many other techniques have been
+invented (Bengio et al., 2007; Hinton et al., 2006) to make
+deep neural networks (DNNs) easily applicable to solv-
+ing challenging artiﬁcial intelligence tasks (Lecun et al.,
+2015). Nevertheless, classical DNNs like VGG networks
+(Simonyan & Zisserman, 2014) have the problem of degra-
+dation, i.e., when the network goes deeper both training and
+testing errors increase even with sufﬁcient training data (He
+et al., 2016a). Deep residual networks (ResNets), especially
+the pre-activated ones (He et al., 2016a;b), proposed by He
+et al. employ shortcut connections to learn residuals only
+and keep a clean information path which efﬁciently solve the
+aforementioned degradation problem. Furthermore, deep
+1Department of Mathematics, UCLA, Los Angeles, California,
+USA 2Department of Mathematical Sciences, Yau Mathematical
+Sciences Center, Tsinghua University, Beijing, China 3Department
+of Mathematics, Duke University, Durham, North Carolina, USA.
+Correspondence to: Bao Wang <wangbaonj@gmail.com>.
+ResNets enable generalization accuracy improvement for
+networks up to 1000 layers.
+Many advances have been made after the emergence of the
+deep ResNets. These include both theoretical analysis and
+algorithmic development. In the original work of He et al
+(He et al., 2016b), the pre-activated ResNets are formulated
+as discrete dynamical systems. This dynamical system point
+of view leads to an elegant analysis on the optimality of
+the identity map in the ResNets. Hardt and Ma (Hardt &
+Ma, 2017) use matrix factorization techniques to analyze
+the landscape of the linear ResNets and its representation
+power. E considers the deep ResNets as a control problem
+of a class of continuous dynamical systems (E, 2017). New
+network structures development is as thriving as theoretical
+analysis. Instead of using a single shortcut to connect two
+consecutive residual blocks, densely connect convolutional
+networks employ shortcut connections to connect all the
+distinct blocks (Huang et al., 2017). The wide residual
+networks (Zagoruyko & Komodakis, 2016) increase the
+width of the layers in the original ResNets. Both dense nets
+and wider ResNets have certain amount of improvement
+compared to the ResNets. Dual path networks is another
+family of interesting improvement over both ResNets and
+dense nets (Chen et al., 2017).
+The accuracy of the DNN externally depends on massive
+amounts of training data. The lack of sufﬁcient training
+data typically leads to another degradation problem. Sig-
+niﬁcant accuracy reduction tends to occur as the network
+goes deeper, which will be further demonstrated in this pa-
+per. Many regularization techniques explored to attempt
+to tackle this challenge(Zhu et al., 2017; Srivastava et al.,
+2014; Wen et al., 2016), but satisfactory results are rare.
+Most existing strategies can be classiﬁed to either loss func-
+tion regularization or network structure regularization. None
+of these considered the speciﬁcity of the data which is of
+critical importance in data analysis(Bishop, 2006).
+In this paper, we try to solve the issue of lacking enough
+training data by using the information of data as a prior
+to train the DNNs. We will ﬁrst build the connection be-
+tween the deep ResNets and the partial differential equation
+(PDE) control problems. Well-posedness theories of PDE
+control problems suggest us to take data dependent acti-
+vations in DNNs. To make the data dependent activation
+Deep Learning with Data Dependent Implicit Activation Function
+control problems, let us consider the terminal value problem
+of the linear transport equation in Rd:
+(cid:40) ∂u
+∂t + v(x, t) · ∇u = 0 x ∈ Rd, t ≥ 0
+u(x, 1) = f (x)
+x ∈ Rd,
+(2)
+where v(x, t) is a given velocity ﬁeld, d is the dimension
+of the ﬂattened input tensor, f is the composition of the
+activation function and the fully connected layer. If we use
+the softmax activation function,
+f (x) = softmax(WF C · x),
+(3)
+where WF C is the weight in the fully connected layer, and
+the softmax function is given by
+softmax(x)i =
+(cid:80)
+exp(xi)
+j exp(xj)
+which models the posterior probability of the instance be-
+longing to each class.
+It is well-known (Evans, 2010) that the solution at t = 0
+can be solved along the characteristics:
+dX(t; x)
+dt
+= v (X(t; x), t) , X(0; x) = x.
+(4)
+We know that along the characteristics, u is a constant (Set
+T = 1 below):
+u(x, 0) = u (X(1; x), T ) = f (X(1; x)).
+Let {tk}L
+k=0 with t0 = 0 and tL = 1 be a partition of [0, 1].
+The characteristics of the transport equation Eq.(4) can be
+approximately solved by using the simple forward Euler
+discretization from X0(x) = x:
+Xk+1(x) = Xk(x) + ∆tv(Xk(x), tk),
+(5)
+where ∆t is the time step. If we choose the velocity ﬁeld
+such that
+∆t v(x, t) = W(2)(t) · σ
+W(1)(t) · σ(x)
+(6)
+(cid:16)
+(cid:17)
+where W(1)(t) and W(2)(t) corresponds to the “weight”
+layers in the residual block, σ = ReLU ◦ BN, one step
+in the forward Euler discretization Eq.(5) is equivalent to
+advancing one layer in the deep ResNets, (see Fig. 1). The
+numerical solution of the transport equation Eq.(2) at t = 0
+is given by
+u(x, 0) = f (XL(x)),
+(7)
+which is exactly the output we get from the ResNets.
+Let x be a point from the training data with its label g(x).
+Training the ResNet is equivalent to ﬁnding the parameters
+in the velocity ﬁeld Eq.(6) and the terminal value so that the
+output in Eq.(7) matches the label g(x)
+Figure 1. The building block of the pre-activated ResNets.
+trainable, we propose surgeries to the existing DNNs to
+construct new data dependent implicitly activated DNNs.
+Efﬁcient algorithms to train and test the model are investi-
+gated. Numerical results on the CIFAR10 dataset with quite
+limited and randomly selected instances show great suc-
+cess of our paradigm in solving the challenge of insufﬁcient
+data. Another successful achievement of our framework
+is regarding the generalization error reduction. On the CI-
+FAR10 and CIFAR100 datasets we receive 30% and 20%
+error reduction, respectively, compared to the base DNNs
+which includes VGG, ResNet, and pre-activated ResNet
+families. Our method provides an alternative towards model
+compression which is important for applications on mobile
+devices.
+This paper is structured as follows: In section 2, we present
+the connection of the PDE control problems with the deep
+ResNets, and some improvements of deep ResNets moti-
+vated by the PDE theory. Data interpolation on a general
+manifold in a harmonic extension manner is reviewed in sec-
+tion 3. Our DNN surgeries, along with their training/testing
+procedures, will be presented in section 4. To validate our
+algorithms, a large variety of numerical results are demon-
+strated in section 5. The summary of this work and future
+directions are discussed in section 6.
+2. Deep Residual Networks and PDE Control
+Problem
+Deep ResNets, especially the pre-activated ResNets (Pre-
+ActResNets), are realized by adding shortcut connections
+to connect the consecutive residual blocks in the classical
+convolutional neural networks (CNN). This can also be re-
+garded as a cascade of the residual block, as shown in Fig.1,
+followed by the ﬁnal ﬂatten and activation layers. Mathe-
+matically, a residual block is formulated as:
+y = F(x,{Wi}) + x,
+(1)
+where x and y are the input and output tensors of the block,
+the function F(x,{Wi}) represents the residual mapping
+to be parametrized.
+To build the connection between the deep ResNets and PDE
+BNxlxl+1ReLUConv.BNReLUConv.+Deep Learning with Data Dependent Implicit Activation Function
+In summary, the training process of the deep ResNets can
+be regarded as solving the following control problem of a
+transport equation in Rd:
+∂t + v(x, t) · ∇u(x, t) = 0 x ∈ Rd, t ≥ 0
+u(x, 1) = f (x)
+u(xi, 0) = g(xi)
+x ∈ Rd
+xi ∈ T,
+(8)
+ ∂u
+where T denotes the training set, g(xi) is the label of in-
+stance xi. This control problem is uniquely determined
+by the terminal value u(x, 1) = f (x) and the velocity ﬁeld
+v(x, t). Conventionally, the corresponding terminal value of
+the transport equation is selected to be a softmax activation
+function as shown in (3). From the control problem point
+of view, the softmax function may not be a good terminal
+condition, since it is pre-determined and maybe far from the
+real value . The ideal terminal function should be a smooth
+function and close to the labeled value in the training set .
+Based on this observation, the weighted nonlocal Laplacian
+(Shi et al., 2017) seems to provide a good choice for the
+terminal function.
+3. Manifold Interpolation-A Harmonic
+Extension Approach
+In this section, we will brieﬂy discuss smooth interpo-
+lation on a general smooth manifold, and give a sufﬁ-
+cient condition on the number of samples needed to make
+sure this interpolation has enough representation diver-
+sity. Consider the following interpolation problem: Let
+P = {p1, p2,··· , pn} be a set of points in a manifold
+M ⊂ Rd and S = {s1, s2,··· , sm} be a subset of P . Sup-
+pose we have the labels for the data in S, and we want to
+extend the label function u to the entire dataset P . Har-
+monic extension is a natural approach, which minimizes the
+following Dirichlet energy functional:
+(cid:88)
+x,y∈P
+E(u) =
+with the boundary condition:
+u(x) = g(x), x ∈ S,
+(cid:40)(cid:80)
+where w(x, y) is a weight function, typically chosen to be
+the Gaussian weight w(x, y) = exp(−||x−y||2
+), and σ is a
+scaling parameter.
+The Euler-Lagrange equation for Eq.(9) is:
+σ2
+u(x) = g(x)
+y∈P (w(x, y) + w(y, x)) (u(x) − u(y)) = 0 x ∈ P/S
+x ∈ S,
+(10)
+which indeed is a boundary value problem for the graph
+Laplacian (GL). It is observed in the work (Shi et al., 2017),
+(cid:17)(cid:80)
+that adding a scale on the GL effectively tames the issue
+of highly unbalanced data, which leads to the following
+weighted nonlocal Laplacian (WNLL):
+
+(cid:80)
+(cid:16)|P|
+y∈P (w(x, y) + w(y, x)) (u(x) − u(y)) +
+|S| − 1
+u(x) = g(x)
+y∈S w(y, x) (u(x) − u(y)) = 0 x ∈ P/S
+x ∈ S,
+(11)
+In order to guarantee the representability of the WNLL, the
+labeled data should cover all types of instances in the data
+pool. For this, we give a necessary condition in Theorem 1.
+Theorem 1. (Representability) Suppose we have a data
+pool formed by N classes of data uniformly, with the number
+of instances of each class to be sufﬁciently large. If we want
+all classes of data to be sampled at least once, on average
+(cid:1) data need to be sampled
+at least N(cid:0)1 + 1
+2 + 1
+3 + ··· + 1
+from the data pool. In this case, the number of data sampled
+for each class is 1 + 1
+Proof. Let Xi, i = 1, 2,··· , N, be the number of addi-
+tional data needed to obtain the i-type after (i − 1) distinct
+types have been sampled. The total number of instances
+needed is:
+N , in expectation.
+3 + ··· + 1
+2 + 1
+X = X1 + X2 + ··· + XN =
+Xi.
+N(cid:88)
+i=1
+For any i, i− 1 distinct types of instances have already been
+sampled. It follows that the probability of a new instance
+being of a different type is 1− i−1
+N = N−i+1
+N . Essentially, to
+obtain the i-th distinct type, the random variable X follows
+a geometric distribution with p = N−i+1
+and E[Xi] =
+N−i+1. Thus, we have
+N(cid:88)
+N(cid:88)
+N − i + 1
+Asymptotically, E[X] ≈ N ln N for sufﬁciently large N.
+4. Network Structure & Training Algorithms
+Deep ResNets enable hierarchical representation learning
+which leads to fabulous performance on many artiﬁcial intel-
+ligence tasks. WNLL is a harmonic extension approach for
+manifold extension analytically and adaptable even when
+the labeled instances are extremely scarce. As illustrated
+in the connection between deep ResNets and PDE control
+problems, a data dependent terminal value in the control
+problem, i.e., data dependent activation function in the deep
+ResNets, should be better than the ad hoc activation func-
+tions, e.g., softmax or linear activations. In this section, we
+w(x, y) (u(x) − u(y))2 ,
+(9)
+E[X] =
+E[Xi] =
+i=1
+i=1
+Deep Learning with Data Dependent Implicit Activation Function
+will discuss how to efﬁciently perform label extension in
+a harmonic extension manner and put the WNLL into the
+deep ResNets. The new framework has the following ben-
+eﬁts: the deep ResNet to learn optimal representations for
+the WNLL interpolation; simultaneously with the WNLL
+as the activation layer, the learned deep representations can
+be better utilized than the classical activation functions. We
+will show that this on-the-ﬂy coupling via information feed-
+forward and error back propagation solves the lack of data
+issue and achieves great accuracy improvement compared
+to the existing DNNs.
+Let us ﬁrst discuss the numerical approach to solve the
+WNLL interpolation given in Eq.(11). The numerical ap-
+proach is straight forward with two computational burdens
+involved: ﬁnding the weights w(x, y) for any x, y ∈ P ,
+and solving the resulting linear system. To ﬁnd the pairwise
+weights, we need to perform the nearest neighbor searching.
+A brute-force approach is of quadratic scaling, however,
+there are many fast algorithms with sub-linear scaling for
+this purpose, e.g., KD-Tree, Ball-Tree, etc. Here we adopt
+the approximate nearest neighbor (ANN) searching algo-
+rithm which is scalable to extremely large scale and high
+dimensional data(Muja & Lowe, 2014). The resulted linear
+system is sparse and positive deﬁnite which is efﬁciently
+solved by the conjugate gradient method in this work. It
+is worth emphasizing that in order to guarantee the WNLL
+interpolation is suitable to represent all classes of instances,
+the labeled instances should be at least around N ln N with
+N be the number of classes.
+The most important component of our algorithm is to put
+the WNLL activation layer into the DNNs, and design ef-
+ﬁcient algorithms for information feed-forward propaga-
+tion and error back-propagation. Our information and error
+propagation paths are demonstrated in Fig.2. The standard
+DNN, e.g., VGG, ResNet, is plotted in Fig.2 (a), the ’DNN’
+block represents all the layers except the last softmax ac-
+tivation function. A naive approach to place the WNLL
+into the DNN is to simply replace the softmax function by
+WNLL. However, in this case though the information can
+be feed-forwarded, the error cannot be back-propagated,
+since WNLL implicitly deﬁnes an activation function on
+the learned representation, and the gradient is not explic-
+itly available. To efﬁciently train the network with WNLL
+activation, we introduce a new structure inherited from the
+standard DNN as depicted in chart (c) of Fig.2. Our structure
+is quite ﬂexible which can be inherited from any existing
+DNN. We equip two new blocks to the standard DNN, a
+buffer block and a WNLL activation function, where the
+buffer block is simply chosen to be a composition of a fully
+connected layer which preserves the dimension of the input
+tensor followed by a ReLU function(Nair & Hinton, 2010).
+The buffer block can be made more complicated. After
+the buffer block, the tensor is passed into two activations,
+a linear activation and a WNLL function, in parallel. Our
+training algorithm for the network in Fig.2(c) is an iterative
+procedure among the following three steps:
+• Step 1. Train the network with only the linear activa-
+tion functions to steady state. For this purpose, we do
+not feed the data to the WNLL activation.
+• Step 2. Run a few training epochs on the network
+which we freeze the “DNN” and ”Linear Activation”
+blocks, and only ﬁne tune the ’Buffer Block’. In order
+to back-propagate the error between the ground-truth
+and the WNLL interpolated results, we feed the data
+into the pre-trained linear activation function, and use
+the corresponding computational graph to perform er-
+ror back-propagation.
+• Step 3. Unfreeze the entire network, and train the
+network with data only feeding to the linear activation
+to the steady state again.
+With the trained network, during the generalization step, we
+use the WNLL activation to get the ﬁnal inference. Our
+algorithm is designed in a greedy fashion. The following
+numerical results validate the efﬁciency of our training al-
+gorithm and the superiority of our network structure. The
+training and testing procedures of our proposed network are
+summarized in Algorithms 1 and 2, respectively.
+Remark 1. During the back-propagation, we use the com-
+putational graph of the linear function to approximate that
+of the WNLL function since the linear functions are the
+simplest nontrivial harmonic functions. Mixed Gaussian
+seems to be a more appealing approximation, since it is com-
+patible with the WNLL. We will continue to explore better
+approximations in our subsequent work.
+5. Numerical Results
+To validate the accuracy, efﬁciency, and robustness of the
+proposed model, we present the numerical results of dif-
+ferent tests on the CIFAR10 and CIFAR100 (Krizhevsky,
+2009), MNIST(LeCun, 1998) and SVHN dataset(Netzer
+et al., 2011). It is generally believe that the difﬁculty of
+these datasets are ranked as CIFAR100 followed by CI-
+FAR10, then SVHN, and the easiest one is MNIST. In all of
+our numerical experiments, we take the standard data aug-
+mentation that is widely used for both CIFAR datasets (He
+et al., 2016a; Huang et al., 2017; Zagoruyko & Komodakis,
+2016). For MNIST and SVHN, we use the raw data without
+any data augmentation. In order to use the computational
+graph of the linear function to approximate that of WNLL,
+we need the dynamical computational graph. For this pur-
+pose, we implement our algorithm on the PyTorch platform
+(Paszke et al., 2017), where automatic differentiation is used
+Deep Learning with Data Dependent Implicit Activation Function
+(a)
+(b)
+(c)
+Figure 2. Illustration of the DNN architectures. Panel (a) depicts the standard DNN, where the “DNN” block represents the layers except
+the last activation layer in the network. Panel (b) plots the standard network with the last layer replaced by the WNLL layer. Panel (c)
+shows the network structure used in our work, detailed explanation is presented in the paper.
+instead of the symbolic computation used in TensorFlow
+(Abadi et al., 2016) and many other systems. All compu-
+tations are done on a machine using only a single Nvidia
+Titan Xp graphics card.
+Before diving into the performance of the DNNs, we ﬁrst
+compare the performance of WNLL interpolation and other
+shallow classiﬁers on different datasets. Table 1 lists the
+performance of k-nearest neighbors (KNN) (the optimal k
+is listed in the table), support vector machine (SVM) with
+RBF kernel, softmax regression and WNLL interpolation
+function. For the WNLL interpolation, in order to speed up
+the computation, we only keep 15 nearest neighbors, and
+the 8th neighbor’s distance is used to normalize the weight
+matrix. Both KNN and WNLL can be regarded as nonpara-
+metric approaches. WNLL outperforms the other methods
+except SVM. KNN, in general, is better than softmax regres-
+sion which demonstrates the importance of the manifold
+structure of the data. These results show the potential of
+using WNLL instead of softmax as the activation function
+in the DNNs.
+Table 1. Accuracy of simple classiﬁers over different datasets
+SVM Softmax WNLL
+57.14% 39.91% 40.73%
+97.79% 92.65% 97.74%
+70.45% 24.66% 56.17%
+32.77% (k=5)
+96.40% (k=1)
+41.47% (k=1)
+KNN
+Dataset
+Cifar10
+MNIST
+SVHN
+We run 400 epochs when training the vanilla DNN, i.e.,
+standard DNN, with the initial learning rate being 0.05
+and halved after every 50 epochs for Cifar10 and Cifar100
+datasets. We also train 5 epochs of the WNLL DNN, i.e.,
+WNLL activated DNN. Since at this stage, the DNN is al-
+ready well trained, we use a smaller learning rate 0.0005.
+For the Cifar datasets, these hyper-parameters are chosen
+based on cross validation. We keep alternating the above
+three steps with the learning rate being one ﬁfth of that in the
+previous stages. The batch size in training the vanilla DNN
+is set to 128 for all experiments. In the SVHN experiments,
+we use the same hyperparameters as reported in (Huang
+et al., 2016). The batch size is set to 2000 when training the
+WNLL DNN. By Theorem 1, this number is big enough to
+sample all types of instances for even CIFAR100 with 100
+classes of images. All the optimizations are carried out by
+a simple SGD solver with the default Nesterov momentum
+acceleration.
+5.1. Resolving the Challenge of the Lack of Training
+Data
+When we do not have sufﬁcient training data, the generaliza-
+tion accuracy typically decays as the network goes deeper.
+This phenomenon is illustrated in Fig.3. The left and right
+panels plot the cases when the ﬁrst 1000 and 10000 data
+in the training set of CIFAR10 are involved in training the
+vanilla and WNLL DNNs. We believe the increase of the
+generalization error is due to the data not being sufﬁcient to
+parametrize the deep networks. With suitable regularization
+techniques, the deep networks can be better parametrized
+by a small amount of training data. WNLL activation which
+involves the information of the data’s geometric structures
+is one of such regularizers. With the WNLL activation,
+the generalization error rate decays persistently as the net-
+work goes deeper. The generalization accuracy between the
+vanilla and WNLL DNN can differ up to 10 percent within
+our testing regime.
+Even though we have only built the connection between the
+deep ResNets and the PDE control problems, we also test
+the performance of our surgeries and algorithms on other
+base DNNs, e.g., VGG networks. In table 2 we list the
+generalization error rates of 15 different DNNs from VGG,
+ResNet, Pre-activated ResNet families on the entire, ﬁrst
+10000, 5000, and 1000 instances in the CIFAR10 training
+set. It is easy to see that WNLL activated DNNs typically
+has much more accuracy improvement for ResNets or pre-
+DNNX(x;Θ)OutputSoftmaxDNNX(x;Θ)WNLLOutputDNNX(x;Θ)BuﬀerBlockFC(linearapprox.)WNLLOutputDeep Learning with Data Dependent Implicit Activation Function
+Algorithm 1 DNN with Data Dependent Activation: Training Procedure.
+Input: Training set (T, lT ), where T is the set of features, lT is the label set.
+Output: An optimized DNN with our surgeries, denoted as DNNs.
+for iter = 1,. . . , N (where we let N = 2 for the entire data, N = 5 for the selected subset of the training set. do
+Train the DNN with linear activation starting from the previous iteration. In the ﬁrst step use the default initialized one.
+Denote the temporary model as DNN1.
+Split T into training and validation parts, T
+the model.
+Partition T T and T V into nbatch1 and nbatch2 mini-batches, denoted as {T T
+nbatch1 and nbatch2 are given integers.
+for i = 1, 2,··· , nbatch2 do
+= T T(cid:83) T V . We will treat instances in T V as unlabeled data when training
+i }nbatch2
+i }nbatch1
+and {T V
+, where
+i=1
+i=1
+for j = 1, 2,··· , nbatch1 do
+Apply the model DNN1 to T T
+Apply the WNLL interpolation to ˆT T
+(cid:83) T V
+(cid:83) ˆT V
+to get ˆT T
+i = DNN1(T T
+i by solving the linear system
+(cid:83) T V
+i ).
+(cid:83) ˆT V
+(cid:83) T V
+i |
+|T V
+i |
+|T T
+(cid:88)
+xn∈T V
+(cid:88)
+(cid:83) T V
+xn∈T T
+(wmn + wnm)(um − un) +
+wnm(um − ln) = 0,
+∀xm ∈ T T
+(cid:91)
+T V
+i .
+to obtain the inferred label uj
+T V
+T V
+j=1
+}nbatch1
+end for
+Voting on {uj
+Back-propagate the loss(lT V
+) by using the computational graph of the linear activation function, and update
+DNN1. For generally classiﬁcation tasks, the loss is selected to be cross entropy between the exact and predicted
+labels.
+end for
+to get the inferred label uT V
+, uT V
+end for
+Table 2. Generalization error rate over the test set of the vanilla DNNs and the WNLL activated ones trained over the entire, the ﬁrst
+10000, 5000, and 1000 instances of the training set of CIFAR10. (Median of 5 independent trials)
+Network
+Whole
+10000
+5000
+1000
+VGG11
+VGG13
+VGG16
+VGG19
+ResNet20
+ResNet32
+ResNet44
+ResNet56
+ResNet110
+ResNet18
+ResNet34
+ResNet50
+PreActResNet18
+PreActResNet34
+PreActResNet50
+9.12%
+9.01%
+9.62%
+Vanilla WNLL Vanilla WNLL Vanilla WNLL Vanilla WNLL
+9.23% 7.35% 10.37% 8.88% 12.36% 10.49% 26.75% 24.10%
+7.64% 10.89% 9.02% 24.85% 22.56%
+6.66% 5.58%
+7.54% 11.25% 9.13% 25.41% 22.23%
+6.72% 5.69%
+6.95% 5.92%
+8.09% 11.76% 9.22% 25.70% 22.87%
+9.06% 7.09% 12.83% 9.96% 14.30% 11.24% 34.90% 29.91%
+7.99% 5.95% 11.18% 8.15% 12.75% 10.63% 33.41% 28.78%
+7.31% 5.70% 10.66% 7.96% 11.84% 10.14% 34.58% 27.94%
+7.61% 12.39% 10.17% 37.83% 28.18%
+7.24% 5.61%
+7.13% 13.45% 10.05% 42.94% 28.29%
+6.41% 4.98%
+6.16% 4.65%
+6.29% 10.38% 8.53% 27.02% 22.48%
+6.11% 10.75% 8.65% 26.47% 20.27%
+5.93% 4.26%
+6.49% 12.96% 8.76% 29.69% 20.19%
+6.24% 4.17%
+6.61% 10.64% 8.18% 27.36% 21.88%
+6.21% 4.74%
+6.08% 4.40%
+6.34% 10.85% 8.44% 23.56% 19.02%
+6.05% 10.64% 8.35% 25.05% 18.61%
+6.05% 4.27%
+9.83%
+8.91%
+8.26%
+8.31%
+9.64%
+8.20%
+8.52%
+9.18%
+activated ResNets. Signiﬁcant accuracy improvement can
+still be observed when our surgeries and training algorithms
+are applied to the VGG networks. Except for VGG networks,
+we can achieve relatively 20% to 30% testing error rate
+reduction. All the results presented here and in the rest of
+this paper are the median of 5 independent trials to reduce
+Deep Learning with Data Dependent Implicit Activation Function
+Algorithm 2 DNN with Data Dependent Activation: Testing Procedure.
+Input: Testing set W and training set (T, lT ), where W and T are features, lT are the labels of the instances in T . And
+the trained DNN with our surgeries, denoted as DNNs.
+Output: The predicted labels for the test set W .
+Partition T and W into nbatch1 and nbatch2 number of mini-batches, denoted as {Ti}nbatch1
+nbatch1 and nbatch2 are given integers.
+for i = 1, 2,··· , nbatch2 do
+and {Wi}nbatch2
+, where
+i=1
+i=1
+for j = 1, 2,··· , nbatch1 do
+Apply the model DNNs to Tj
+Apply the WNLL interpolation to ˆTj
+(cid:88)
+(cid:83) Wi
+xn∈Tj
+(cid:83) Wi to get ˆTj
+(cid:83) Wi)
+(cid:83) ˆWi by solving the linear system
+(cid:83) ˆWi = DNNs(Tj
+(cid:88)
+(cid:83) Wi|
+|Tj
+|Wi|
+xn∈Wi
+(wmn + wnm)(um − un) +
+wnm(um − ln) = 0 ∀xm ∈ Tj
+(cid:91)
+Wi.
+to obtain the inferred label uj
+Wi
+end for
+Voting on {uj
+Output the predicted label uW =(cid:83)nbatch2
+}nbatch1
+j=1
+Wi
+i=1
+to get the inferred label uWi.
+uWi.
+end for
+ter around 300 epochs, the accuracies of the vanilla DNNs
+plateaued and cannot improve any more. However, in stage
+2, once we use the WNLL activation, there is a jump in
+the generalization accuracy; during stage 3, even though
+initially there is an accuracy reduction, with the training con-
+tinuing, the accuracy keeps climbing for a while. The gener-
+alization accuracy increases if ﬁnally we use the WNLL as
+the activation function.
+(a)
+(c)
+(b)
+(d)
+Figure 4. The evolution of the generation accuracy over the training
+procedure. Charts (a) and (b) are the accuracy plots for ResNet50
+with 1000 training data, where (a) and (b) are plots for the epoch
+v.s. accuracy of the vanilla and the WNLL activated DNN. Pan-
+els (c) and (d) correspond to the case of 10000 training data for
+PreActResNet50. All tests are done on the Cifar10 dataset.
+(a)
+(b)
+Figure 3. Taming of the degeneration problem of vanilla DNN by
+WNLL activated DNN. Panels (a) and (b) plot the generation error
+when 1000 and 10000 training data are used to train the vanilla
+and the WNLL activated DNN, respectively. In each plot, we test
+three different networks: PreActResNet18, PreActResNet34, and
+PreActResNet50. It is easy to see that when the vanilla network
+becomes deeper, the generation error does not decayed, while
+WNLL activation resolves this degeneracy. All tests are done on
+the Cifar10 dataset.
+the inﬂuence of stochasticity.
+5.2. Error Rate Reduction in Base DNNs
+We next present the superiority of our deep network in terms
+of the generalization accuracy when compared to its base
+network. Figure. 4 plots the generalization accuracy evolu-
+tion during the training procedure. Panels (a) and (b) plot
+the cases for the ResNet50 and WNLL activated ResNet50
+when only the ﬁrst 1000 CIFAR10 training data are utilized.
+Charts (c) and (d) are for the cases when the ﬁrst 10000
+CIFAR10 training instances are used to train the vanilla
+pre-activated ResNet50 and WNLL activated version. Af-
+Deep Learning with Data Dependent Implicit Activation Function
+For the street view house number recognition (SVHN) task,
+we simply test the performance when the full training data
+are used. Here we only test the performance of the ResNets
+and pre-activated ResNets. There is a relatively 7%-10%
+error rate reduction for all these DNNs. There is rela-
+tively more improvement on pre-activated ResNets than
+on ResNets, this is consistent with our basic PDE control
+problem ansatz.
+Table 3. Error rate of the vanilla DNN v.s. the WNLL activated
+DNN over the whole SVHN dataset. (Median of 5 independent
+trials)
+Network
+ResNet20
+ResNet32
+ResNet44
+ResNet56
+ResNet110
+ResNet18
+ResNet34
+PreActResNet18
+PreActResNet34
+Vanilla DNN WNLL DNN
+3.76%
+3.28%
+2.84%
+2.64%
+2.55%
+3.96%
+3.81%
+4.03%
+3.66%
+3.44%
+2.96%
+2.56%
+2.32%
+2.26%
+3.65%
+3.54%
+3.70%
+3.32%
+Tables 2 and 4 list the error rate of 15 different vanilla net-
+works and the WNLL activated networks. On CIFAR10,
+the WNLL activated DNNs outperformed the vanilla ones
+with around 1.5% to 2.0% absolute, or 20% to 30% relative
+error rate reduction. We reproduced the results of the vanilla
+DNNs on both datasets. Our results are consistent with the
+original reports and other researchers’ reproductions (He
+et al., 2016a;b; Huang et al., 2017). Interestingly, when
+the task become harder, our improvement becomes more
+signiﬁcant. This builds our conﬁdent in trying harder tasks
+in the future. Reducing the sizes of DNN models is an
+important direction to make the DNN applicable for gen-
+eralize purpose, e.g., auto-drive, mobile intelligence, etc.
+So far the most successful attempt is DNN weights quan-
+tization(Bengio & David, 2015). Our approach is a new
+direction for reducing the size of the model: to achieve the
+same level of accuracy, compared to the vanilla networks,
+our model’s size can be tens of times smaller.
+6. Concluding Remarks
+Motivated by the connection between deep ResNets and
+PDE control problems, we propose a novel DNN struc-
+ture which can be inherited from any existing DNN. An
+end-to-end greedy styled, multi-staged training algorithm is
+proposed to train the novel networks. In order to efﬁciently
+back propagate the errors, we utilized the computational
+graph of a linear function dynamically to approximate that
+Table 4. Error rate of the vanilla DNN v.s. the WNLL activated
+DNN over the whole CIFAR100 dataset. (Median of 5 independent
+trials)
+Network
+VGG11
+VGG13
+VGG16
+VGG19
+ResNet20
+ResNet32
+ResNet44
+ResNet56
+ResNet110
+ResNet18
+ResNet34
+ResNet50
+PreActResNet18
+PreActResNet34
+PreActResNet50
+Vanilla DNN WNLL DNN
+32.68%
+29.03%
+28.59%
+28.55%
+35.79%
+32.01%
+31.07%
+30.03%
+28.86%
+27.57%
+25.55%
+25.09%
+28.62%
+26.84%
+25.95%
+28.80%
+25.21%
+25.72%
+25.07%
+31.53%
+28.04%
+26.32%
+25.36%
+23.74%
+22.89%
+20.78%
+20.45%
+23.45%
+21.97%
+21.51%
+for the manifold interpolation function. On one hand, our
+new framework resolves the issue of the lack of big training
+data, on the other hand, it provides great accuracy improve-
+ment compared to the base DNNs. This improvement is
+consistent for networks with different depths. Utilizing our
+structure, it is very easy to get near state-of-the-art results
+with very small model, which has great potential for the
+mobile device applications. Nevertheless, there are many di-
+rections for improvement: the current manifold interpolation
+is still one of the computational bottlenecks, according to
+the representability theorem for the data with many classes.
+For instance, the batch size need to be very large for the
+ImageNet dataset (J. et al., 2009), which poses memory
+challenges. Another important issue is the approximation
+of the gradient of the WNLL activation function. Linear
+function is an option but it is far from optimal. We believe a
+better harmonic function approximation can further lift the
+model’s performance.
+7. Acknowledgement
+This material is based, in part, upon work supported by
+the U.S. Department of Energy, Ofﬁce of Science and by
+National Science Foundation, and National Science Foun-
+dation of China, under Grant Numbers doe-sc0013838 and
+DMS-1554564, (STROBE), NSFC 11671005.
+Deep Learning with Data Dependent Implicit Activation Function
+LeCun, Yann. The mnist database of handwritten digits.
+1998.
+Lecun, Yann, Bengio, Yoshua, and Hinton, Geoffrey. Deep
+learning. Nature, 521:436–444, 2015.
+Muja, Marius and Lowe, David G. Scalable nearest neighbor
+algorithms for high dimensional data. Pattern Analysis
+and Machine Intelligence (PAMI), 36, 2014.
+Nair, Vinod and Hinton, Geoffrey. Rectiﬁed linear units
+improve restricted boltzmann machines. ICML, 2010.
+Netzer, Yuval, Wang, Tao, Coates, Adam, Bissacco, Alessan-
+dro, Wu, Bo, and Ng, Andrew Y. Reading digits in nat-
+ural images with unsupervised features learning. NIPS
+Workshop on Deep Learning and Unsupervised Feature
+Learning, 2011.
+Paszke, Adam, Gross, Sam, Chintala, Soumith, Chanan,
+Gregory, Yang, Edward, DeVito, Zachary, Lin, Zeming,
+Desmaison, Alban, Antiga, Luca, and Lerer, Adam. Au-
+tomatic differentiation in pytorch. 2017.
+Shi, Z., Osher, S., and Zhu, W. Weighted nonlocal Laplacian
+on interpolation from sparse data. Journal of Scientiﬁc
+Computing, pp. to appear, 2017.
+Simonyan, Karen and Zisserman, Andrew. Very deep con-
+volutional networks for large-scale image recognition.
+Arxiv:1409.1556, 2014.
+Srivastava, N., Hinton, G. E., Krizhevsky, A., Sutskever, I.,
+and Salakhutdinov, R. Dropout: a simple way to prevent
+neural networks from overﬁtting. Journal of Machine
+Learning Research, 15(1):1929–1958, 2014.
+Wen, Yandong, Zhang, Kaipeng, Li, Zhifeng, and Qian, Yu.
+A discriminative feature learning approach for deep face
+recognition. ECCV, 2016.
+Zagoruyko, S. and Komodakis, N. Wide residual networks.
+BMVC, 2016.
+Zhu, Wei, Qiu, Qiang, Huang, Jiaji, Carderbank, Robert,
+Sapiro, Guillermo, and Daubechies, Ingrid. Low dimen-
+sional manifold regularized neural networks. UCLA CAM
+Report: 17-66, 2017.
+References
+Abadi, M., Agarwal, A., and et al. Tensorﬂow: Large-scale
+machine learning on heterogeneous distributed systems.
+ArXiv:1603.04467, 2016.
+Bengio, M. Courbariaux Y. and David, J. Binaryconnet:
+Training deep neural networks with binary weights. NIPS,
+2015.
+Bengio, Y., Lamblin, P., Popovici, D., and Larochelle, H.
+Greedy layer-wise training of deep networks. NIPS, 2007.
+Bishop, C. M. Pattern recognition and machine learning.
+Springer, 2006.
+Chen, Yunpeng, Li, Jianan, Xiao, Huaxin, Jin, Xiaojie, Yan,
+Shuicheng, and Feng, Jiashi. Dual path networks. NIPS,
+2017.
+E, Weinan. A proposal on machine learning via dynamical
+systems. Communications in Mathematics and Statistics,
+5(1):1–11, 2017.
+Evans, L.C. Partial differential equations. American Mathe-
+matical Soc, 2010.
+Hardt, Moritz and Ma, Teng Yu. Identity matters in deep
+learning. ICLR, 2017.
+He, Kaiming, Zhang, Xiangyu, Ren, Shaoqing, and Sun,
+Jian. Deep residual learning for image recognition. CVPR,
+2016a.
+He, Kaiming, Zhang, Xiangyu, Ren, Shaoqing, and Sun,
+Jian. Identity mappings in deep residual networks. ECCV,
+2016b.
+Hinton, G. E., Osindero, S., and Teh, T. W. A fast learning
+algorithm for deep belief nets. Neural Computation, 18
+(7):1527–1554, 2006.
+Huang, Gao, Sun, Yu, Liu, Zhuang, Sedra, Daniel, and
+WeinBerger, Kilian. Deep networks with stochastic depth.
+ECCV, 2016.
+Huang, Gao, Liu, Zhuang, Weinberger, K. Q., and van der
+Maaten, Laurens. Densely connected convolutional net-
+works. CVPR, 2017.
+J., Deng, W., Dong, R., Socher, L.-J., Li, K., Li, and L.,
+Fei Fei. ImageNet: A Large-Scale Hierarchical Image
+Database. In CVPR09, 2009.
+Krizhevsky, Alex. Learning multiple layers of features from
+tiny images. 2009.
+Langley, P. Crafting papers on machine learning. In Langley,
+Pat (ed.), Proceedings of the 17th International Confer-
+ence on Machine Learning (ICML 2000), pp. 1207–1216,
+Stanford, CA, 2000. Morgan Kaufmann.

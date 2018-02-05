@@ -1,0 +1,926 @@
+
+Convolutional networks (CNNs) have greatly acceler-
+ated the progress of many computer vision areas and appli-
+cations in recent years. Despite their powerful visual repre-
+sentational capabilities, CNNs are bottlenecked by their im-
+mense computational demands. Recent CNN architectures
+such as Residual Networks (ResNets) [8, 9] and Inception
+[34] require billions of ﬂoating-point operations (FLOPs)
+to perform inference on just one single input image. Fur-
+thermore, as the amount of visual data grows, we need in-
+creasingly higher-capacity (thus higher complexity) CNNs
+which have shown to better utilize these large visual data
+compared to their lower-capacity counterparts [33].
+There have been works which tackle the efﬁciency is-
+sues of deep CNNs, mainly by lowering numerical preci-
+sions (quantization) [14, 27, 41], pruning network weights
+[6, 21, 39, 10, 23], or adopting separable convolutions [16,
+3, 38]. These methods result in more efﬁcient models which
+have ﬁxed inference costs (measured in ﬂoating-point oper-
+ations or FLOPs). Models with ﬁxed inference costs cannot
+work effectively in certain resource-constrained vision sys-
+tems, where the computational budget that can be allocated
+to CNN inference depends on the real-time resource avail-
+ability. When the system is lower in resources, it is prefer-
+able to allocate a lower budget for more efﬁcient or cheaper
+inference, and vice versa. Moreover, in some cases, the ex-
+act inference budget cannot be known beforehand during
+training time.
+As a simple solution to such a concern, one could train
+several CNN models such that each has a different inference
+cost, and then select the one that matches the given budget at
+inference time. However, it is extremely time-consuming to
+train many models, not to mention the computational stor-
+age required to store the weights of many models. In this
+work, we focus on CNNs whose computational costs are
+dynamically adjustable at inference time. A CNN with cost-
+adjustable inference only has to be trained once, and it al-
+lows users to control the trade-off of inference cost against
+network accuracy/performance. The different inference in-
+stances (each with different inference cost) are all derived
+from the same model parameters.
+For cost-adjustable inference in CNNs, we propose a
+novel training method - Stochastic Downsampling Point
+(SDPoint). A SDPoint instance is a network conﬁguration
+consisting of a unique downsampling point (layer index) in
+the network layer hierarchy as well as a unique downsam-
+pling ratio. As illustrated in Fig. 1, at every training itera-
+tion, a SDPoint instance is randomly selected (from a list of
+instances), and downsampling happens based on the down-
+sampling point and ratio of that instance. The earlier the
+downsampling happens, the lower the total computational
+costs will be, given that spatially smaller feature maps are
+cheaper to process.
+During inference, a SDPoint instance can be determinis-
+Figure 1: Progression of feature map spatial sizes during training of a (Left) conventional CNN, (Right) with SDPoint. The
+costs here refer to computational costs measured in numbers of ﬂoating-point operations (FLOPs).
+tically handpicked (among the SDPoint instances seen dur-
+ing training) to match the given inference budget. Existing
+approaches [20, 36, 18] to achieve cost-adjustable inference
+in CNNs work by evaluating just subparts of the network
+(e.g., skipping layers or skipping subpaths), and therefore
+not all network parameters are utilized during cheaper in-
+ference. In contrast to existing approaches, SDPoint makes
+full use of all network parameters regardless of the infer-
+ence costs, thus making better use of network represen-
+tational capacity. Moreover, the (scale-related) parameter
+sharing across the SDPoint instances (each with a different
+downsampling and downsampling ratio) provides signiﬁ-
+cant improvement in terms of model regularization. On top
+of these advantages, SDPoint is architecture-neutral, and it
+adds no parameter or training overheads. We carry out ex-
+periments on image classiﬁcation with a variety of recent
+network architectures to validate the effectiveness of SD-
+Point in terms of cost-accuracy performances and regular-
+ization beneﬁts. The code to reproduce experiments will be
+released.
+2. Related Work
+Cost-adjustable Inference: One representative method to
+achieve cost-adjustable inference is to train “intermediate”
+classiﬁers [20, 19, 36] which branch out of intermediate
+network layers. A lower inference cost can be attained
+by early-exiting, based on the intermediate classiﬁers’ out-
+put conﬁdence [20] or entropy [36] threshold. The lower
+the threshold is, the lower the inference cost will be, and
+vice versa.
+In [20], intermediate softmax classiﬁers are
+trained (second stage) after the base network has been com-
+pletely trained (ﬁrst stage). The downside of [20] is that
+the intermediate classiﬁer losses are not backpropagated for
+ﬁne-tuning the base network weights. To make the net-
+works more aware of intermediate classiﬁers, BranchyNet
+[36] has intermediate classiﬁers (each with more layers per
+branch than [20]) and ﬁnal classiﬁer trained jointly, us-
+ing a weighted sum of classiﬁcation losses. Unlike these
+works, our SDPoint method relies on the same ﬁnal clas-
+siﬁer for different inference costs. FractalNets [18] which
+are CNNs designed to have many parallel subnetworks or
+“paths” which can be stochastically dropped for regulariza-
+tion during training. For cost-adjustable inference, some
+FractalNet’s “paths” can be left out. But the path-dropping
+regularization gives inconsistent/marginal improvements if
+data augmentation is being used.
+Another line of work somehow related to cost-adjustable
+inference is adaptive computation in recurrent networks
+[5] and CNNs [4]. The inference costs of adaptive com-
+putation networks are adaptive to the given inputs - harder
+examples cost more than easier ones. The learned policies
+of choosing the amount of computation however cannot be
+modiﬁed during inference for cost-adjustable inference.
+Stochastic Regularization: Our work is closely related
+to stochastic regularization methods which apply certain
+stochastic operations to network training for regularization.
+Dropout [32] drops network activations, while DropCon-
+nect [37] drops network weights. Stochastic Depth [13]
+allows nonlinear residual building blocks to be dropped
+during training. These 3 methods are similar in the way
+that during inference, all stochastically dropped elements
+(activations, weight, residual blocks) are to be present. For
+any of the methods, its different stochastic instances seen
+during training have rather comparable forward pass costs,
+making them unﬁt for cost-adjustable inference.
+Multiscale parameter-sharing: Multiscale training of
+CNNs, ﬁrst introduced by [7] is quite similar to SDPoint.
+In the training algorithm of [7], the network is trained with
+224×224 and 180×180 images alternatively (one scale per
+epoch). The same idea has also been applied to CNN train-
+ing for other tasks [2, 28]. While multiscale training down-
+samples the input images to different sizes, SDPoint only
+downsamples feature maps (at feature level). Downsam-
+pling at feature level encourages earlier network layers to
+learn to better preserve information, to compensate for loss
+of spatial information caused by stochastic downsampling
+later. This does not apply to multiscale training, where the
+input images are downsampled through interpolation oper-
+ations which happen before network training takes place.
+3. Preliminaries: Conventional CNNs with
+Fixed Downsampling Points
+Conventionally, downsampling of feature maps happens
+in CNNs at several predeﬁned ﬁxed locations/points in the
+layer hierarchy, depending on the architectural designs.
+For example, in ResNet-50, spatial pooling (happens af-
+ter the ﬁrst ReLU layer, and after the last residual block)
+and strided convolutions (or convolution with strides > 1
+which happens right after the 3rd, 7th, and 13th residual
+blocks) are used to achieve downsampling. Between these
+downsampling layers are network stages. Downsampling in
+CNNs trades low-level spatial information for richer high-
+level semantic information (needed for high-level visual
+tasks such as image classiﬁcation) in a gradual fashion.
+During network inference,
+these ﬁxed downsampling
+points have to be followed exactly as how they are conﬁg-
+ured during training, for optimal accuracy performance. In
+this work, we go beyond ﬁxed downsampling points - we
+develop a novel stochastic downsampling method named
+Stochastic Downsampling Point (SDPoint) which does not
+restrict downsampling to happen every time at same ﬁxed
+points in the layer hierarchy. The proposed method is com-
+plementary to the ﬁxed downsampling points in existing
+network architectures, and do not replace them. SDPoint
+can be simply plugged into existing network architectures,
+and no major architectural modiﬁcations are required.
+4. Stochastic Downsampling Point
+A Stochastic Downsampling Point (SDPoint) instance
+has a unique downsampling point p ∈ Z and a unique down-
+sampling ratio r ∈ R which are stochastically/randomly se-
+lected during network training. A p and a r are stochasti-
+cally selected at the beginning of each network training iter-
+ation, and downsampling occurs to the selected point (based
+on the selected ratio) for all samples in the current training
+mini-batch. The downsampling points and a downsampling
+ratios will be discussed more thoroughly in the upcoming
+sections. Downsampling is performed by a downsampling
+function D(·) which makes use of some downsampling op-
+erations. When the selected point falls at the lower layer
+in the layer hierarchy, the downsampling happens earlier
+(in the forward propagation), causing quicker loss of spa-
+tial information in the feature maps, but more computation
+savings. Conversely, spatial information can be better pre-
+served at higher computational costs, if the stochastic down-
+sampling happens later.
+SDPoint can effectively turn the feature map spatial sizes
+right before prediction layers to be different from original
+sizes, and this could cause shape incompatibility between
+the prediction layer weights (as well as labels) and the con-
+volutional outputs (before prediction layers). To prevent
+this, we preserve the feature map spatial size in the last net-
+work stage, regardless of stochastic downsampling taking
+place or not, by adjusting convolution strides and/or pool-
+ing sizes accordingly. For example, in image classiﬁcation
+networks, we consider the global average pooling layer [22]
+and the ﬁnal classiﬁcation layer to be the last network stage.
+Therefore, regardless of the spatial size (variable due to SD-
+Point) of the incoming feature maps, we globally pool them
+to have spatial size of 1 × 1.
+4.1. Downsampling Operation
+As discussed in Sect. 3, the downsampling operation
+employed in D(·) can be either pooling [1] (average or
+max variations) or strided convolution. We opt for average
+pooling (the corresponding downsampling function is de-
+noted as Davg(·)), rather than strided convolutions or max
+pooling for several reasons. Strided convolutions are the
+preferred way to do downsampling in recent network ar-
+chitectures, because they add extra parameters (convolution
+weights) and therefore improving the representational capa-
+bility. In this work, we want to rule out the possible perfor-
+mance improvements from increase in parameter numbers
+(rather than the SDPoint itself). Moreover, strided convo-
+lutions with integer-valued strides cannot work well with
+arbitrary downsampling ratios (see Sect. 4.3). On the other
+hand, average pooling is preferred over max pooling in this
+paper due to the fact that max pooling itself is a form of non-
+linearity. Using max pooling as the downsampling opera-
+tion could either push for a greater non-linearity in the net-
+work (positive outcome) which is unfair to the baselines, or
+could exacerbate the vanishing gradient problem [11] com-
+monly associated with deep networks (negative outcome).
+Besides, the effectiveness of average pooling has been val-
+idated through its extensive roles in recent CNN architec-
+tures (e.g., global average pooling [22, 8], DenseNets’ tran-
+sition [12]).
+4.2. Downsampling Points
+At every training iteration, a downsampling point p for
+a SDPoint instance can be drawn from a discrete uniform
+distribution on a set of predeﬁned downsampling point in-
+dices P = {0, 1, 2, ...,N -1,N}, with N + 1 number of
+points.
+In this work, the downsampling point candidates
+are the points between two consecutive CNN “basic build-
+ing blocks”, mirroring the placements of ﬁxed downsam-
+pling layers in conventional CNNs. We keep the original
+network (without stochastic downsampling) as an instance
+by assigning the index p = 0 to it, so that we can perform
+full-cost inference later. Let F (·) denote the function car-
+ried out by the i-th basic building block, wi denote the net-
+work weights involved in the block. For a given input xi
+and downsampling ratio r, the downsampling is carried out
+as following:
+yi = Davg(F (xi; wi); si, r)
+(1)
+to obtain the output yi. The downsampling switch denoted
+as si ∈ {True, False} is turned on if p = i.
+For non-residual CNNs (e.g., VGG-Net [30]), the ba-
+sic building block comprises 3 consecutive convolutional,
+Batch Normalization (BN) [15], non-linear activation lay-
+ers. On the other hand, for residual networks, residual
+blocks are considered as the basic building blocks.
+the
+downsampling point p can be stochastically selected to be
+any point between any 2 basic building blocks in the net-
+work, where downsampling happens. Since a residual block
+involves two streams of information - (i.) the identity skip
+connection and (ii.) the non-linear function consisting of
+several network layers, we apply stochastic downsampling
+function Davg(·) to the point right after the residual addition
+operation. We also experiment with Densely Connected
+Networks (DenseNets) [12] in this paper. For DenseNets,
+the SDPoint downsampling points are the points right be-
+hind each block concatenation operation, mirroring the ﬁxed
+downsampling in DenseNets.
+In principle, each mini-batch sample could have its
+unique downsampling point pi (for stronger stochasticity),
+but due to practical reasons (e.g., training efﬁciency, ease
+of implementation), we resort to using the same pi for all
+samples in a mini-batch. While it is possible to have more
+than one downsampling points in each training iteration,
+the number of possible combinations or SDPoint instances
+would become excessively large. Some of the instances
+would deviate too much from the original network, in terms
+of computational cost and accuracy performance. We opt
+for single stochastic downsampling point in this work.
+4.3. Downsampling Ratios
+We consider a set of downsampling ratios R, which
+the SDPoint instance can stochastically draw a downsam-
+pling ratio r from, for use at current training iteration. As
+with Sect. 4.2, downsampling ratios are drawn accord-
+ing to discrete uniform distributions. The ratios cannot be
+too low that they hamper the training convergence (due to
+parameter-sharing unfeasibility). And, we consider only a
+small number of downsampling ratios in R to prevent an
+excessive number of SDPoint instances, which would cause
+great difﬁculty in experimentally evaluating all SDPoint in-
+stances for cost-adjustable inference. A recent experimental
+study [24] on CNNs ﬁnds that it is sufﬁcient to make quali-
+tative conclusions about optimal network structure that hold
+for the full-sized (224 × 224 image resolution) ImageNet
+[29] classiﬁcation task, by using just 128 × 128 (roughly
+half the original resolution) input images. Conceivably, the
+same network structure/architecture that works well with a
+certain image resolution is likely to work well with a resolu-
+tion double/half of that. Motivated by the above-mentioned
+heuristics and experimental ﬁnding, we come up with the
+downsampling ratio set R = {0.5, 0.75}. The same ratios
+have also been used by [2] for “multiscale-input” semantic
+segmentation. The same hyperpameter R is used across all
+experiments in this paper.
+Downsampling with such fractional downsampling ra-
+tios cannot be trivially achieved with integer-valued pooling
+hyperparameters. For example, pooling a 28 × 28 feature
+map to a 21 × 21 one (with r of 0.75 and minimal over-
+laps) cannot be easily done by tuning just the pooling size
+and stride. To this end, we adopt a spatial pooling strat-
+egy (which works along with the pooling choice in Sect.
+4.1) akin to that of Spatial Pyramid Pooling [7] that gener-
+ates ﬁxed-length representation via adaptive calculations of
+pooling sizes and strides.
+(cid:46) Downsampling Points
+(cid:46) Downsampling Ratios
+(cid:46) Forward pass
+Randomly draw p from P
+Randomly draw r from R
+x1 = x
+for i ∈ {1, 2, ...,N -1,N} do
+Algorithm 1 : Training with SDPoint
+1: P = {0, 1, 2, ...,N -1,N}
+2: R = {0.5, 0.75}
+3: while given a training mini-batch x do
+4:
+5:
+6:
+7:
+8:
+9:
+10:
+11:
+12:
+13:
+14:
+15:
+16:
+17:
+18: end while
+end for
+Compute loss with xN +1
+Backward pass
+Parameter updates
+end if
+xi+1 = Davg(F (xi; wi); si, r)
+si = False
+if i = p then
+si = True
+else
+4.4. Training with SDPoint
+SDPoint gives rise to a new training algorithm for CNNs.
+The training algorithm consolidating all the previously in-
+troduced SDPoint concepts is given in Algorithm 1. F (·)
+denotes the generic nonlinear building network block in
+CNNs. For simplicity sake, we omit the other network lay-
+ers which are not basic building blocks - typically the start-
+ing and ending layers.
+In a nutshell, Algorithm 1 shows
+that whenever a building block index i is equal to the down-
+sampling point p, the downsampling switch s is turned on.
+Stochastic downsampling then happens to the output of i-th
+building block, with the stochastic downsampling ratio r. It
+is important to point out that the (stochastic) downsampling
+does not happen, if p is drawn to be 0, allowing the network
+to work in its original “unadulterated” form.
+4.5. Regularization
+SDPoint can be seen as a regularizer for CNNs. When
+stochastic downsampling takes place, the receptive ﬁeld
+size becomes larger and it causes a sudden shrinkage of
+spatial information in the feature maps. The network has
+to learn to adapt to such variations during training, and per-
+form parameter-sharing across the downsampled feature
+maps and the originally sized feature maps (when p = 0).
+In addition to robustness in terms of receptive ﬁeld size and
+spatial shrinkage, SDPoint also necessitates the convolu-
+tional layers to accommodate for different “padded pixel to
+non-padded pixel” ratios. For example, applying a 3 × 3
+convolutional ﬁlter (with zero-padding of 1) to a 8 × 8 fea-
+ture map gives a padded-pixel ratio of 0.44, compared to
+0.56 ratio resulted from applying the same ﬁlter to 6 × 6
+feature map. Zero-padded pixels are quite similar to the
+zero-ed out activations caused by Dropout [32], in the sense
+that they both are missing values. Thus, a higher padded-
+pixel ratio is akin to having a higher number of dropped-out
+activations, vice versa. This form of variation provides fur-
+ther regularization boost. Experimentally, we ﬁnd that even
+with the use of heavy data augmentation - such as “scale +
+aspect ratio” augmentation [35, 34], SDPoint can still help.
+5. Cost-adjustable Inference
+A network that can perform inference at different
+computational costs depending on the user requirements,
+is considered to be capable of cost-adjustable inference.
+Opting for a lower inference cost usually results in a lower
+prediction accuracy, and vice versa. SDPoint naturally
+supports cost-adjustable inference, given that SDPoint
+instances have varying computational costs, given the
+different downsampling point locations and downsampling
+ratios. More importantly, the instances have all been trained
+to minimize the same prediction loss, and this helps them
+to work relatively well for inference. During inference, one
+may handpick a SDPoint instance (with its downsampling
+point p and downsampling ratio r) to make the inference
+cost ﬁt a particular inference budget.
+5.1 Instance-Speciﬁc Batch Normalization As men-
+tioned in Sect. 4, SDPoint instances are trained in such a
+way that every training mini-batch and iteration shares the
+same SDPoint instance. For a SDPoint instance, the pre-
+diction and loss minimization during training are based on
+the Batch Normalization (BN) statistics (means and stan-
+dard deviations) of that particular instance. Therefore, us-
+ing the BN statistics accumulated over many training itera-
+tions (and thus many different SDPoint instances) for infer-
+ence causes inference-training “mismatch”. A similar form
+of inference-training “mismatch” caused by BN statistics
+has also been observed by [31] in another context. The BN
+statistics required for one SDPoint instance should differ
+from that of another instance. When using the same (accu-
+mulated) BN statistics to perform cost-adjustable inference,
+the inference accuracies could be jeopardized.
+To address the “mismatch” issue, we compute SD-
+Point instance-speciﬁc BN statistics, and use them for cost-
+adjustable inference. Disentangling the different SDPoint
+instances by unsharing BN statistics makes the inference
+more accurate. The computational storage overhead re-
+sulted from instance-speciﬁc BN statistics is relatively low,
+as BN statistics of some earlier layers can be shared1 among
+certain SDPoint instances that downsample at later layers.
+6. Experiments
+Experiments are carried out on image classiﬁcation tasks
+to evaluate SDPoint. We consider image classiﬁcation
+datasets with varying dataset scales in terms of numbers of
+categories/classes and sample counts: CIFAR-10 [17] (50k
+training images, 10k validation images, 10 classes), CIFAR-
+100 [17] (50k training images, 10k validation images, 100
+classes), ImageNet [29] (1.2M training images, 50k valida-
+tion images, 1000 classes). For inference cost comparison,
+we measure the model costs in terms of ﬂoating-point op-
+eration numbers (FLOPs) needed for forward propagation
+of single image. We treat addition and multiplication as 2
+separate operations. Implementations are in PyTorch [25].
+6.1. CIFAR
+[40]
+For CIFAR-10 and CIFAR-100,
+the baseline archi-
+tectures are Wide-ResNet
+(WRN-d28-w10 and
+WRN-d40-w4) and DenseNetBC-d40-g60 [12].
+‘d’, ‘w’,
+‘g’ stand for the network depth, widen factor of WRN, and
+growth rate of DenseNetBC, respectively. The training
+hyperparameters (e.g.,
+learning rates, schedules, batch
+sizes, augmentation) follow the ones in original papers,
+except for training epoch numbers which we ﬁx to 400 for
+all. The original learning rate schedules still apply (e.g.,
+learning rates are dropped at 50% and 75% of total number
+of training epochs). The numbers of SDPoint downsam-
+pling points (N ) for {WRN-d28-w10, WRN-d40-w4, and
+DenseNetBC-d40-g60} are {12, 18 ,12} respectively. As
+mentioned in Sect. 4.3, the downsampling ratios are drawn
+uniformly from R = {0.5, 0.75}.
+6.1.1 Baseline Comparison: We compare SDPoint
+with some baseline methods related to ours, in terms of
+cost-adjustable inference performance. The classiﬁcation
+error-cost performance plots on CIFAR-10 and CIFAR-100
+1refer to supplementary materials for more about storage overheads.
+Figure 2: WRNs’ and DenseNetBC’s cost-error plots on CIFAR-10 (Top) and CIFAR-100 (Bottom). It is observed that
+models trained with SDPoint consistently outperform their non-SDPoint counterparts, given the same computational budgets.
+10.8
+21.4
+10.1
+18.7
+2.6
+2.5/2.6
+10.5
+10.5
+36.5M 6.5/10.1
+34.4M
+68.1M
+15.3M
+25.6M
+8.9M
+8.9M
+36.5M
+36.5M
+Model
+ResNeXt-d29-c08 [38]
+ResNeXt-d29-c16 [38]
+DenseNetBC-d250-g24 [12]
+DenseNetBC-d190-g40 [12]
+WRN-d40-w4 [40]
+WRN-d40-w4 [40]
+with SDPoint
+WRN-d28-w10 [40]
+WRN-d28-w10 [40]
+with Dropout [32]
+WRN-d28-w10 [40]
+with SDPoint
+DenseNetBC-d40-g60 [12]
+DenseNetBC-d40-g60 [12]
+with SDPoint
+# Params GFLOPs CIFAR-10 CIFAR-100
+17.77
+17.31
+17.60
+17.18
+20.78
+19.55
+(↓ 1.23)
+18.51
+18.05
+(↓ 0.46)
+17.53
+(↓ 0.98)
+20.00
+19.25
+(↓ 0.75)
+Table 1: CIFAR-10 and CIFAR-100 validation errors (%).
+The GFLOPs with 2 values separated by “/” are for CIFAR-
+10 and CIFAR-100 respectively.
+3.65
+3.58
+3.62
+3.46
+4.29
+3.73
+(↓ 0.56)
+3.84
+3.86
+(↑ 0.02)
+3.35
+(↓ 0.49)
+3.99
+3.39
+(↓ 0.60)
+4.3M
+4.3M
+3.6
+2.7/3.6
+are shown in Fig. 2. Note that for SDPoint and baseline
+methods, not all instances of the same model appear on the
+plots; if a higher-cost instance performs worse than any
+lower-cost instance, it is not shown. Each model (evaluated
+on a dataset) is trained only once to obtain its cost-error plot.
+(i) Early-Exits (EE) We train models based on the WRN
+with intermediate classiﬁers (branches) which allow early-
+exits (EE), following the design of BranchyNet [36]. Each
+network stage in the main network has two evenly spaced
+branches, and the branches each have single-repetition
+of building block per branch network stage. The blocks
+in the branches follow the same hyperparameters (e.g.,
+#channels) as the blocks in the original network. For
+cost-adjustable inference, we evaluate every branch, and
+make all samples “exit” at the same branch. The early-exit
+models have considerably more parameters than both the
+baseline models and SDPoint-based models. We conjecture
+that the relatively worse performance of EE is due to lack
+of full network parameter ultilization. Also, EE forces
+CNN features to be classiﬁcation-ready in early stage, thus
+causing higher layers to rely heavily on the classiﬁcation-
+ready features, instead of learning better features on their
+own.
+(ii) Multiscale Training (MS) Multiscale (MS) training
+is a baseline method inspired by [7, 2, 28]. The input
+images are downsampled using bilinear interpolations, to
+an integer-valued size randomly chosen from sizes ranging
+from half (16 × 16) to full size (32 × 32), with step size
+of 1 pixel. This is done for every training iteration, similar
+to SDPoint. The number of “instances” (16) resulted from
+multiscale training is close to the downsampling point num-
+bers of applying SDPoint to WRNs and DenseNetBC(s).
+Also, the ranges of cost-adjustable inference costs among
+them are comparable.
+Instance-speciﬁc BN statistics are
+applied. The cost-adjustable performance of MS consis-
+tently trails behind that of SDPoint, as input downsampling
+causes more drastic information loss than feature map
+downsampling (see Sect. 2).
+(iii) Uniform Batch Normalization (UBN) To validate the
+effectiveness of SDPoint instance-speciﬁc BN, we show
+the results of a SDPoint baseline whose BN statistics are
+averaged from many training iterations, and are uniform
+for all of its instances. There are consistent classiﬁcation
+performance gaps between using UBN statistics and
+instance-speciﬁc BN statistics, suggesting that it is prefer-
+able to keep instance-speciﬁc statistics for inference.
+6.1.2 State-of-the-art Comparison:
+Table 1 reports
+Model
+ResNeXt-d101-c64 [38]
+DenseNetBC-d264 [26]
+ResNeXt-d101-c32 [38]
+ResNeXt-d101-c32 [38]
+with SDPoint
+PreResNet-d101 [9]
+PreResNet-d101 [9]
+with SDPoint
+PreResNet-d101 [9]
+with SACT [4]
+PreResNet-d101 [9]
+with SDPoint
+# Params GFLOPs
+∼32
+∼26
+16.0
+16.0
+∼89M
+∼73M
+44.3M
+44.3M
+15.7
+15.7
+11.1
+44.7M
+44.7M
+45.0M
+44.7M
+Top-1
+20.4
+20.4
+21.2
+20.4
+(↓ 0.8)
+22.0
+21.4
+(↓ 0.6)
+24.4
+Top-5
+5.3
+5.6
+5.3
+(↓ 0.3)
+6.1
+5.6
+(↓ 0.5)
+7.2
+7.7
+24.3
+7.2
+Table 2: ImageNet top-1 and top-5 validation errors (%),
+with model parameter numbers and giga-FLOPs (GFLOPs).
+the CIFAR validation results of state-of-the-art (SOTA)
+ResNeXt [38] and DenseNetBC [12] models, for compar-
+ison with ours. For each SDPoint-enabled model, we show
+the results (giga-FLOPs, classiﬁcation errors) from the best-
+performing SDPoint instance among its instances. Notably,
+WRN-d28-w10 with SDPoint is competitive to SOTA mod-
+els on CIFAR-100, and it outperforms them on CIFAR-
+10. Overall, SDPoint considerably improves classiﬁcation
+performance without bringing in additional parameters and
+computational costs, unlike the SOTA models which re-
+quire about 2× model complexity to attain slight improve-
+ments. In fact, the best SDPoint-enabled models on CIFAR-
+10 have reduced inference costs (FLOPs). We reckon that
+a prolonged preservation of spatial details (i.e., no early
+downsampling) in CNN feature maps is not crucial to a
+dataset with relatively low label complexity such as CIFAR-
+10. This reveals a drawback of current practice of using
+CNNs in “one-size-ﬁts-all” fashion.
+6.2. ImageNet
+We consider ResNeXt-d101-c32 [38] and PreResNet-
+d101 [9] as baseline architectures. ‘c’ stands for ResNeXt’s
+cardinality. With SDPoint, there are 33 downsampling
+points (N ) per model. We train the models on ImageNet-1k
+[29] training set, and evaluate them on the validation set
+(224×224 center crops). All models are trained using
+training hyperparameters and “scale + aspect ratio” aug-
+mentation [35] identical to [38]. Note that we do not
+allocate more training epochs to models with SDPoint. The
+cost-error plots are given in Fig. 3 and 4, for PreResNet-
+d101 and ResNeXt-d101-c32 respectively, along with some
+ﬁxed-cost & carefully designed2 baseline models from the
+same architecture families. Overall, models trained with
+SDPoint can roughly match the performance of baseline
+models in the lower-cost range, and surpass them in the
+upper-cost range. Notably,
+to obtain cost-error plots,
+SDPoint-enabled models only have to be trained once. The
+2model hyperparameters are carefully chosen by the authors [9, 38] to
+optimize accuracy performances under some budget constraints.
+Figure 3: PreResNets’ [9] cost-error plots on ImageNet.
+PreResNet-d101 (SDPoint) only has to be trained once (as a
+single model), while the baseline models (without SDPoint)
+has to be trained separately with huge training and storage
+costs.
+Figure 4: ResNeXts’ [38] cost-error plots on ImageNet.
+Like Fig. 3, any of ResNeXt-d101-c32 (SDPoint..) only
+has to be trained once (as a single model).
+baseline models are trained separately, resulting in a huge
+total number of epochs (#models × #epochs per model)
+and storage cost.
+6.2.1 Ablation Study: We study the effects of choice of
+SDPoint downsampling points and downsampling ratios on
+cost-adjustable inference performance. For this, we train a
+ResNeXt-d101-c32 with default SDPoint hyperparameters
+(downsampling points at the end of every residual block,
+downsampling ratios of {0.5,0.75}), as well as 2 baseline
+models with (i) downsampling points at the end of every
+other residual block dubbed alternate (ii) downsampling
+ratio of just {0.75} dubbed 075. They are shown on
+Fig. 4. Either removing the 0.5 downsampling ratio or
+alternating blocks for downsampling gives worse results,
+due to reduced stochasticity (and regularization strengths).
+6.2.2 State-of-the-art Comparison:
+compare
+our models with SOTA ResNeXt-d101-c64 [38] and
+DenseNetBC-d264-g48 [26] models in Table 2. SDPoint
+pushes the top-1 and top-5 validation errors of ResNeXt-
+We
+51015202530GFLOPs22232425262728Top-1 Validation Error (%)PreResNet-d34PreResNet-d50PreResNet-d101PreResNet-d152PreResNet-d200PreResNet-d101 (SDPoint)51015202530GFLOPs21222324252627Top-1 Validation Error (%)ResNeXt-d50-c32ResNeXt-d101-c32ResNeXt-d101-c64ResNeXt-d101-c32 (SDPoint-075)ResNeXt-d101-c32 (SDPoint-alternate)ResNeXt-d101-c32 (SDPoint)Figure 5: Some Imagenet validation examples grouped according to the minimum inference costs (FLOPs) required by
+ResNeXt-d101-c32 (with SDPoint) to classify them correctly, in terms of top-5 accuracy. The ground-truth label names are
+shown below their corresponding images.
+d101-c32 down to 20.4% and 5.3% respectively, which
+are (previously) only attainable by SOTA models with
+roughly 2× inference costs and parameter counts. We
+also display the results (and mean FLOPs) of Spatially
+Adaptive Computation Time (SACT)
+[4] paired with
+PreResNet-d101, and compare it to a SDPoint instance of
+our PreResNet-d101 that achieves similar classiﬁcation
+errors. SDPoint merely needs 69% of FLOPs needed by
+SACT to achieve similar results. SACT saves computation
+by skipping layers (and network parameters) for certain
+locations in feature maps according to learned policy and
+inputs, while SDPoint downsamples feature maps to save
+computation (but makes full use of network parameters
+& capacity during inference). We contend that in cost-
+accuracy trade-off for inference, reducing feature map
+spatial sizes is less harmful to accuracy than skipping
+network parameters/layers.
+6.2.3 Analysis: We provide some analyses of ResNeXt-
+d101-c32 (trained with SDPoint on ImageNet) with regards
+to certain aspects of downsampling and SDPoint.
+Cost-dependent misclassiﬁcations: We group ImageNet
+validation images (which are correctly classiﬁed with
+full inference cost) according to the minimum inference
+costs required to classify them correctly, and present some
+examples on Fig. 5. More difﬁcult examples that require
+higher inference costs (9.9, 16.0 GFLOPs) to be classi-
+ﬁed correctly, generally have size-dominant
+interfering
+objects/scenes (e.g., hair dryer, cab, caldron,
+cock, tench), in contrast to the easier examples (4.3
+GFLOPs). Intuitively, pooling-based downsampling causes
+more information loss to smaller objects than to larger
+(size-dominant) objects, especially when it occurs at some
+early layer, where the semantic/context
+information is
+still relatively weak to distinguish objects of interest from
+interfering objects. So, for those difﬁcult examples, it
+makes sense to preserve spatially informative object details
+longer in the CNN layer hierarchy, and downsample the
+feature maps only after they are semantically rich enough.
+Scale sensitivity: Training CNNs with SDPoint involves
+stochastic downsampling of intermediate feature maps,
+which we hypothesize to be beneﬁcial for scale sensitiv-
+ity/invariance, as mentioned in Sect. 4.5. To validate this
+hypothesis, we vary the pre-cropping3 sizes of ImageNet
+validation images in the range of 256, ..., 352 with step size
+of 16, resulting in 7 pre-cropping sizes. For every pre-
+cropping size, 224 × 224 center image regions are cropped
+out for evaluation. The models involved are SDPoint-
+enabled ResNeXt-d101-c32, and the baseline without SD-
+Point. We compute the mean of all pairwise cosine simi-
+larities (a total of 21 pairs) resulted from the different pre-
+cropping sizes, in terms of ImageNet 1k-class probabil-
+ity scores. This is done for entire ImageNet validation set.
+The pairwise cosine-similarity mean obtained for baseline
+model is 0.944, while for the SDPoint-enabled model, it is
+0.961. A higher cosine similarity is a strong indicator of the
+model being less sensitive to scales. This demonstrates that
+SDPoint can indeed beneﬁt CNNs, in terms of scale sensi-
+tivity.
+7. Conclusion
+We propose Stochastic Downsampling Point (SDPoint),
+a novel approach to train CNNs by downsampling inter-
+mediate feature maps. At no extra parameter and training
+costs, SDPoint facilitates effective cost-adjustable inference
+and greatly improves network regularization (thus accuracy
+performance). Through experiments, we additionally ﬁnd
+out that SDPoint can help to identify more optimal (yet less
+costly) sub-networks (Sect. 6.1.2), sort input examples by
+various levels of classiﬁcation difﬁculties (Fig. 5), and mak-
+ing CNNs less scale-sensitive (Sect. 6.2.3).
+3It is a standard practice [8, 9, 38, 12] to resize images to have a shorter
+side of 256 (pre-cropping size) before doing 224 × 224 center-cropping.
+References
+[1] Y.-L. Boureau, J. Ponce, and Y. LeCun. A theoretical analy-
+sis of feature pooling in visual recognition. In International
+Conference on Machine Learning (ICML), 2010. 3
+[2] L.-C. Chen, G. Papandreou, I. Kokkinos, K. Murphy, and
+A. L. Yuille. Deeplab: Semantic image segmentation with
+deep convolutional nets, atrous convolution, and fully con-
+nected crfs. IEEE Transactions on Pattern Analysis and Ma-
+chine Intelligence (TPAMI), 2017. 2, 4, 6
+[3] F. Chollet. Xception: Deep learning with depthwise sepa-
+rable convolutions. In Conference on Computer Vision and
+Pattern Recognition (CVPR), 2017. 1
+[4] M. Figurnov, M. D. Collins, Y. Zhu, L. Zhang, J. Huang,
+D. Vetrov, and R. Salakhutdinov. Spatially adaptive compu-
+In Conference on Com-
+tation time for residual networks.
+puter Vision and Pattern Recognition (CVPR), 2017. 2, 7,
+[5] A. Graves. Adaptive computation time for recurrent neural
+networks. arXiv preprint arXiv:1603.08983, 2016. 2
+[6] S. Han, J. Pool, J. Tran, and W. Dally. Learning both weights
+and connections for efﬁcient neural network. In Conference
+on Neural Information Processing Systems (NIPS), 2015. 1
+[7] K. He, X. Zhang, S. Ren, and J. Sun. Spatial pyramid pooling
+in deep convolutional networks for visual recognition.
+In
+European Conference on Computer Vision (ECCV), 2014. 2,
+4, 6
+[8] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning
+In Conference on Computer Vision
+for image recognition.
+and Pattern Recognition (CVPR), 2016. 1, 3, 8
+[9] K. He, X. Zhang, S. Ren, and J. Sun. Identity mappings in
+deep residual networks. In European Conference on Com-
+puter Vision (ECCV), 2016. 1, 7, 8
+[10] Y. He, X. Zhang, and J. Sun. Channel pruning for accelerat-
+ing very deep neural networks. In International Conference
+on Computer Vision (ICCV), 2017. 1
+[11] S. Hochreiter. Untersuchungen zu dynamischen neuronalen
+netzen. Diploma, Technische Universit¨at M¨unchen, 91,
+1991. 3
+[12] G. Huang, Z. Liu, L. van der Maaten, and K. Q. Weinberger.
+Densely connected convolutional networks. In Conference
+on Computer Vision and Pattern Recognition (CVPR), 2017.
+3, 4, 5, 6, 7, 8
+[13] G. Huang, Y. Sun, Z. Liu, D. Sedra, and K. Q. Weinberger.
+Deep networks with stochastic depth. In European Confer-
+ence on Computer Vision (ECCV, pages 646–661. Springer,
+2016. 2
+[14] I. Hubara, M. Courbariaux, D. Soudry, R. El-Yaniv, and
+In Conference on
+Y. Bengio. Binarized neural networks.
+Neural Information Processing Systems (NIPS), 2016. 1
+[15] S. Ioffe and C. Szegedy. Batch normalization: Accelerating
+deep network training by reducing internal covariate shift.
+In International Conference on Machine Learning (ICML),
+pages 448–456, 2015. 4
+[16] M. Jaderberg, A. Vedaldi, and A. Zisserman. Speeding up
+convolutional neural networks with low rank expansions. In
+British Machine Vision Conference (BMVC), 2014. 1
+[17] A. Krizhevsky. Learning multiple layers of features from
+tiny images. 2009. 5
+[18] G. Larsson, M. Maire, and G. Shakhnarovich.
+Fractal-
+In In-
+net: Ultra-deep neural networks without residuals.
+ternational Conference on Learning Representations (ICLR),
+2017. 2
+[19] C.-Y. Lee, S. Xie, P. Gallagher, Z. Zhang, and Z. Tu. Deeply-
+supervised nets. In Artiﬁcial Intelligence and Statistics (AIS-
+TATS, 2015. 2
+[20] S. Leroux, S. Bohez, T. Verbelen, B. Vankeirsbilck,
+P. Simoens, and B. Dhoedt. Resource-constrained classiﬁ-
+cation using a cascade of neural network layers. In Interna-
+tional Joint Conference on Neural Networks (IJCNN), 2015.
+[21] H. Li, A. Kadav, I. Durdanovic, H. Samet, and H. P. Graf.
+Pruning ﬁlters for efﬁcient convnets. In International Con-
+ference on Learning Representations (ICLR), 2017. 1
+[22] M. Lin, Q. Chen, and S. Yan. Network in network. In In-
+ternational Conference on Learning Representations (ICLR),
+2014. 3
+[23] J.-H. Luo, J. Wu, and W. Lin. Thinet: A ﬁlter level pruning
+In Interna-
+method for deep neural network compression.
+tional Conference on Computer Vision (ICCV), 2017. 1
+[24] D. Mishkin, N. Sergievskiy, and J. Matas. Systematic eval-
+uation of convolution neural network advances on the ima-
+genet. Computer Vision and Image Understanding (CVIU),
+2017. 4
+[25] A. Paszke, S. Gross, S. Chintala, and G. Chanan. Pytorch.
+http://pytorch.org/. 5
+[26] G. Pleiss, D. Chen, G. Huang, T. Li, L. van der Maaten,
+and K. Q. Weinberger. Memory-efﬁcient implementation of
+densenets. arXiv preprint arXiv:1707.06990, 2017. 7
+[27] M. Rastegari, V. Ordonez, J. Redmon, and A. Farhadi. Xnor-
+net: Imagenet classiﬁcation using binary convolutional neu-
+ral networks. In European Conference on Computer Vision
+(ECCV), 2016. 1
+[28] J. Redmon and A. Farhadi. Yolo9000: Better, faster, stronger.
+In Conference on Computer Vision and Pattern Recognition
+(CVPR), 2017. 2, 6
+[29] O. Russakovsky, J. Deng, H. Su, J. Krause, S. Satheesh,
+S. Ma, Z. Huang, A. Karpathy, A. Khosla, M. Bernstein,
+et al. Imagenet large scale visual recognition challenge. In-
+ternational Journal of Computer Vision (IJCV, 115(3):211–
+252, 2015. 4, 5, 7
+[30] K. Simonyan and A. Zisserman. Very deep convolutional
+networks for large-scale image recognition. In International
+Conference on Learning Representations (ICLR), 2015. 4
+[31] S. Singh, D. Hoiem, and D. Forsyth. Swapout: Learning
+an ensemble of deep architectures. In Conference on Neural
+Information Processing Systems (NIPS), pages 28–36, 2016.
+[32] N. Srivastava, G. E. Hinton, A. Krizhevsky, I. Sutskever, and
+R. Salakhutdinov. Dropout: a simple way to prevent neu-
+ral networks from overﬁtting. Journal of Machine Learning
+Research (JMLR), 15(1):1929–1958, 2014. 2, 5, 6
+[33] C. Sun, A. Shrivastava, S. Singh, and A. Gupta. Revisiting
+unreasonable effectiveness of data in deep learning era. In
+International Conference on Computer Vision (ICCV), 2017.
+[34] C. Szegedy, S. Ioffe, V. Vanhoucke, and A. A. Alemi.
+Inception-v4, inception-resnet and the impact of residual
+connections on learning. In AAAI Conference on Artiﬁcial
+Intelligence, 2017. 1, 5
+[35] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed,
+D. Anguelov, D. Erhan, V. Vanhoucke, and A. Rabinovich.
+Going deeper with convolutions. In Conference on Computer
+Vision and Pattern Recognition (CVPR), 2015. 5, 7
+[36] S. Teerapittayanon, B. McDanel, and H. Kung. Branchynet:
+Fast inference via early exiting from deep neural networks.
+In International Conference on Pattern Recognition (ICPR),
+2016. 2, 6
+[37] L. Wan, M. Zeiler, S. Zhang, Y. L. Cun, and R. Fergus. Reg-
+ularization of neural networks using dropconnect. In Inter-
+national Conference on Machine Learning (ICML), 2013. 2
+[38] S. Xie, R. Girshick, P. Doll´ar, Z. Tu, and K. He. Ag-
+gregated residual transformations for deep neural networks.
+In Conference on Computer Vision and Pattern Recognition
+(CVPR), 2017. 1, 6, 7, 8
+[39] T.-J. Yang, Y.-H. Chen, and V. Sze. Designing energy-
+efﬁcient convolutional neural networks using energy-aware
+In Conference on Computer Vision and Pattern
+pruning.
+Recognition (CVPR), 2017. 1
+[40] S. Zagoruyko and N. Komodakis. Wide residual networks.
+In British Machine Vision Conference (BMVC), 2016. 5, 6
+[41] C. Zhu, S. Han, H. Mao, and W. J. Dally. Trained ternary
+quantization. In International Conference on Learning Rep-
+resentations (ICLR), 2017. 1

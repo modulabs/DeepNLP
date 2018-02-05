@@ -1,0 +1,892 @@
+Incremental kernel PCA and the Nystr¨om method
+Fredrik Hallgren
+Paul Northrop
+Department of Statistical Science
+University College London
+London WC1E 6BT, United Kingdom
+fredrik.hallgren@ucl.ac.uk
+Abstract
+Incremental versions of batch algorithms are
+often desired, for increased time efﬁciency
+in the streaming data setting, or increased
+memory efﬁciency in general.
+In this paper
+we present a novel algorithm for incremen-
+tal kernel PCA, based on rank one updates to
+the eigendecomposition of the kernel matrix,
+which is more computationally efﬁcient than
+comparable existing algorithms. We extend
+our algorithm to incremental calculation of the
+Nystr¨om approximation to the kernel matrix,
+the ﬁrst such algorithm proposed. Incremen-
+tal calculation of the Nystr¨om approximation
+leads to further gains in memory efﬁciency,
+and allows for empirical evaluation of when a
+subset of sufﬁcient size has been obtained.
+1 INTRODUCTION
+Kernel methods make use of non-linear patterns in data
+whilst being able to use linear solution methods, through
+a non-linear transformation of data examples into a fea-
+ture space where inner products correspond to the appli-
+cation of a kernel function between data examples (Hof-
+mann et al., 2008). Many kernel methods have been
+conceived as the direct application of well-known linear
+methods in this feature space, occasionally reformulated
+to be expressed entirely in the form of inner products.
+This is the case for kernel PCA, obtained through the ap-
+plication of linear PCA in feature space (Sch¨olkopf et al.,
+1998) and involving an eigendecomposition of the kernel
+matrix. It has been shown to outperform linear PCA in a
+number of applications (Chin and Suter, 2007).
+Incremental algorithms, where a solution is updated for
+additional data examples, are often desirable. If data ar-
+Department of Statistical Science
+University College London
+London WC1E 6BT, United Kingdom
+p.northrop@ucl.ac.uk
+rives sequentially in time and a solution is required for
+each additional data example, more efﬁcient incremen-
+tal algorithms are often available than repeated applica-
+tion of a batch procedure. Furthermore, incremental al-
+gorithms often have a lower memory footprint than their
+batch counterparts.
+In this paper, we propose a novel algorithm for incremen-
+tal kernel PCA, which accounts for the change in mean in
+the covariance matrix from each additional data example.
+It works by writing the expanded mean-adjusted kernel
+matrix from an additional data point in terms of a num-
+ber of rank one updates, to which a rank one update al-
+gorithm for the eigendecomposition can be applied. We
+use a rank one update algorithm based on work in Golub
+(1973) and Bunch et al. (1978).
+A few previous exact incremental algorithms for kernel
+PCA have been proposed, some of which are based on
+the application of an incremental linear PCA method in
+feature space (Kim et al., 2005; Chin and Suter, 2007;
+Hoegaerts et al., 2007). Rank one update algorithms for
+the eigendecomposition have not previously been applied
+to kernel PCA, to the best of our knowledge. If the mean
+of the feature vectors is not adjusted, our algorithm corre-
+sponds to an incremental procedure for the eigendecom-
+position of the kernel matrix, which can be more widely
+applied.
+Our algorithm has the same time and memory complex-
+ities as existing algorithms for incremental kernel PCA
+and it is more computationally efﬁcient than the com-
+parable algorithm in Chin and Suter (2007), which also
+allows for a change in mean. Furthermore, it can be con-
+sidered more ﬂexible, since it is straightforward to apply
+a different rank one update algorithm to the one we have
+used, for potentially improved efﬁciency. Approximate
+algorithms could also be applied, for example from ran-
+domized linear algebra (Mahoney, 2011).
+The usefulness of kernel methods is limited by their large
+computational requirements in time and memory, which
+scale in the number of data points, since the dimension
+of the transformed variables often is very large, or they
+are not explicitly available, and one therefore must ex-
+press a solution in terms of transformed data examples.
+This is particularly true for kernel PCA since it requires
+an eigendecomposition of the kernel matrix, an expen-
+sive operation. As a remedy, various approximate meth-
+ods have been introduced, such as the Nystr¨om method
+(Williams and Seeger, 2001), which creates a low-rank
+approximation to the kernel matrix based on a randomly
+sampled subset of data examples.
+We also extend our algorithm for incremental kernel
+PCA to incremental calculation of the Nystr¨om approxi-
+mation to the kernel matrix. We incrementally add data
+examples to the subset used to create the Nystr¨om ap-
+proximation to kernel PCA. This allows one to evalu-
+ate empirically the accuracy of the Nystr¨om approxima-
+tion for each added data example. Rudi et al. (2015)
+presented an incremental updating procedure for the
+Nystr¨om approximation to kernel ridge regression, based
+on rank one updates to the Cholesky decomposition. Our
+proposed incremental procedure can be applied to any
+kernel method requiring the eigendecomposition or in-
+verse of the kernel matrix. Combining an incremental
+algorithm with the Nystr¨om method also leads to further
+improvements in memory efﬁciency, compared with ei-
+ther method on its own.
+2 BACKGROUND
+2.1 KERNEL METHODS
+Kernel methods allow for the application of linear meth-
+ods to discover non-linear patterns between variables,
+through a non-linear transformation of data points φ(x)
+into a feature space where linear algorithms can be ap-
+plied (Hofmann et al., 2008). They rely on two things.
+First, the calculation of inner products between trans-
+formed data examples through a symmetric positive def-
+inite kernel k(x, y); second, the expression of a solution
+linearly in the space of transformed data examples, rather
+than in the space of transformed variables.
+We have a set of n observations {xi}n
+i=1. Linear meth-
+ods generally scale in the dimension of the observa-
+tions. For example, if each xi is a real vector xi =
+(x(1)
+), a linear method will scale as the
+number of variables d.
+Let each xi be an element from a set X . In general, no
+further restrictions need to be placed on the set X , which
+is a great beneﬁt of kernel methods. For example, X
+can be a collection of text strings or graphs (Lodhi et al.,
+, ..., x(d)
+, x(2)
+i.e.
+2002; Vishwanathan et al., 2010). Let H be a Hilbert
+space of real-valued functions on X , with inner product
+(cid:104)· , ·(cid:105)H. If X is a vector space, then H is a closed sub-
+space of X ∗, the dual space of bounded linear functionals
+on X .
+Consider H(cid:48), the dual space of linear functionals on H.
+For each x∈X there is an element δx∈H(cid:48) such that
+δx(f ) = f (x), termed the evaluation functional.
+If δx
+continuous), then by the Riesz rep-
+is bounded (i.e.
+resentation theorem there is a unique element gx∈H
+such that δx(f ) =(cid:104)gx, f(cid:105)H (Bollob´as, 1999). If we con-
+sider gx as a function of x, say k(x,·), then k(x,·)
+(cid:104)k(x,·), f (·)(cid:105)H =
+has the reproducing property,
+f (x). Furthermore, by the reproducing property, we have
+(cid:104)k(x,·), k(y,·)(cid:105)H = k(x, y). Then k(x, y) is a symmetric
+positive deﬁnite function by the symmetric positive deﬁ-
+nite property of the inner product. The function k(x,·) is
+also often denoted by φ(x), termed a feature map.
+The space H has uncountable dimension, but since ev-
+ery (separable) Hilbert space is isometrically isomorphic
+to (cid:96)2, the space of square-summable sequences (Bol-
+lob´as, 1999), each element φ(xi) has a representation
+as a vector φ(xi) = (φ1(xi), φ2(xi), ..., φd(xi)) over R
+k=1 φk(xi)φk(xj). We call
+these feature vectors. However, this representation is
+often not known, or d is very large, so it might not be
+possible to apply a linear method directly on the vari-
+ables φ1(x), φ2(x), ..., φd(x). Thanks to the represen-
+ter theorem (Sch¨olkopf et al., 2001), a solution can in-
+stead often be expressed in terms of elements in H, as
+with (cid:104)φ(xi), φ(xj)(cid:105)H =(cid:80)d
+f (x) =(cid:80)n
+i=1 αik(xi, x) with coefﬁcients αi.
+We arrange the feature vectors along the rows of a
+data matrix Φ. The kernel matrix is given by K :=
+(k(xi, xj))∈Rn×n = ΦΦT .
+2.2 KERNEL PCA
+PCA ﬁnds the set of orthogonal linear combinations of
+variables that maximizes the variance of each linear com-
+bination in turn. PCA can be used for dimensionality re-
+duction, in regression and classiﬁcation problems, and to
+detect outliers, among other applications (Jolliffe, 2002).
+The principal components are obtained by calculating
+the eigendecomposition of the sample covariance matrix
+n X T X, for a data matrix of (centred) observations
+C = 1
+X, where each observation occupies a row. This gives
+the decomposition C = V ΛV T where the columns of V
+are the directions of maximum variance. The principal
+components can also be obtained through the related sin-
+gular value decomposition (SVD).
+Assuming centered data, kernel PCA performs the eigen-
+decomposition of the covariance matrix in feature space
+through (Sch¨olkopf et al., 1998)
+ΦT Φv = λv
+n ΦT Φ = V ΣV T . Hence-
+resulting in the decomposition 1
+forth we will ignore the factor 1
+n and only be con-
+cerned with the eigendecomposition of ΦT Φ. Noting
+that span{ΦT} = span{V }, we can write v in terms of
+an n-dimensinal vector u as v = ΦT u. Left-multiplying
+the eigenvalue equation by Φ we obtain Ku = λu and the
+decomposition K = U ΛU T .
+If the data vectors in feature space are not assumed to be
+centred, we need to subtract the mean of each variable
+from Φ and instead calculate the eigendecomposition of
+K(cid:48) = (Φ− 1nΦ)(Φ− 1nΦ)T
+= K − 1nK − K1n + 1nK1n
+(1)
+where 1n is an n× n matrix for which (1n)i,j = 1
+with every element equal to 1
+n.
+n, i.e.
+2.3
+INCREMENTAL KERNEL PCA
+Incremental algorithms update an existing solution for
+one or several additional data examples, also referred
+to as online learning. The goal is that specialized algo-
+rithms will achieve greater time or memory performance
+than repeated application of batch procedures. There
+are many use cases for incremental versions of batch al-
+gorithms, for example when memory capacity is con-
+strained, or when data examples arrive sequentially in
+time, termed streaming data, and a solution is desired for
+each additional data example.
+A few algorithms for exact incremental kernel PCA have
+been proposed. The algorithm in Chin and Suter (2007)
+is based on the incremental linear PCA algorithm from
+Lim et al. (2004). The time complexity is O(n3) and
+the memory complexity O(n2). Hoegaerts et al. (2007)
+write the kernel matrix expanded with an additional data
+example in terms of two rank one updates, without ad-
+justing for a change in mean, and hence propose an al-
+gorithm to update a subset of m dominant eigenvalues
+and corresponding eigenvectors. If the algorithm is ap-
+plied to update all eigenpairs, the complexities in time
+and memory are O(n3) and O(n2), respectively.
+Iterative algorithms produce a sequence of improving ap-
+proximate solutions that converges to the exact solution
+as the number of steps increases (Golub and Van Loan,
+2013). An iterative algorithm can often be made to op-
+erate efﬁciently in an incremental fashion, by expanding
+the data set with additional data examples and restart-
+ing the iterative procedure. An example of an iterative
+method for kernel PCA that can be made to operate in-
+crementally is the kernel Hebbian algorithm (Kim et al.,
+2005), based on the generalized Hebbian algorithm (Oja,
+1982) applied in feature space.
+Various approximations to incremental kernel PCA have
+also been proposed. See for example Tokumoto and
+Ozawa (2011) or Sheikholeslami et al. (2015). Since we
+present an exact algorithm for incremental kernel PCA,
+we will not describe these or similar works further.
+2.4 THE NYSTR ¨OM METHOD
+The Nystr¨om method (Williams and Seeger, 2001) ran-
+domly samples m data examples from the full dataset,
+often uniformly, and calculates a low-rank approxima-
+tion ˜K to the full kernel matrix through
+˜K = Kn,mK−1
+m,mKm,n
+where Kn,m is an n× m matrix obtained by choosing m
+columns from the original matrix K, Km,n is its trans-
+pose and Km,m contains the intersection of the same m
+columns and rows.
+3 KERNEL PCA THROUGH
+RANK ONE UPDATES
+In this section we present an algorithm for incremen-
+tal kernel PCA based on rank one updates to the eigen-
+decomposition of the kernel matrix K, or the mean-
+adjusted kernel matrix K(cid:48). Any incremental algorithm
+for the eigendecomposition of the kernel matrix K can
+be applied where the explicit or implicit inverse of the
+same is required, such as kernel regression and kernel
+SVM. Various methods other than kernel PCA are also
+based on the eigendecomposition of the kernel matrix,
+such as kernel FDA (Mika et al., 1999). Even when
+more efﬁcient solution methods are available, access to
+the eigendecomposition can be highly useful for statisti-
+cal regularization or controlling numerical stability.
+In contrast to the covariance matrix in linear PCA, the
+kernel matrix expands in size for each additional data
+point, which needs to be taken into account, and the ef-
+fect on the eigensystem determined. We write the ker-
+nel matrix K(cid:48)
+m+1,m+1 created with m+1 data examples
+in terms of an expansion and a sequence of symmetric
+rank one updates to the kernel matrix K(cid:48)
+m,m, and apply a
+rank one update algorithm to the eigendecomposition of
+K(cid:48)
+m,m to obtain the eigendecomposition of K(cid:48)
+m+1,m+1.
+A number of algorithms have been suggested to perform
+rank one modiﬁcation to the symmetric eigenproblem.
+Golub (1973) presented a procedure to determine the
+eigenvalues of a diagonal matrix updated through a rank
+one perturbation. Bunch et al. (1978) extended the re-
+sults to the determination of both eigenvalues and eigen-
+vectors of an arbitrary perturbed matrix, including an im-
+proved procedure to determine the eigenvalues. Stability
+issues in the calculation of the eigenvectors, including
+loss of numerical orthogonality, later motivated several
+improvements (Dongarra and Sorensen, 1987; Sorensen
+and Tang, 1991; Gu and Eisenstat, 1994). Alternatively,
+one could potentially employ update algorithms for the
+singular value decomposition, such as the algorithm sug-
+gested in Brand (2006) for the thin singular value decom-
+position.
+We use the rank one update algorithm for eigenvalues
+from Golub (1973) and the determine the eigenvectors
+according to Bunch et al. (1978). In the experiments our
+approach seems to be sufﬁciently stable and accurate for
+most use cases. We assume throughout that the kernel
+matrix remains non-singular after each update.
+Our algorithm has the same time and memory complex-
+ities as competing methods. The algorithm most com-
+parable to ours is the one in Chin and Suter (2007),
+which also accounts for a change in mean. If one addi-
+tional data example is added incrementally, and all eigen-
+pairs are retained, it requires the eigendecomposition of
+an m+2×m+2 matrix, the eigendecomposition of the
+m×m unadjusted kernel matrix, and a multiplication of
+two m×m matrices at each step. Since a multiplication
+of two m×m matrices requires 2m3 ﬂops, and the state-
+of-the-art QR algorithm for the symmetric eigenproblem
+about 9m3 ﬂops (Golub and Van Loan, 2013), the algo-
+rithm thus requires 20m3 ﬂops to the O(m3) factor. Our
+proposed algorithm requires 8m3 ﬂops to the O(m3) fac-
+tor if the mean is adjusted, and 4m3 ﬂops otherwise, from
+one multiplication of two m+1×m+1 matrices for each
+rank one update. Our algorithm is thus more than twice
+as efﬁcient.
+3.1 RANK ONE UPDATE PROCEDURE
+m and write K(cid:48)
+If we know the eigendecomposition of K(cid:48)
+m,m=
+m+1,m+1 in terms of an ex-
+UmΛmU T
+pansion and number of symmetric rank one updates
+to K(cid:48)
+m,m, we can then apply a rank one update algo-
+rithm to obtain the eigendecomposition of K(cid:48)
+m+1,m+1=
+Um+1Λm+1U T
+m+1.
+3.1.1 Zero-mean data
+If we assume that the data examples have zero mean in
+feature space, then the mean does not need to be updated
+for previous data points and Km,m only needs to be ex-
+panded with an additional row and column. In this case
+we can devise a rank one update procedure from Km,m
+to Km+1,m+1 in two steps. We denote ki,j =k(xi,xj)
+and a = [k1,m+1 k2,m+1 ··· km,m+1]T , i.e.
+a column
+vector with elements k1,m+1, k2,m+1, ..., km,m+1 and let
+v1=[aT 1
+km+1,m+1]T
+v2=[aT 1
+σ=4/km+1,m+1
+km+1,m+1]T
+Then we have
+Km+1,m+1=
+(cid:20)Km,m
+(cid:21)
+4 km+1,m+1
+1 −σv2vT
+0m
+0T
+m,m+σv1vT
+:=K 0
++σv1vT
+1 −σv2vT
+(2)
+m,m and
+corresponding to an expansion of Km,m to K 0
+two rank one updates, where 0m is a column vector of ze-
+m,m will
+ros. Compared to the eigensystem of Km,m, K 0
+have an additional eigenvalue λm+1= 1
+4 km+1,m+1 and
+corresponding eigenvector um+1=[0 0 ··· 0 1]T . The
+matrix K 0
+m,m is symmetric positive deﬁnite (SPSD),
+since all eigenvalues are positive. It will remain SPSD
+after the ﬁrst update, since it is a sum of two SPSD
+matrices, as v1vT
+1 is a Gram matrix, if each element
+is instead seen as a separate vector. The resulting ma-
+trix after the second update will be SPSD since this
+holds for Km+1,m+1. The algorithm for one updating
+iteration is described in Algorithm 1, given a function
+rankoneupdate(σ,v,L,U ) that updates the eigenvalues
+L and eigenvectors U from a rank one additive perturba-
+tion σvvT .
+(cid:20)U
+i=1 ; row vector of eigenvalues L and ma-
+Algorithm 1 Incremental eigendecomposition of kernel
+matrix
+Input: Dataset {xi}m+1
+trix of eigenvectors U of Km,m; kernel function k(·,·)
+Output: Eigenvalues L and eigenvectors U of Km+1,m+1
+1: L←[L km+1,m+1/4]
+2: U←
+km+1,m+1/4
+3: sigma ←4/km+1,m+1
+4: k1←[k1,m+1 k2,m+1 ... km+1,m+1/2]
+5: k0←[k1,m+1 k2,m+1 ... km+1,m+1/4]
+6: L,U←rankoneupdate(sigma, k1, L, U )
+7: L,U←rankoneupdate(−sigma, k0, L, U )
+(cid:21)
+If we limit ourselves to kernel functions for which
+k(x,x) is constant, without loss of generality we can set
+k(x,x)=1 and the above expression simpliﬁes.
+m+1,m+1, all the elements of K(cid:48)
+3.1.2 Mean-adjusted data
+To construct a rank one update procedure from K(cid:48)
+m,m
+to K(cid:48)
+m,m need to be ad-
+justed in addition to the expansion with another row and
+column. We ﬁrst devise two rank one updates that adjust
+the mean of K(cid:48)
+m,m to account for the additonal data ex-
+ample. We then expand the resulting matrix and perform
+symmetric updates to set the last row and column to the
+required values, similarly to (2).
+Recall that when taking the mean into account, one per-
+forms an eigendecomposition of the adjusted kernel ma-
+trix K(cid:48)=K−1nK+K1n−1nK1n. The elements of
+K(cid:48)
+m,m can thus be adjusted through the following for-
+mula
+m+1,m+1)1:m,1:m
+K(cid:48)(cid:48)
+m,m:=(K(cid:48)
+m,m+1mKm,m+Km,m1m−1mKm,m1m
+=K(cid:48)
++(−1m+1Km+1,m+1−Km+1,m+11m+1
++1m+1Km+1,m+11m+1)1:m,1:m
+where (· )1:m,1:m denotes the ﬁrst m rows and columns
+of a matrix. The latter six terms are all rank one matrices.
+The matrices 1mKm,m and −(1m+1Km+1,m+1)1:m,1:m
+are constant along the columns, and hence their
+the rows of Km,m1m−
+sum,
+(Km+1,m+11m+1)1:m,1:m. The matrix 1mKm,m1m
+has constant entries, equal to the sum of all elements
+of Km,m multiplied by a factor 1/m2, and similarly
+for (1m+1Km+1,m+11m+1)1:m,1:m. Consequently, all
+terms can be written as two rank one updates. We have
+and similarly for
+1mKm,m−(1m+1Km+1,m+1)1:m,1:m
+(1mKm,m−1maT )
+Km,m1m−(Km+1,m+11m+1)1:m,1:m
+m+1
+m+1
+(Km,m1m−a1T
+m)
+with a as in section 3.1.1 above and where 1m is a
+column vector of ones.
+Since Km,m is symmetric
+for all m, we have 1mKm,m= (Km,m1m)T and
+1:m,1:m,
+(1m+1Km+1,m+1)1:m,1:m= (Km+1,m+11m+1)T
+and can set
+u=
+m(m+1)
+Km,m1m− 1
+m+1
+a+
+C1m
+C=− 1
+m2 Σm+
+(m+1)2 Σm+1
+mKm,m1m, the sum of
+where we have denoted Σm=1T
+all elements of Km,m, to obtain
+K(cid:48)(cid:48)
+m,m=K(cid:48)
+m,m+1muT +u1T
+(1m+u)(1m+u)T − 1
+=K(cid:48)
+m,m+
+which is two symmetric rank one updates to K(cid:48)
+m,m. Σm
+and Km,m1m can easily be updated between iterations
+like so
+(1m−u)(1m−u)T
+Σm+1=Σm+2aT 1m+km+1,m+1
+Km+1,m+11m+1=[Km,m1m+a; aT 1m+km+1,m+1]
+where [b; c] denotes a column vector b expanded with
+an additional element c. We now expand K(cid:48)(cid:48)
+m,m to
+K(cid:48)
+m+1,m+1, analogously to (2), but taking the adjusted
+mean into account. The required last row and column is
+given by
+v := k− 1
+m+1
+(1m+11T
+m+1k+Km+1,m+11m+1
+− 1
+m+1
+Σm+11m+1)
+with k=[aT k(xm+1,xm+1)]T . If we let
+v1=[(v)1:m;
+σ=4/(v)m+1
+v2=[(v)1:m;
+(v)m+1]
+(v)m+1]
+where (v)1:m is a vector of the ﬁrst m elements of v, and
+(v)m+1 is its last element, we have
+K(cid:48)
+m+1,m+1=
++σv1vT
+1 −σv2vT
+(cid:20)K(cid:48)(cid:48)
+:=K 0
+(cid:21)
+1 −σv2vT
+0m
+m,m
+0T
+m,m+σv1vT
+4 (v)m+1
+(3)
+We have thus devised a procedure to update K(cid:48)
+m,m to
+K(cid:48)
+m+1,m+1 using four symmetric rank one updates, for
+which a rank one eigendecomposition update algorithm
+can be applied. The full procedure is described in Algo-
+rithm 2. Note that the matrix K(cid:48)
+m,m or its expansion do
+not need to be kept in memory. The procedure is linear
+in time and memory, since all constituent quantities are
+updated incrementally.
+3.2 UPDATE ALGORITHM FOR THE
+EIGENDECOMPOSITION
+Here we describe an algorithm for updating the eigen-
+decomposition after a rank one perturbation. Suppose
+Algorithm 2 Incremental eigendecomposition of
+adjusted kernel matrix
+Input: Dataset {xi}m+1
+i=1 ; row vector of eigenvalues L and ma-
+trix of eigenvectors U of Km,m; kernel function k(·,·);
+sum of all elements of Km,m, denoted S; sum of rows of
+Km,m, i.e. Km,m1m, denoted K1
+Output: Eigenvalues L and eigenvectors U of Km+1,m+1
+1: a←[k1,m+1 k2,m+1 ... km,m+1]
+2: S2←S +2∗sum(a)+km+1,m+1
+3: C←−S/m2 +S2/(m+1)2
+4: u←K1/(m∗(m+1))2−a/(m+1)+0.5∗C∗ones(m)
+5: L,U←rankoneupdate(0.5, 1+u, L, U )
+6: L,U←rankoneupdate(−0.5, 1−u, L, U )
+7: K1←[K1+a sum(a)+k]
+8: S←S2
+9: m←m+1
+10: v←k−(ones(m)∗(sum(a)+k)+K1−S/m)/m
+11: v0←v[m]
+12: v←v[1:m−1]
+13: L←[L v0/4]
+14: U←
+v0/4
+15: sigma←4/v0
+16: v1←[v v0/2]
+17: v2←[v v0/4]
+18: L,U←rankoneupdate(sigma, v1, L, U )
+19: L,U←rankoneupdate(−sigma, v2, L, U )
+(cid:20)U
+(cid:21)
+we know the eigendecomposition of a symmetric matrix
+A=U ΛU T . Let
+B =U ΛU T +σvvT =U (Λ+σzzT )U T
+where z=U T v, and look for the eigendecomposition
+of ˜B =Λ+σzzT := ˜U ˜Λ ˜U T (Bunch et al., 1978). Then
+the eigendecomposition of B is given by U ˜U ˜Λ ˜U T U T
+with unchanged eigenvalues and eigenvectors U B :=
+U ˜U, since the product of two orthogonal matrices is
+orthogonal and since the eigendecomposition is unique,
+provided all eigenvalues are distinct.
+The eigenvalues of ˜B can be calculated in O(n2) time by
+ﬁnding the roots of the secular equation (Golub, 1973)
+n(cid:88)
+i=1
+ω(˜λ):=1+σ
+z2
+λi−˜λ
+(4)
+The eigenvalues of the modiﬁed system are subject to the
+following bounds
+λi≤˜λi≤λi+1
+λn≤˜λn≤λn +σzT z
+λi−1≤˜λi≤λi
+λ1 +σzT z≤˜λ1≤λ1
+i=1,2,...,n−1, σ>0
+σ>0
+i=2,3,...,n, σ<0
+σ<0
+(5)
+which can be used to supply initial guesses for the root
+ﬁnding algorithm. Note that after expanding the eigen-
+system, as described above, the eigenpairs need to be re-
+ordered for the bounds to be valid.
+Once the updated eigenvalues have been calculated the
+eigenvectors of the perturbed matrix B are given by
+(Bunch et al., 1978)
+uB
+i =
+U D−1
+i z
+i z(cid:107)
+(cid:107)D−1
+(6)
+where Di :=Λ−˜λiI. Since U and D−1
+are m×m and
+Di is diagonal the denominator is O(m) and the numer-
+ator is O(m2), leading to O(m3) time complexity to up-
+date all eigenvectors. The number of ﬂops for the full
+procedure is 2n3 +O(n2). Equation (6) requires the cre-
+ation of an additional n×n matrix, hence the full proce-
+dure is quadratic in memory.
+INCREMENTAL NYSTR ¨OM
+In this section we extend our proposed algorithm to in-
+cremental calculation of the Nystr¨om approximation to
+the kernel matrix. Having access to an incremental pro-
+cedure for the Nystr¨om method can be highly useful.
+Different sizes of subsets used in the approximation can
+efﬁciently be evaluated, to determine a suitable size for
+the problem at hand or for empirical investigation of the
+characteristics of the Nystr¨om method for subsets of dif-
+ferent sizes. For very large datasets, the combination of
+the Nystr¨om method with incremental calculation results
+in further gains in memory efﬁciency.
+Rudi et al. (2015) previously proposed an incremental
+algorithm for the Nystr¨om approximation applied to ker-
+nel ridge regression, based on rank one updates to the
+Cholesky decomposition. Our proposed procedure can
+be seen as a generalization of their work. To the best of
+our knowledge, it is the ﬁrst incremental algorithm for
+calculation of the full Nystr¨om approximation to the ker-
+nel matrix.
+Given the eigenvalues Λ and eigenvectors U of the
+matrix Km,m, the corresponding approximate eigenval-
+ues and eigenvectors of K are given by (Williams and
+Seeger, 2001)
+Λnys :=
+U nys :=
+(cid:114) m
+Kn,mU Λ−1
+(7)
+an
+obtain
+procedure
+incremental
+˜K =
+To
+U nysΛnysU nysT , calculate U and Λ incrementally
+using Algorithm (2), then at each iteration add an extra
+column to Kn,m corresponding to the additional data
+example, and calculate the rescaling (7). The rescaling
+for
+Figure 1: Difference between batch and incremental calculation of K(cid:48) of size 20+m for the two datasets.
+has O(m2n) time complexity from the matrix product
+in (7).
+Note that the proposed incremental calculation of the
+Nystr¨om approximation exactly reproduces batch com-
+putation at each m, save for numerical differences. The
+accuracy of the Nystr¨om approximation has been exten-
+sively studied, including comparisons with other meth-
+ods (Gittens and Mahoney, 2016; Yang et al., 2012).
+5 EXPERIMENTAL ANALYSIS
+In this section we present the results of a number of
+experiments1. We run the experiments on two differ-
+ent datasets from the UCI Machine Learning Reposi-
+tory (Lichman, 2013), the simulated Magic gamma tele-
+scope dataset and the Yeast dataset, containing cellular
+protein location sites. Where applicable, we remove the
+target variable when this is categorical and not continu-
+ous. Throughout the experiments we use the radial basis
+functions kernel
+(cid:18)
+−(cid:107)x−y(cid:107)2
+(cid:19)
+k(x,y)=exp
+where σ is a parameter. For each dataset, we set σ to be
+the median of the distances between all pairs of data ex-
+amples (in a subset of the full dataset), a common heuris-
+tic.
+1Source code in Python is available at
+https://github.com/cfjhallgren/inkpca
+5.1
+INCREMENTAL KERNEL PCA
+We implement and evaluate our algorithm for incremen-
+tal kernel PCA both with and without adjustment of the
+mean of the feature vectors.
+Numerical accuracy is generally good, whether adjusting
+the mean or not. A slight loss of orthogonality is discov-
+ered in the eigenvectors, as measured by how close U U T
+is to the identity, particularly for mean-adjusted data that
+requires four updates at each step and involves more nu-
+merical operations.
+We have previously assumed that the kernel matrix re-
+mains of full rank after each added data example. This
+will always be the case in theory if data contains noise,
+however near numerical rank deﬁciency can cause issues
+in practice. Equation (4) may then lack the required num-
+ber of roots.
+In this instance one can deﬂate the ma-
+trix (see e.g. Bunch et al. (1978) for details), but for
+the purposes of our experiments we have contended with
+excluding the speciﬁc data example from the algorithm.
+An excluded data point does not add any time overhead
+to the O(n3) factor.
+Every numerical operation leads to a small loss in ac-
+curacy, due to the ﬁnite representation of ﬂoating-point
+numbers, which is propagated, with varying severity,
+over subsequent operations. An incremental procedure
+involves substantionally more operations than a batch
+procedure, which leads to worse accuracy in compari-
+son, often termed drift. We illustrate this by plotting the
+Frobenius, spectral and trace norms of the difference be-
+tween the m×m adjusted kernel matrix K(cid:48)
+m,m and the
+reconstruction using the incrementally calculated eigen-
+decomposition, for different numbers of data points m,
+i.e. (cid:107)K(cid:48)
+m (cid:107). We plot the difference for
+(cid:48)T
+m,m−U(cid:48)
+mΛ(cid:48)
+mU
+01020304050607080m0.00000.00050.00100.00150.0020NormmagicFrobeniustracespectralFrobenius meantrace meanspectral mean01020304050607080m0.00000.00050.00100.00150.0020NormyeastFrobeniustracespectralFrobenius meantrace meanspectral meanFigure 2: Difference between K and ˜K of size 20+m for the two datasets.
+one run of the algorithm as well as the mean difference
+for each value of m over 50 runs. Please see Figure 1.
+The drift for reconstruction of the unadjusted matrix is
+smaller and is not plotted. Our results show that the drift
+is small.
+5.2
+INCREMENTAL NYSTR ¨OM
+We implement the proposed incremental calculation of
+the Nystr¨om approximation, using the ﬁrst 1000 observa-
+tions from each dataset. Having access to an incremen-
+tal algorithm for calculating the Nystr¨om approximation
+lets us investigate explicitly how the approximation im-
+proves with each additional data point for a speciﬁc data
+set. We calculate the Frobenius norm, spectral norm and
+trace norm of the difference between the the Nystr¨om ap-
+proximation and the full kernel matrix at each step of the
+algorithm. All these three norm can be of interest to a
+downstream machine learning practitioner (Gittens and
+Mahoney, 2016). Again, we plot the results for one run
+of the algorithm and for an average of 50 runs. Please
+see Figure 2.
+As seen in the plots, the Nystr¨om approximation seems
+to provide a high degree of accuracy in approximating
+the matrix K, even for a fairly small number of basis
+points.
+6 CONCLUSION
+We have in this paper presented an algorithm for incre-
+mental kernel PCA based on rank one updates to the
+eigendecomposition of the kernel matrix K or the mean-
+adjusted kernel matrix K(cid:48), which we extended to incre-
+mental calculation of the Nystr¨om approximation to the
+kernel matrix. Rank one update algorithms for the eigen-
+decomposition other than the one chosen in this paper
+could also be applied to the kernel PCA problem, for
+potentially improved accuracy and efﬁciency, including
+algorithms potentially not yet conceived. Furthermore, it
+could be straightforward to adapt the proposed algorithm
+for incremental kernel PCA to only maintain a subset of
+the eigenvectors and eigenvalues.
+An incremental procedure for the Nystr¨om method can
+aid in determining a suitable size of the subset used for
+the approximation through empirical evaluation. A fairly
+limited amount of work has been dedicated to the de-
+termination of this hyperparameter or equivalent hyper-
+parameters for other approximate kernel methods. Var-
+ious bounds on the statistical accuracy of the Nystr¨om
+method and related approximations have been derived,
+which could guide the choice of this hyperparameter, but
+this might not be the most suitable strategy.
+Acknowledgements
+We would like to thank Ricardo Silva at the Department
+of Statistical Science at UCL for helpful comments and
+guidance.
+References
+Bollob´as, B. (1999). Linear analysis. Cambridge Uni-
+versity Press, Cambridge, UK, 2nd edition.
+Brand, M. (2006). Fast low-rank modiﬁcations of the
+thin singular value decomposition. Linear Algebra
+and its Applications, 415(1):20–30.
+Bunch, J. R., Nielsen, C. P., and Sorensen, D. C. (1978).
+01020304050607080m020406080100120140160NormmagicFrobeniustracespectralFrobenius meantrace meanspectral mean01020304050607080m050100150200250NormyeastFrobeniustracespectralFrobenius meantrace meanspectral meanMika, S., R¨atsch, G., Weston, J., Sch¨olkopf, B., and
+M¨uller, K.-R. (1999). Fisher discriminant analysis
+with kernels. In Neural Networks for Signal Process-
+ing IX: Proceedings of the 1999 IEEE Signal Process-
+ing Society Workshop, pages 41–48. IEEE.
+Oja, E. (1982). Simpliﬁed neuron model as a principal
+component analyzer. Journal of Mathematical Biol-
+ogy, 15(3):267–273.
+Rudi, A., Camoriano, R., and Rosasco, L. (2015). Less
+is more: Nystr¨om computational regularization.
+In
+Advances in Neural Information Processing Systems,
+pages 1657–1665.
+Sch¨olkopf, B., Herbrich, R., and Smola, A. (2001). A
+In Computational
+generalized representer theorem.
+Learning Theory (COLT), pages 416–426. Springer.
+Sch¨olkopf, B., Smola, A., and M¨uller, K.-R. (1998).
+Nonlinear component analysis as a kernel eigenvalue
+problem. Neural computation, 10(5):1299–1319.
+Sheikholeslami, F., Berberidis, D., and Giannakis, G. B.
+(2015). Kernel-based low-rank feature extraction on a
+budget for big data streams. In IEEE Global Confer-
+ence on Signal and Information Processing (Global-
+SIP), pages 928–932. IEEE.
+Sorensen, D. C. and Tang, P. T. P. (1991). On the or-
+thogonality of eigenvectors computed by divide-and-
+SIAM Journal on Numerical
+conquer techniques.
+Analysis, 28(6):1752–1775.
+Tokumoto, T. and Ozawa, S. (2011). A fast incremen-
+tal kernel principal component analysis for learning
+stream of data chunks. In International Joint Confer-
+ence on Neural Networks (IJCNN), pages 2881–2888.
+IEEE.
+Vishwanathan, S. V. N., Schraudolph, N. N., Kondor, R.,
+and Borgwardt, K. M. (2010). Graph kernels. Journal
+of Machine Learning Research, 11(Apr):1201–1242.
+Williams, C. and Seeger, M. (2001). Using the Nystr¨om
+method to speed up kernel machines. In Advances in
+Neural Information Processing Systems, pages 682–
+688.
+Yang, T., Li, Y.-F., Mahdavi, M., Jin, R., and Zhou, Z.-H.
+(2012). Nystr¨om method vs random Fourier features:
+A theoretical and empirical comparison. In Advances
+in Neural Information Processing Systems, pages 476–
+484.
+Rank-one modiﬁcation of the symmetric eigenprob-
+lem. Numerische Mathematik, 31(1):31–48.
+Chin, T.-J. and Suter, D. (2007). Incremental kernel prin-
+cipal component analysis. IEEE Transactions on Im-
+age Processing, 16(6):1662–1674.
+Dongarra, J. J. and Sorensen, D. C. (1987). A fully par-
+allel algorithm for the symmetric eigenvalue problem.
+SIAM Journal on Scientiﬁc and Statistical Computing,
+8(2):139–154.
+Gittens, A. and Mahoney, M. W. (2016). Revisiting
+the Nystr¨om method for improved large-scale machine
+Journal of Machine Learning Research,
+learning.
+17(Dec):1–65.
+Golub, G. H. (1973). Some modiﬁed matrix eigenvalue
+problems. Siam Review, 15(2):318–334.
+Golub, G. H. and Van Loan, C. F. (2013). Matrix com-
+putations. John Hopkins University Press, Baltimore,
+MD, 4th edition.
+Gu, M. and Eisenstat, S. C. (1994). A stable and efﬁcient
+algorithm for the rank-one modiﬁcation of the sym-
+metric eigenproblem. SIAM Journal on Matrix Analy-
+sis and Applications, 15(4):1266–1276.
+Hoegaerts, L., De Lathauwer, L., Goethals, I., Suykens,
+J. A., Vandewalle, J., and De Moor, B. (2007). Ef-
+ﬁciently updating and tracking the dominant kernel
+principal components. Neural Networks, 20(2):220–
+229.
+Hofmann, T., Sch¨olkopf, B., and Smola, A. J. (2008).
+Kernel methods in machine learning. The Annals of
+Statistics, 36(3):1171–1220.
+Jolliffe,
+I. (2002).
+Springer, New York, NY, 2nd edition.
+Principal component analysis.
+Kim, K. I., Franz, M. O., and Sch¨okopf, B. (2005). It-
+erative kernel principal component analysis for image
+modeling. IEEE Transactions on Pattern Analysis and
+Machine Intelligence, 27(9):1351–1366.
+Lichman, M. (2013). UCI machine learning repository.
+Lim, J., Ross, D. A., Lin, R.-S., and Yang, M.-H. (2004).
+Incremental learning for visual tracking. In Advances
+in Neural Information Processing Systems, pages 793–
+800.
+Lodhi, H., Saunders, C., Shawe-Taylor, J., Cristianini,
+N., and Watkins, C. (2002). Text classiﬁcation using
+string kernels. Journal of Machine Learning Research,
+2(Feb):419–444.
+Mahoney, M. W. (2011). Randomized algorithms for ma-
+trices and data. Foundations and Trends R(cid:13) in Machine
+Learning, 3(2):123–224.

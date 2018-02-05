@@ -1,0 +1,962 @@
+On Polynomial time Constructions of
+Minimum Height Decision Tree
+Nader H. Bshouty Waseem Makhoul
+Technion, Haifa, Israel
+bshouty@ca.technion.ac.il
+Abstract. A decision tree T in Bm := {0, 1}m is a binary tree where
+each of its internal nodes is labeled with an integer in [m] = {1, 2, . . . , m},
+each leaf is labeled with an assignment a ∈ Bm and each internal node
+has two outgoing edges that are labeled with 0 and 1, respectively. Let
+A ⊂ {0, 1}m. We say that T is a decision tree for A if (1) For every a ∈ A
+there is one leaf of T that is labeled with a. (2) For every path from the
+root to a leaf with internal nodes labeled with i1, i2, . . . , ik ∈ [m], a leaf
+labeled with a ∈ A and edges labeled with ξi1 , . . . , ξik ∈ {0, 1}, a is the
+only element in A that satisﬁes aij = ξij for all j = 1, . . . , k.
+Our goal is to write a polynomial time (in n := |A| and m) algorithm
+that for an input A ⊆ Bm outputs a decision tree for A of minimum
+depth. This problem has many applications that include, to name a few,
+computer vision, group testing, exact learning from membership queries
+and game theory.
+Arkin et al. and Moshkov [4,14] gave a polynomial time (ln|A|)- approx-
+imation algorithm (for the depth). The result of Dinur and Steurer [6] for
+set cover implies that this problem cannot be approximated with ratio
+(1− o(1))· ln|A|, unless P=NP. Moskov studied in [14] the combinatorial
+measure of extended teaching dimension of A, ETD(A). He showed that
+ETD(A) is a lower bound for the depth of the decision tree for A and
+then gave an exponential time ETD(A)/ log(ETD(A))-approximation al-
+gorithm.
+In this paper we further study the ETD(A) measure and a new com-
+binatorial measure, DEN(A), that we call the density of the set A. We
+show that DEN(A) ≤ ETD(A) + 1. We then give two results. The ﬁrst
+result is that the lower bound ETD(A) of Moshkov for the depth of the
+decision tree for A is greater than the bounds that are obtained by the
+classical technique used in the literature. The second result is a poly-
+nomial time (ln 2)DEN(A)-approximation (and therefore (ln 2)ETD(A)-
+approximation) algorithm for the depth of the decision tree of A. We
+also show that a better approximation ratio implies P=NP.
+We then apply the above results to learning the class of disjunctions
+of predicates from membership queries [5]. We show that the ETD of
+this class is bounded from above by the degree d of its Hasse diagram.
+We then show that Moshkov algorithm can be run in polynomial time
+and is (d/ log d)-approximation algorithm. This gives optimal algorithms
+when the degree is constant. For example, learning axis parallel rays over
+constant dimension space.
+2
+Introduction
+Consider the following problem: Given an n-element set A ⊆ Bm := {0, 1}m
+from some class of sets A and a hidden element a ∈ A. Given an oracle that
+answers queries of the type: “What is the value of ai?”. Find a polynomial time
+algorithm that with an input A, asks minimum number of queries to the oracle
+and ﬁnds the hidden element a. This is equivalent to constructing a minimum
+height decision tree for A. A decision tree is a binary tree where each internal
+node is labeled with an index from [m] and each leaf is labeled with an assignment
+a ∈ Bm. Each internal node has two outgoing edges one that is labeled with 0
+and the other is labeled with 1. A node that is labeled with i corresponds to the
+query “Is ai = 0?”. An edge that is labeled with ξ corresponds to the answer
+ξ. This decision tree is an algorithm in an obvious way and its height is the
+worst case complexity of the number of queries. A decision tree T is said to be a
+decision tree for A if the algorithm that corresponds to T predicts correctly the
+hidden assignment a ∈ A. Our goal is to construct a small height decision tree
+for A ⊆ Bm in time polynomial in m and n := |A|. We will denote by OPT(A)
+the minimum height decision tree for A.
+This problem is related to the following problem in exact learning [1]: Given
+a class C of boolean functions f : X → {0, 1}. Construct in poly(|C|,|X|) time
+an optimal adaptive algorithm that learns C from membership queries. This
+learning problem is equivalent to constructing a minimum height decision tree
+j = fi(xj)} where fi is the ith function in C and xj is
+for the set A = {a(i)|a(i)
+the jth instance in X. In computer vision the problem is related to minimizing
+the number of “probes” (queries) needed to determine which one of a ﬁnite set
+of geometric ﬁgures is present in an image [4]. In game theory the problem is
+related to the minimum number of turns required in order to win a guessing
+game.
+1.1 Previous and New Results
+In [4], Arkin et al. showed that (AMMRS-algorithm) if at every node the deci-
+sion tree chooses i that partitions the current set (the set of assignments that
+are consistent to the answers of the queries so far) as evenly as possible, then
+the height of the tree is within a factor of log |A| from optimal. I.e., log |A|-
+approximation algorithm. Moshkov [14] analysis shows that this algorithm is
+(ln|A|)-approximation algorithm. This algorithm runs in polynomial time in m
+and |A|.
+Hyaﬁl and Rivest, [11], show that the problem of constructing a minimum
+depth decision tree is NP-Hard. The reduction of Laber and Nogueira, [12] to
+set cover with the inapproximability result of Dinur and Steurer [6] for set cover
+implies that it cannot be approximated to a factor of (1 − o(1)) · ln|A| unless
+P=NP. Therefore, no better approximation ratio can be obtained if no constraint
+is added to the set A.
+Moshkov, [13], studied the extended teaching dimension combinatorial mea-
+sure, ETD(A), of a set A ⊆ Bm. It is the maximum over all the possible assign-
+3
+ments b ∈ Bm of the minimum number of indices I ⊂ [m] in which b agrees with
+at most one a ∈ A. Moshkov showed two results. The ﬁrst is that ETD(A) is a
+lower bound for OPT(A). The second is an exponential time algorithm that asks
+(2ETD(A)/ log ETD(A)) log n queries. This gives a (ln 2) (ln|A|)/ log ETD(A) -
+approximation (exponential time) algorithm (since OPT(A) ≥ ETD(A)) and at
+the same time 2ETD (A)/ log ETD(A)-approximation algorithm (since OPT(A) ≥
+log |A|). Since many interesting classes have small ETD dimension, the latter re-
+sult gives small approximation ratio but unfortunately Moshkov algorithm runs
+in exponential time.
+In this paper we further study the ETD measure. We show that any poly-
+nomial time (1 − o(1))ETD(C)-approximation algorithm implies P=NP. There-
+fore, Moshkov algorithm cannot run in polynomial time unless P=NP. We then
+show that the above AMMRS-algorithm, [4], is polynomial time (ln 2)ETD(C)-
+approximation algorithm. This gives a small approximation ratio for classes with
+small extended teaching dimension.
+Another reason for studying the ETD of classes is the following: If you ﬁnd
+the ETD of the set A then you either get a lower bound that is better than the
+information theoretic lower bound log |A| or you get an approximation algorithm
+with a better ratio than ln|A|. This is because if ETD(A) < log |A| then the
+AMMRS-algorithm has a ratio (ln 2)ETD(A) that is better than the ln|A| ratio
+and if ETD(A) > log |A| then Moshkov lower bound, ETD(A), for OPT(A) is
+better than the information theoretic lower bound log |A|.
+To get the above results, we deﬁne a new combinatorial measure called the
+density DEN(A) of the set A. If Q = DEN(A) then there is a subset B ⊆ A such
+that an adversary can give answers to the queries that eliminate at most 1/Q
+fraction of the number of elements in B. This forces the learner to ask at least
+Q queries. We then show that ETD(A) ≥ DEN(A) − 1. On the other hand, we
+show that if Q = DEN(A) then a query in the AMMRS-algorithm eliminates
+at least (1 − 1/Q) fraction of the assignments in A. This gives a polynomial
+time (ln 2)DEN(A)-approximation algorithm which is also a (ln 2)(ETD(A) + 1)-
+approximation algorithm.
+In order to compare both algorithms we show that (ETD(A) − 1)/ ln|A| ≤
+DEN(A) ≤ ETD(A) + 1 and for random uniform A (and therefore for almost all
+A), with high probability DEN(A) = Θ(ETD(A)/ ln|A|). Since |A| > ETD(A),
+this shows that AMMRS-algorithm may get a better approximation ratio than
+Moshkov algorithm.
+The inapproximability results follows from the reduction of Laber and Nogueira,
+[12] to set cover with the inapproximability result of Dinur and Steurer [6] and
+the fact that DEN(A) ≤ ETD(A) + 1 ≤ OPT(A) + 1.
+We then apply the above results to learning the class of disjunctions of pred-
+icates from a set of predicates F from membership queries [5]. We show that the
+ETD of this class is bounded from above by the degree d of its Hasse diagram. We
+then show that Moshkov algorithm, for this class, runs in polynomial time and
+is (d/ log d)-approximation algorithm. Since |F| ≥ d (and in many applications,
+|F| (cid:29) d), this improves the |F|-approximation algorithm SPEX in [5] when the
+4
+size of Hasse diagram is polynomial. This also gives optimal algorithms when
+the degree d is constant. For example, learning axis parallel rays over constant
+dimension space.
+2 Deﬁnitions and Preliminary Results
+In this section we give some deﬁnitions and preliminary results
+2.1 Notation
+Let Bm = {0, 1}m. Let A = {a(1), . . . , a(n)} ⊆ Bm be an n-element set. We
+will write |A| for the number of elements in A. For h ∈ Bm we deﬁne A + h =
+{a + h|a ∈ A} where + (in the square brackets) is the bitwise exclusive or of
+elements in Bm.
+For integer q let [q] = {1, 2, . . . , q}. Throughout the paper, log x = log2 x.
+2.2 Optimal Algorithm
+We denote by OPT(A) the minimum depth of a decision tree for A. Our goal is
+to build a decision tree for A with small depth.
+Obviously
+where n := |A|.
+log n ≤ OPT(A) ≤ n − 1
+(1)
+The following result is easy to prove (see Appendix A)
+Lemma 1. We have OPT(A) = OPT(A + h).
+2.3 Extended Teaching Dimension
+In this section we deﬁne the extended teaching dimension.
+Let h ∈ Bm be any element. We say that a set S ⊆ [m] is a specifying set
+for h with respect to A if |{a ∈ A | (∀i ∈ S)hi = ai}| ≤ 1. That is, there is at
+most one element in A that is consistent with h on the entries of S. Denote by
+ETD(A, h) the minimum size of a specifying set for h with respect to A. The
+extended teaching dimension of A is
+ETD(A) = max
+h∈Bm
+ETD(A, h).
+(2)
+We will write ETDz(A) for ETD(A, 0). It is easy to see that
+ETD(A, h) = ETDz(A + h) and ETD(A) = ETD(A + h).
+(3)
+We say that a set S ⊆ [m] is a strong specifying set for h with respect to
+A if either h ∈ A and |{a ∈ A | (∀i ∈ S)hi = ai}| = 1, or |{a ∈ A | (∀i ∈
+5
+S)hi = ai}| = 0. That is, if h ∈ A then there is exactly one element in A that
+is consistent with h on the entries of S. Otherwise, no element in A is consistent
+with h on S. Denote SETD(A, h) the minimum size of a strong specifying set
+for h with respect to A. The strong extended teaching dimension of A is
+SETD(A) = max
+h∈Bm
+SETD(A, h).
+(4)
+We will write SETDz(A) for SETD(A, 0). It is easy to see that
+SETD(A, h) = SETDz(A + h) and SETD(A) = SETD(A + h).
+(5)
+Obviously, ETD(A, h) ≤ min(m, n−1) and ETD(A, h) ≤ SETD(A, h) ≤ min(m, n)
+We now show
+Lemma 2. We have ETD(A, h) ≤ SETD(A, h) ≤ ETD(A, h) + 1 and therefore
+ETD(A) ≤ SETD(A) ≤ ETD(A) + 1.
+Proof. The fact ETD(A, h) ≤ SETD(A, h) follows from the deﬁnitions. Let S ⊆
+[m] be a specifying set for h with respect to A. Then for T := {a ∈ A | (∀i ∈
+S)hi = ai} we have t := |T| ≤ 1. If t = 0 or h ∈ A then S is a strong specifying
+set for h with respect to A. If t = 1 and h (cid:54)∈ A then for the element a ∈ T there
+is j ∈ [m] such that aj (cid:54)= hj and then S ∪ {j} is a strong specifying set for h
+with respect to A. This proves that SETD(A, h) ≤ ETD(A, h) + 1.
+(cid:117)(cid:116)
+The other claims follows immediately.
+Obviously, for any B ⊆ A
+ETD(B) ≤ ETD(A),
+SETD(B) ≤ SETD(A).
+(6)
+2.4 Hitting Set
+In this section we deﬁne the hitting set for A.
+A hitting set for A is a set S ⊆ [m] such that for every non-zero element
+a ∈ A there is j ∈ S such that aj = 1. That is, S hits every element in A except
+the zero element (if it exists). The size of the minimum size hitting set for A is
+denoted by HS(A).
+We now show
+Lemma 3. We have HS(A) = SETDz(A). In particular, SETD(A, h) = HS(A+
+h) and SETD(A) = maxh∈Bm HS(A + h).
+Proof. If 0 ∈ A then SETDz(A) is the minimum size of a set S such that
+{a ∈ A | (∀i ∈ S)ai = 0} = {0} and if 0 (cid:54)∈ A then it is the minimum size of a
+set S such that {a ∈ A | (∀i ∈ S)ai = 0} = ∅. Therefore the set S hits all the
+nonzero elements in A.
+(cid:117)(cid:116)
+The other results follow from (5) and the deﬁnition of SETD.
+6
+2.5 Density of a Set
+In this section we deﬁne our new measure DEN of a set.
+Let A = {a(1), . . . , a(n)} ⊆ Bm. We deﬁne MAJ(A) ∈ Bm such that MAJ(A)i =
+1 if the number of ones in (a(1)
+) is greater or equal the number of zeros
+and MAJ(A)i = 0 otherwise. We denote by MAX(A) the maximum number of
+ones in (a(1)
+) over all i = 1, . . . , m. Let
+,··· , a(n)
+,··· , a(n)
+MAMI(A) = min
+h∈Bm
+MAX(A + h) = MAX(A + MAJ(A)).
+(7)
+For j ∈ [m] and ξ ∈ {0, 1} let Aj,ξ = {a ∈ A | aj = ξ}. Then
+MAMI(A) = max
+min(|Aj,0|,|Aj,1|).
+We deﬁne the density of a set A ⊆ Bm by
+DEN(A) = max
+B⊆A
+|B| − 1
+MAMI(B)
+(8)
+(9)
+Notice that since every j ∈ [m] can hit at most MAX(A) elements in A we
+have
+HS(A) ≥ |A| − 1
+MAX(A)
+(10)
+3 Bounds for OPT
+In this section we give upper and lower bounds for OPT.
+3.1 Lower Bound
+Moshkov results in [10, 13] and the information theoretic bound in (1) give the
+following lower bound. We give the proof in Appendix A for completeness.
+Lemma 4.
+[10, 13] Let A ⊆ Bm be any set. Then
+OPT(A) ≥ max(ETD(A), log |A|).
+Many lower bounds in the literature for OPT(A) are based on ﬁnding a
+subset B ⊆ A such that for each query there is an answer that eliminates at
+most small fraction E of B. Then (|B|− 1)/E is a lower bound for OPT(A). The
+best possible bound that one can get using this technique is exactly DEN(A)
+(Lemma 5), the density deﬁned in Section 2.5. Lemma 6 shows that the lower
+bound ETD(A) for OPT(A) exceeds any such bound.
+In Appendix A we prove
+Lemma 5. We have OPT(A) ≥ DEN(A).
+Lemma 6. We have ETD(A) ≥ DEN(A) − 1.
+Proof. By (7) and (9) there is B ⊆ A such that
+DEN(A) =
+|B| − 1
+MAMI(B)
+|B| − 1
+MAX(B + h)
+where h = MAJ(B). Then
+(11)
+ETD(A)
+(2)≥ ETD(B, h)
+(6)≥ ETD(B)
+L2≥ SETD(B, h) − 1 L3= HS(B + h) − 1
+(10)≥
+|B| − 1
+MAX(B + h)
+− 1
+(11)
+= DEN(A) − 1.(cid:117)(cid:116)
+In Appendix A we also prove
+Lemma 7. We have
+ETD(A) ≤ ln|A| · DEN(A) + 1.
+It is also easy to see (by standard analysis using Chernoﬀ Bound) that for a
+random uniform A, with positive probability, DEN(A) = O(1) and ETD(A) =
+Θ(log |A|). See the proof sketch in Appendix A. So the bound in Lemma 7 is
+asymptotically best possible.
+3.2 Upper Bounds
+Moshkov [10, 13] proved the following upper bound. We gave the proof in the
+Appendix B for completeness.
+Lemma 8.
+[10, 13] Let A ⊆ {0, 1}m of size n. Then
+OPT(A) ≤ ETD(A) +
+ETD(A)
+log ETD(A)
+log n ≤ 2 · ETD(A)
+log ETD(A)
+log n.
+In [10,13], Moshkov gave an example of a n-set AE ⊆ {0, 1}m with ETD(AE) =
+E and OPT(AE) = Ω((E/ log E) log n). So the upper bound in the above lemma
+is the best possible.
+4 Polynomial Time Approximation Algorithm
+Given a a set A ⊆ Bm. Can one construct an algorithm that ﬁnds a hidden a ∈ A
+with OPT(A) queries? Obviously, with unlimited computational power this can
+be done so the question is: How close to OPT(A) can one get when polynomial
+time poly(m, n) is allowed for the construction?
+8
+An exponential time algorithm follows from the following
+OPT(A) = min
+i∈[m]
+max(OPT(Ai,0), OPT(Ai,1))
+where Ai,ξ = {a ∈ A | ai = ξ}. This algorithm runs in time at least m! ≥ (m/e)m.
+See also [3, 7].
+Can one give a better exponential time algorithm? In what follows (Theo-
+rem 1) we use Moshkov [10, 13] result (Lemma 8) to give a better exponential
+time approximation algorithm. In Appendix B we give another simple proof
+of the Moshkov [10, 13] result that in practice uses less number of specifying
+sets. When the extended teaching dimension is constant, the algorithm is O(1)-
+approximation algorithm and runs in polynomial time.
+Theorem 1. Let A be a class of sets A ⊆ Bm of size n. If there is an algorithm
+that for any h ∈ Bm and any A ∈ A gives a specifying set for h with respect to
+A of size at most E in time T then there is an algorithm that for any A ∈ A
+constructs a decision tree for A of depth at most
+E +
+log E
+log n ≤ E +
+log E
+OPT(A)
+queries and runs in time O(T log n + nm).
+Proof. Follows immediately from Moshkov algorithm [10, 13]. See Appendix B.(cid:117)(cid:116)
+The following result immediately follows from Theorem 1.
+Theorem 2. Let A ⊆ Bm be a n-set. There is an algorithm that ﬁnds the hidden
+column in time
+(cid:18) m
+(cid:19)
+· ETD(A) · n log n
+and asks at most
+ETD(A)
+2 · ETD(A) · log n
+log ETD(A)
+≤ 2 · min(ETD(A), log n)
+log ETD(A)
+OPT(A)
+queries.
+In particular, if ETD(A) is constant then the algorithm is O(1)-approximation
+algorithm that runs in polynomial time.
+Proof. To ﬁnd a specifying set for h with respect to A we exhaustively check
+each ETD(A) row of A. Each check takes time n. Since the algorithm asks at
+most ETD(A) · log n queries, the time complexity is as stated in the Theorem.
+Can one do it in poly(m, n) time? Hyaﬁl and Rivest, [11], show that the
+problem of ﬁnding OPT is NP-Complete. The reduction of Laber and Nogueira,
+[12], of set cover to this problem with the inapproximability result of Dinur and
+9
+Steurer [6] for set cover implies that it cannot be approximated to (1− o(1))· ln n
+unless P=NP.
+In [4], Arkin et al. showed that (the AMMRS-algorithm) if at the ith query
+the algorithm chooses an index j that partitions the current node set (the ele-
+ments in A that are consistent with the answers until this node) A as evenly as
+possible, that is, that maximizes min(|{a ∈ A|aj = 0}|,|{a ∈ A|aj = 1}|), then
+the query complexity is within a factor of (cid:100)log n(cid:101) from optimal. The AMMRS-
+algorithm, [4], runs in time poly(m, n). Moshkov [4, 14] analysis shows that this
+algorithm is ln n-approximation algorithm and therefore is optimal. In this sec-
+tion we will give a simple proof.
+In [10, 13], Moshkov gave a simple ETD(A)-approximation algorithm (Al-
+gorithm MEMB-HALVING-1 in [10]). He then gave another algorithm that
+achieves the query complexity in Lemma 8 (Algorithm MEMB-HALVING-2
+in [10]). This is within a factor of
+2 · min(ETD(A), log n)
+log ETD(A)
+from optimal. This is better than the ratio ln n, but, unfortunately, both algo-
+rithms require ﬁnding a minimum size specifying set and the problem of ﬁnding
+a minimum size specifying set for h is NP-Hard, [2, 8, 15].
+Can one achieve a O(ETD(A))-approximation. In the following we give a sur-
+prising result. We show that the AMMRS-algorithm is (ln 2)ETD(A)-approximation
+algorithm. We also show that no better ratio can be achieved unless P=NP.
+Theorem 3. The AMMRS-algorithm runs in time O(mn) and ﬁnds the hidden
+element a ∈ A with at most
+DEN(A) · ln(n) ≤ min((ln 2)DEN(A), ln n) · OPT(A)
+≤ min((ln 2)(ETD(A) + 1), ln n) · OPT(A)
+queries.
+Proof. Let B be any subset of A. Then,
+DEN(B)
+(9)≥ |B| − 1
+MAMI(B)
+and therefore
+MAMI(B) ≥ |B| − 1
+DEN(B)
+≥ |B| − 1
+DEN(A)
+Since the AMMRS-algorithm chooses at each node in the decision tree the
+index j that maximizes min(|Bj,0|,|Bj,1|) where Bj,ξ = {a ∈ B|aj = ξ} and B
+is the set of elements in A that are consistent with the answers until this node,
+we have
+max(|Bj,0|,|Bj,1|) − 1 = |B| − 1 − min(|Bj,0|,|Bj,1|)
+(8)
+= |B| − 1 − MAMI(B) ≤ (|B| − 1)
+(cid:18)
+1 −
+DEN(A)
+(cid:19)
+10
+Therefore, for a node v of depth h in the decision tree, the set B(v) of elements
+in A that are consistent with the answers until this node contains at most
+(cid:19)h
++ 1
+(cid:18)
+(|A| − 1)
+1 −
+DEN(A)
+elements. Therefore the depth of the tree is at most
+DEN(A) ln|A|.(cid:117)(cid:116)
+We now show that our approximation algorithm is optimal
+Theorem 4. Let  be any constant. There is no polynomial time algorithm that
+ﬁnds the hidden element with less than (1 − )DEN(A) · ln|A| unless P=NP.
+Proof. Suppose such an algorithm exists. Then
+(1 − )DEN(A) ln|A| L5≤ (1 − ) ln|A|OPT(A).
+That is, the algorithm is also (1 − ) ln|A|-approximation algorithm. Laber and
+Nogueira, [12] gave a polynomial time algorithm reduction of minimum depth
+decision tree to set cover and Dinur and Steurer [6] show that there is no poly-
+nomial time (1 − o(1)) · ln|A| for set cover unless P=NP. Therefore, such an
+(cid:117)(cid:116)
+algorithm implies P=NP.
+5 Applications to Disjunction of Predicates
+In this section we apply the above results to learning the class of disjunctions of
+predicates from a set of predicates F from membership queries [5].
+Let C = {f1, . . . , fn} be a set of boolean functions fi : X → {0, 1} where
+X = {x1, . . . , xm}. Let AC = {(fi(x1), . . . , fi(xm)) | i = 1, . . . , n}. We will write
+OPT(AC), ETD(AC), etc. as OPT(C), ETD(C), etc.
+Let F be a set of boolean functions (predicates) over a domain X. We consider
+the class of functions F∨ := {∨f∈Sf | S ⊆ F}.
+5.1 An Equivalence Relation Over F∨
+In this section, we present an equivalence relation over F∨ and deﬁne the repre-
+sentatives of the equivalence classes. This enables us in later sections to focus on
+the representative elements from F∨. Let F be a set of boolean functions over
+the domain X. The equivalence relation = over F∨ is deﬁned as follows: two
+disjunctions F1, F2 ∈ F∨ are equivalent (F1 = F2) if F1 is logically equal to F2.
+In other words, they represent the same function (from X to {0, 1}). We write
+F1 ≡ F2 to denote that F1 and F2 are identical; that is, they have the same
+representation. For example, consider f1, f2 : {0, 1} → {0, 1} where f1(x) = 1
+and f2(x) = x. Then, f1 ∨ f2 = f1 but f1 ∨ f2 (cid:54)≡ f1.
+11
+We denote by F∗
+∨ the set of equivalence classes of = and write each equiv-
+alence class as [F ], where F ∈ F∨. Notice that if [F1] = [F2], then [F1 ∨ F2] =
+[F1] = [F2]. Therefore, for every [F ], we can choose the representative element
+to be GF := ∨F (cid:48)∈SF (cid:48) where S ⊆ F is the maximum size set that satisﬁes
+∨S := ∨f∈Sf = F . We denote by G(F∨) the set of all representative ele-
+ments. Accordingly, G(F∨) = {GF | F ∈ F∨}. As an example, consider the
+set F consisting of four functions f11, f12, f21, f22 : {1, 2}2 → {0, 1} where
+fij(x1, x2) = [xi ≥ j] where [xi ≥ j] = 1 if xi ≥ j and 0 otherwise. There
+2 := F∨ and ﬁve representative functions in G(F∨):
+are 24 = 16 elements in Ray2
+G(F∨) = {f11∨f12∨f21∨f22, f12∨f22, f12, f22, 0} (where 0 is the zero function).
+5.2 A Partial Order Over F∨ and Hasse Diagram
+In this section, we deﬁne a partial order over F∨ and present related deﬁnitions.
+The partial order, denoted by ⇒, is deﬁned as follows: F1⇒F2 if F1 logically
+implies F2. Consider the Hasse diagram H(F∨) of G(F∨) for this partial order.
+The maximum (top) element in the diagram is Gmax := ∨f∈F f . The minimum
+(bottom) element is Gmin := ∨f∈∅f , i.e., the zero function. Figures 3 and 4 shows
+an illustration of the Hasse diagram.
+In a Hasse diagram, G1 is a descendant (resp., ascendent) of G2 if there is a
+(nonempty) downward path from G2 to G1 (resp., from G1 to G2), i.e., G1⇒G2
+(resp., G2⇒G1) and G1 (cid:54)= G2. G1 is an immediate descendant of G2 in H(F∨)
+if G1⇒G2, G1 (cid:54)= G2 and there is no G ∈ G(F∨) such that G (cid:54)= G1, G (cid:54)= G2
+and G1⇒G⇒G2. G1 is an immediate ascendant of G2 if G2 is an immediate
+descendant of G1.
+We denote by De(G) and As(G) the sets of all the immediate descendants and
+immediate ascendants of G, respectively. The neighbours set of G is Ne(G) =
+De(G) ∪ As(G). We further denote by DE(G) and AS(G) the sets of all G’s
+descendants and ascendants, respectively.
+Deﬁnition 1. The degree of G is deg(G) = |Ne(G)| and the degree deg(F∨) of
+F∨ is maxG∈G(F∨) deg(G).
+For G1 and G2, we deﬁne their lowest common ascendent (resp., greatest com-
+mon descendant) G = lca(G1, G2) (resp., G = gcd(G1, G2)) to be the minimum
+(resp., maximum) element in AS(G1) ∩ AS(G2) (resp., DE(G1) ∩ DE(G2)).
+Lemma 9. Let G1, G2 ∈ G(F∨). Then, lca(G1, G2) = G1 ∨ G2.
+G1 ∨ G2 = G.
+In particular, if G1, G2 are two distinct immediate descendants of G, then
+The following result is from [5]
+5.3 Witnesses
+In this subsection we deﬁne the term witness. Let G1 and G2 be elements in
+G(F∨). An element a ∈ X is a witness for G1 and G2 if G1(a) (cid:54)= G2(a).
+For a class of boolean functions C over a domain X and a function G ∈ C
+we say that a set of elements W ⊆ X is a witness set for G in C if for every
+G(cid:48) ∈ C and G(cid:48) (cid:54)= G there is a witness in W for G and G(cid:48).
+12
+5.4 The Extended Teaching Dimension of F∨
+In this section we prove
+Lemma 10. For every h : X → {0, 1} if h (cid:59) Gmax then ETD(F∨, h) = 1.
+Otherwise, there is G ∈ G(F∨) such that
+ETD(F∨, h) ≤ |De(G)| + HS(As(G) ∧ ¯G) ≤ |Ne(G)| = deg(G)
+where As(G) ∧ ¯G = {s ∧ ¯G | s ∈ As(G)}. In particular,
+(cid:0)|De(G)| + HS(As(G) ∧ ¯G)(cid:1) ≤ deg(F∨).
+ETD(F∨) ≤ max
+G∈G(F∨)
+Proof. Let h : X → {0, 1} be any function. If h (cid:59) Gmax then there is an
+assignment a that satisﬁes h(a) = 1 and Gmax(a) = 0. Since for all G ∈ G(F∨),
+G ⇒ Gmax we have G(a) = 0. Therefore, the set {a} is a specifying set for h
+with respect to F∨ and ETD(F∨, h) = 1.
+Let h ⇒ Gmax. Consider any G ∈ G(F∨) such that h⇒G and for every imme-
+diate descendant G(cid:48) of G we have h (cid:59) G(cid:48). Now for every immediate descendent
+G(cid:48) of G ﬁnd an assignment a such that G(cid:48)(a) = 0 and h(a) = 1. Then a is a
+witness for h and G(cid:48). Therefore, a is also a witness for h and every descendant
+of G(cid:48). Let A be the set of all such assignments, i.e., for every descendant of G
+one witness. Then |A| ≤ |De(G)| and A is a witness set for h and all the descen-
+dants of G. We note here that if h = 0 then G = Gmin which has no immediate
+descendants and then A = ∅.
+Consider a hitting set B for As(G)∧ ¯G of size HS(As(G)∧ ¯G). Now for every
+immediate ascendant G(cid:48)(cid:48) of G ﬁnd an assignment b ∈ B such that G(cid:48)(cid:48)(b)∧ ¯G(b) =
+1. Then G(cid:48)(cid:48)(b) = 1 and G(b) = 0. Since G(b) = 0 we have h(b) = 0 and then b is
+a witness for h and G(cid:48)(cid:48). Therefore, b is also a witness for h and every ascendant
+of G(cid:48)(cid:48). Thus B is a witness set for h in all the ascendants of G.
+Let G0 be any element in G(F∨) (that is not a descendant or an ascendant).
+Consider G1 = lca(G, G0). By Lemma 9, we have G1 = G ∨ G0. Since G1 is an
+ascendent of G there is a witness a ∈ B such that G1(a) = 1 and G(a) = 0.
+Then G0(a) = 1, h(a) = 0 and a is a witness of h and G0. Therefore A ∪ B is
+a specifying set for h with respect to G(F∨). Since for every F ∈ F∨ we have
+F = GF ∈ G(F∨), A ∪ B is also a specifying set for h with respect to F∨.
+Since
+ETD(F∨, h) ≤ |A| + |B| ≤ |De(G)| + HS(As(G) ∧ ¯G)
+the result follows.
+In Appendix C we show that
+ETD(F∨) = max
+G∈G(F∨)
+(cid:0)|De(G)| + HS(As(G) ∧ ¯G)(cid:1) .
+(cid:117)(cid:116)
+We could have replaced |De(G)| by HS(De(G)∧ G), but Lemma 14 in Appendix
+C shows that they are both equal.
+The following result follows immediately from the proof of Lemma 10
+Lemma 11. For any h : X → {0, 1}, a specifying set for h with respect to F∨
+of size deg(F∨) can be found in time O(nm).
+By Theorem 1 we have
+13
+Theorem 5. There is an algorithm that learns F∨ in time O(nm) and asks at
+most
+(cid:18) deg(F∨)
+log deg(F∨)
+(cid:19)
++ 1
+OPT(F∨)
+deg(F∨) +
+deg(F∨)
+log deg(F∨)
+log n ≤
+membership queries.
+5.5 Learning Other Classes
+If a specifying set of small size cannot be found in polynomial time then from
+Theorem 2, 3 and Lemma 10, we have
+Theorem 6. For a class C we have
+1. There is an algorithm that learns C in time
+(cid:18) m
+(cid:19)
+· ETD(C) · n log n
+deg(C)
+and asks at most
+2 · ETD(C) · log n
+log ETD(C))
+≤ 2 · min(ETD(C)), log n)
+log ETD(C))
+OPT(C)
+membership queries.
+In particular, when ETD(C) is constant the algorithm runs in polynomial
+time and its query complexity is (asymptotically) optimal.
+2. There is an algorithm that learns C in time O(nm) and asks at most
+DEN(C) · ln(n) ≤ min((ln 2)DEN(C), ln n) · OPT(C)
+≤ min((ln 2)(ETD(C) + 1), ln n) · OPT(C)
+membership queries.
+References
+1. Dana Angluin. Queries and concept learning. Machine Learning, 2(4):319–342,
+1988.
+2. Martin Anthony, Graham R. Brightwell, David A. Cohen, and John Shawe-Taylor.
+On exact speciﬁcation by examples.
+In Proceedings of the Fifth Annual ACM
+Conference on Computational Learning Theory, COLT 1992, Pittsburgh, PA, USA,
+July 27-29, 1992., pages 311–318, 1992.
+14
+3. Esther M. Arkin, Michael T. Goodrich, Joseph S. B. Mitchell, David M. Mount,
+Christine D. Piatko, and Steven Skiena. Point probe decision trees for geometric
+concept classes. In Algorithms and Data Structures, Third Workshop, WADS ’93,
+Montr´eal, Canada, August 11-13, 1993, Proceedings, pages 95–106, 1993.
+4. Esther M. Arkin, Henk Meijer, Joseph S. B. Mitchell, David Rappaport, and Steven
+Int. J. Comput. Geometry Appl.,
+Skiena. Decision trees for geometric models.
+8(3):343–364, 1998.
+5. Nader H. Bshouty, Dana Drachsler-Cohen, Martin T. Vechev, and Eran Yahav.
+Learning disjunctions of predicates.
+In Proceedings of the 30th Conference on
+Learning Theory, COLT 2017, Amsterdam, The Netherlands, 7-10 July 2017, pages
+346–369, 2017.
+6. Irit Dinur and David Steurer. Analytical approach to parallel repetition. In Sym-
+posium on Theory of Computing, STOC 2014, New York, NY, USA, May 31 -
+June 03, 2014, pages 624–633, 2014.
+7. M. R. Garey. Optimal binary identiﬁcation procedures. SIAM Journal on Applied
+Mathematics, 23(2):173–186, 1971.
+8. Sally A. Goldman and Michael J. Kearns. On the complexity of teaching. J.
+Comput. Syst. Sci., 50(1):20–31, 1995.
+9. Sally A. Goldman, Ronald L. Rivest, and Robert E. Schapire. Learning binary
+In 30th Annual Symposium on
+relations and total orders (extended abstract).
+Foundations of Computer Science, FOCS 1989, pages 46–51.
+10. Tibor Heged¨us. Generalized teaching dimensions and the query complexity of
+learning. In Proceedings of the Eigth Annual Conference on Computational Learn-
+ing Theory, COLT 1995, Santa Cruz, California, USA, July 5-8, 1995, pages 108–
+117, 1995.
+11. Laurent Hyaﬁl and Ronald L. Rivest. Constructing optimal binary decision trees
+is np-complete. Inf. Process. Lett., 5(1):15–17, 1976.
+12. Eduardo Sany Laber and Loana Tito Nogueira. On the hardness of the minimum
+height decision tree problem. Discrete Applied Mathematics, 144(1-2):209–212,
+2004.
+13. M. Y. Moshkov. On conditional tests. Problemy Kibernetiki. and Sov. Phys. Dokl.,
+27(7):528–530, 1982.
+14. Mikhail Ju. Moshkov. Greedy algorithm of decision tree construction for real data
+tables. pages 161–168, 2004.
+15. Ayumi Shinohara. Teachability in computational learning. New Generation Com-
+put., 8(4):337–347, 1991.
+16. Ayumi Shinohara and Satoru Miyano. Teachability in computational learning. In
+Algorithmic Learning Theory, First International Workshop, ALT ’90.
+15
+6 Appendix A
+In this Appendix we give a proof of some lemmas
+Lemma 1. We have
+OPT(A) = OPT(A + h).
+Proof. Since (A + h) + h = A, it is enough to prove that OPT(A + h) ≤ OPT(A).
+Now given a decision tree T for A of depth OPT(A). For each node, v, in T
+labeled with j, such that hj = 1, exchange the labels in their outgoing edges.
+Then change the label of each leaf labeled with a to a + h. It is easy to show
+(cid:117)(cid:116)
+that the new tree is a decision tree for A + h.
+Lemma 4. [10, 13] Let A ⊆ {0, 1}m be any set. Then
+OPT(A) ≥ max(ETD(A), log |A|).
+Proof. The lower bound log |A| is the information theoretic lower bound. We
+now prove the other bound.
+Let T be a decision tree for A = {a(1), . . . , a(n)} of minimum depth. Consider
+the path P in T that at each level chooses the edge that is labeled with 0.
+Let S be the set of labels in the internal nodes of P and a(j) be the label
+of the leaf of P . Then a(j) is the only element in A that satisﬁes a(j)
+i = 0
+for all i ∈ S. Therefore S is a specifying set for 0 with respect to A. Thus
+OPT(A) ≥ |S| ≥ ETDz(A). Now, by Lemma 1, for any h ∈ {0, 1}m we have
+OPT(A) = OPT(A + h) ≥ ETDz(A + h) = ETD(A, h) and therefore OPT(A) ≥
+(cid:117)(cid:116)
+maxh ETD(A, h) = ETD(A).
+Lemma 5. We have OPT(A) ≥ DEN(A).
+Proof. Let B ⊆ A be a set such that
+|B| − 1
+MAMI(B)
+MAX(B + MAJ(B))
+|B| − 1
+DEN(A)
+(9)
+(7)
+For every query i ∈ [m] (what is “ai”?), the adversary answers MAJ(B)i. This
+eliminates at most MAX(B+MAJ(B)) elements from B. Therefore the algorithm
+is forced to ask at least (|B| − 1)/MAX(B + MAJ(B)) queries.
+(cid:117)(cid:116)
+Lemma 7 We have
+ETD(A) ≤ ln|A| · DEN(A) + 1.
+Proof. There is h0 ∈ {0, 1}m such that
+ETD(A)
+L2≤ SETD(A)
+(4)
+= SETD(A, h0) L3= HS(A + h0).
+(12)
+16
+For any C ⊆ A we have
+DEN(C)
+(9)
+= max
+B⊆C
+(7)≥ max
+B⊆C
+|B| − 1
+MAMI(B)
+|B| − 1
+MAX(B + h0)
+|C| − 1
+MAX(C + h0)
+and therefore, for any C ⊆ A we have
+MAX(C + h0) ≥ |C| − 1
+DEN(C)
+(9)≥ |C + h0| − 1
+DEN(A)
+(13)
+We now consider the following sequence of subsets of A + h0, C0, C1, . . . , Ct
+where C0 = A + h0 and the subset Ci+1 is deﬁned by Ci as follows: Since (13)
+is also true for Ci there is ji ∈ [m] such that ji hits at least (|Ci| − 1)/DEN(A)
+elements in Ci. Then Ci+1 contains all the elements in Ci that are not hit by ji.
+Then
+|Ci+1| − 1 ≤ |Ci| − |Ci| − 1
+DEN(A)
+Therefore
+|Ci| ≤ (|A| − 1)
+(cid:18)
+− 1 = (|Ci| − 1)
+1 −
+DEN(A)
+1 −
+DEN(A)
++ 1.
+Let Ct be the ﬁrst set in this sequence that satisﬁes Ct = ∅ or Ct = {0}. Deﬁne
+X = {ji|i = 0, 1, . . . , t−1}. Then X is a hitting set for A+h0 of size t. Therefore,
+by (12) we have
+(cid:19)
+(cid:18)
+(cid:19)i
+ETD(A) ≤ HS(A + h0) ≤ t ≤
+ln
+We now give proof sketch of
+(cid:16)
+ln(|A| − 1)
+1 −
+DEN(A)
+(cid:17)−1 + 1 ≤ DEN(A) · ln|A| + 1.
+(cid:117)(cid:116)
+Lemma 12. There is a set A ⊆ Bm of size n where m = poly(n) such that
+ETD(A) = Ω(log n) and DEN(A) = O(1).
+Proof. Consider a random uniform set A ⊆ Bm of size n. The probability that
+there are k = (log n)/2 entries i1, . . . , tk ∈ [m] such that no a ∈ A satisﬁes
+(cid:19)(cid:18)
+ai1 = ai2 = ··· = aik = 0 is (cid:18)m
+(cid:19)n ≤ 1
+1 − 1
+2k
+17
+Therefore, with probability at least 3/4, ETDz(A) ≥ k and then ETD(A) =
+Ω(log n).
+The probability that some subset B ⊆ A of size |B| > 100 has MAMI(B) ≤
+|B|/100 is at most
+(cid:18) 1
+(cid:19)m
+2n
+Therefore with probability at least 3/4, MAMI(B) ≥ |B|/100 and DEN(A) =
+(cid:117)(cid:116)
+O(1).
+7 Appendix B
+In this appendix we give the proof of Lemma 8 that is the same as the proof of
+Lemma 3.2 in [10].
+Lemma 8 [10, 13] Let A ⊆ {0, 1}m of size n. Then
+OPT(A) ≤ ETD(A) +
+ETD(A)
+log ETD(A)
+log n ≤ 2 · ETD(A)
+log ETD(A)
+log n.
+Proof. Consider the algorithm in Figure 1. In Step 3, the algorithm deﬁnes a
+hypothesis that is the bitwise majority of all the vectors in A(i,1). In Step 7 an
+index y is found that maximizes the size of
+(cid:110)
+(cid:111)
+A(i,k)
+(y,fy) :=
+g ∈ A(i,k) | gy = fy
+Suppose the variable i (in the algorithm) gets the values 1, 2, . . . , t + 1 and for
+each 1 ≤ i ≤ t the variable k gets the values 0, 1, 2, . . . , ki. Then the number of
+membership queries asked by the algorithm is k1 + ··· + kt. We ﬁrst prove the
+following
+Claim For i = 1, . . . , t − 1 we have
+|A(i+1,1)| ≤ |A(i,1)|
+max(2, ki)
+Proof. Since S is a specifying set for h, either some y ∈ S satisﬁes hy (cid:54)= ay or
+a is the only column in A that is consistent with h on S. Therefore, since h =
+Majority(A(i,1)), we have
+|A(i+1,1)| ≤ |A(i,1)|
+(14)
+Let D = A(i,1) and D(cid:48) = A(i+1,1). Suppose y1, . . . , yki are the queries that
+were asked in the ith stage and let δj = ayj for j = 1, . . . , ki. Then
+D(cid:48) = D(y1,δ1),(y2,δ2),...,(yki ,δki )
+18
+and (disjoint union)
+D = D(y1,¯δ1) ∪ D(y1,δ1),(y2,¯δ2) ∪ ··· ∪ D(y1,δ1),(y2,δ2)...,(yki−1,δki−1),(yki ,¯δki ) ∪ D(cid:48).
+Let D(j) = D(y1,δ1),(y2,δ2)...,(yj ,δj ), the set of columns in D that are consistent
+with the target column on the ﬁrst j assignments y1, . . . , yj. Then
+D = D(0)
+(y1,¯δ1) ∪ D(1)
+(y2,¯δ2) ∪ ··· ∪ D(ki−1)
+(yki ,¯δki ) ∪ D(cid:48).
+For 0 ≤ j ≤ ki − 2, the fact that we took yj+1 for the (j + 1)th query and not
+yki implies that |D(j)
+)|. Therefore, for 0 ≤ j ≤ ki − 2
+(yj+1,hyj+1 )| ≤ |D(j)
+| = |D(j)
+(ykj ,hykj
+| ≥ |D(j)
+(yj+1,hyj+1 )
+| = |D(j)
+(ykj ,δkj )| ≥ |D(cid:48)|.
+(ykj ,hykj
+|D(j)
+(yj+1,δj+1)
+Therefore
+|D| = |D(0)
+(y1,¯δ1)| + |D(1)
+(y2,¯δ2)| + ··· + |D(ki−1)
+(yki ,¯δki )| + |D(cid:48)| ≥ ki · |D(cid:48)|.
+With (14), the result of the claim follows.
+(cid:117)(cid:116)
+Let zi = max(2, ki). Then
+and therefore(cid:80)t−1
+1 ≤ |A(t,1)| ≤
+n(cid:81)t
+i=1 zi
+i=1 log zi ≤ log n. Now for E ≥ 4 and since E ≤ n
+t(cid:88)
+t−1(cid:88)
+ki
+ki = kt +
+log zi
+i=1
+i=1
+log zi
+≤ kt + max
+≤ E +
+log E
+ki
+log n
+log zi
+log n ≤ 2E
+log E
+log n.
+It is also easy to show that the above is also true for E = 2, 3.
+We now prove the time complexity. Finding a specifying set at each iteration
+of the While loop takes time T and the number of iterations in at most log n.
+This takes T log n time. Now at the ﬁrst iteration we deﬁne an array of length
+|S| ≤ E that contains |A(i,1)
+(z,hz)| for each z ∈ S. This takes at most |A(i,1)| · E
+time. Now if we have such array for A(i,k)
+(z,hz), we can ﬁnd y (in Step 7) in time E
+and update the array for A(i,k+1) = A(i,k)
+(y,hy) in time |A(i,k)\A(i,k)
+(y,hy)|·E. Therefore
+the time of the Repeat loop is at most 2|A(i,1)| · E. Since |A(i+1,1)| ≤ |A(i,1)|/2,
+(cid:117)(cid:116)
+the time of the While loop is at most 4n · E. This gives the result.
+Algorithm: Find the hidden column a ∈ A.
+19
+1. i ← 1, k ← 0, A(1,1) ← A.
+2. While |A(i,1)| ≥ 2 do
+3. h ← Majority(A(i,1))
+4. Find a specifying set S for h with respect to A(i,1)
+5. Repeat
+6.
+(cid:12)(cid:12)(cid:12)A(i,k)
+(cid:12)(cid:12)(cid:12)
+7.
+(z,hz )
+k ← k + 1.
+Find y ← arg minz∈S
+Ask query “What is ay”?
+A(i,k+1) ← A(i,k)
+S ← S\{y}.
+8.
+9.
+10.
+11. Until (hy (cid:54)= ay or |A(i,k+1)| = 1)
+12. A(i+1,1) ← A(i,k+1), i ← i + 1, k ← 0
+13. End While
+14. Output the column in A(i,k).
+(y,ay )
+Fig. 1. An algorithm that ﬁnd the hidden column a ∈ A
+We now give another proof
+Proof. of Theorem 1 Consider the following algorithm. After the ith query,
+the algorithm deﬁnes a set Ai ⊆ A of all the columns that are consistent with
+the answers of the queries that were asked so far. Consider any 0 <  < 1. Now
+the algorithm searches for a j ∈ [m] such that
+|Ai| ≤ |{a ∈ Ai | aj = 0}| ≤ (1 − )|Ai|.
+If such j ∈ [m] exists then the algorithm asks “What is aj?”. Let the answer
+be ξ. Deﬁne Ai+1 = {a ∈ Ai | aj = ξ}. Obviously, in that case,
+|Ai+1| ≤ (1 − )|Ai|.
+If no such j ∈ [m] exists then the algorithm ﬁnds a specifying set Th for
+h := Majority(Ai), where “Majority” is the bitwise majority function. Then
+asks queries “What is aj” for all j ∈ Th. If the answers are consistent with h on
+Th then there is a unique column c ∈ Ai consistent with the answers and the
+algorithm outputs the index of this column. Otherwise, there is j0 ∈ Th such
+that aj0 (cid:54)= hj0. It is easy to see that in that case
+|Ai+1| ≤ |Ai|.
+(cid:24)
+(cid:25)
+Now when  = ln E/E we get
+OPT(A) ≤ max
+(cid:24) log n
+(cid:25)(cid:19)
+(cid:18)
+log(1/)
+log n
+log(1/(1 − ))
+≤ 2E
+log E
+log n.
+20
+The time complexity of this algorithm is O(T log n + mn).
+(cid:117)(cid:116)
+(cid:19)(cid:19)
+log n
+(cid:18) E log log E
+log2 E
+In fact one can prove the bound
+(cid:18) E
+OPT(A) ≤
+E log log E
+log2 E
++ o
+log E
+by substituting  = (ln E)/(E(1 + ln ln E/ ln E)).
+8 Appendix C
+In this Appendix we ﬁnd ETD(F∨) exactly. We prove
+ETD(F∨) = max
+G∈G(F∨)
+|De(G)| + HS(As(G) ∧ ¯G).
+The following result is from [5].
+Lemma 13. Let De(G) = {G1, G2, . . . , Gt} be the set of immediate descendants
+of G. If a is a witness for G1 and G, then a is not a witness for Gi and G for
+all i > 1. That is, G1(a) = 0, G(a) = 1, and G2(a) = ··· = Gt(a) = 1.
+8.1 Teaching Dimension
+The minimum size of a witness set for G in C is called the witness size and is
+denoted by TD(C, G). The value
+TD(C) := max
+G∈C
+TD(C, G)
+is called the teaching dimension of C, [8, 9, 16]. Obviously,
+ETD(C, G) ≥ TD(C, G),
+and ETD(C) ≥ TD(C).
+8.2 The Proof
+Lemma 14. For every G ∈ F∨ we have
+TD(F∨, G) ≥ |De(G)| + HS(As(G) ∧ ¯G).
+In particular,
+ETD(F∨) = TD(F∨) = max
+G∈G(F∨)
+(cid:0)|De(G)| + HS(As(G) ∧ ¯G)(cid:1) .
+Proof. Let B be a witness set for G in Ne(G). Take any G(cid:48) ∈ De(G). Then there
+is a ∈ B such that G(cid:48)(a) = 0 and G(a) = 1. Since for any ascendent G(cid:48)(cid:48) of G we
+have G(cid:48)(cid:48)(a) = 1, a is not a witness to G and any of its ascendants. By Lemma 13,
+a cannot be a witness to any other descendent. In the similar way, a witness for
+an ascendent of G and G cannot be a witness for any descendent of G and G.
+Therefore,
+21
+TD(F∨, G) ≥ TD(Ne(G), G) = TD(De(G), G) + TD(As(G), G)
+(15)
+Now let S be a witness set for G in As(G). Then for every G(cid:48)(cid:48) ∈ As(G) there is
+a ∈ S such that G(cid:48)(cid:48)(a) = 1 and G(a) = 0 which is equivalent to G(cid:48)(cid:48)(a)∧ ¯G(a) = 1.
+Therefore,
+= |De(G)| + TD(As(G), G).
+TD(As(G), G) ≥ HS(As(G) ∧ ¯G).
+This with (15) gives the result.
+9 Appendix D
+(cid:117)(cid:116)
+9.1 Example of Classes
+where fi1,i2,...,im(x1, . . . , xm) = (cid:86)m
+Deﬁne the class Raym
+n . The functions are fi1,i2,...,im (x1, . . . , xm) : [n]m → {0, 1}
+j=1[xj ≥ ij]. It is easy to see that this class
+contains O(nm) functions and its Hasse degree is 2m. See Ray2
+See ﬁgure 4 for another example of F with Hasse degree 3.
+4 in Figure 2.
+Fig. 2. Hasse diagram of Ray2
+[x2 ≥ i].
+4. The functions are fi(x1, x2) = [x1 ≥ i] and gi(x1, x2) =
+𝑓1,𝑓2,𝑓3,𝑓4,𝑔1,𝑔2,𝑔3,𝑔4𝑓2,𝑓3,𝑓4,𝑔2,𝑔3,𝑔4𝑓3,𝑓4,𝑔2,𝑔3,𝑔4𝑓4,𝑔2,𝑔3,𝑔4𝑔2,𝑔3,𝑔4𝑔3,𝑔4𝑔4𝑓2,𝑓3,𝑓4,𝑔3,𝑔4𝑓2,𝑓3,𝑓4,𝑔4𝑓2,𝑓3,𝑓4𝑓3,𝑓4𝑓4𝑓3,𝑓4,𝑔3,𝑔4𝑓4,𝑔3,𝑔4𝑓3,𝑓4,𝑔4𝑓4,𝑔422
+Fig. 3. Hasse diagram of ...
+Fig. 4. Hasse diagram when F = {f1, f2, f3, g1, g2, g3, h1, . . . , h5} of
+functions
+{1, 2, 3} × {1, 2, 3} → {0, 1} where fi(x1, y1) = [x1 ≥ i], gi(x1, x2) = [x2 ≥ i] and
+hi(x1, x2) = [x1 + x2 ≥ i + 1].
+𝑥1∨𝑥2∨𝑥30𝑥1∨𝑥2𝑥1∨𝑥3𝑥2∨𝑥3𝑥1𝑥2𝑥3𝑥1∨𝑥2∨𝑥1∨𝑥20𝑥1∨𝑥2𝑥1∨𝑥2𝑥2∨𝑥1𝑥1𝑥2𝑥1𝑥1∨𝑥2𝑥2𝑓1,𝑓2,𝑓3,𝑔1,𝑔2,𝑔3,ℎ1,ℎ2,ℎ3,ℎ4,ℎ5𝑓2,𝑓3,𝑔2,𝑔3,ℎ2,ℎ3,ℎ4,ℎ5𝑓2,𝑓3,𝑔3,ℎ3,ℎ4,ℎ5𝑓2,𝑓3,ℎ4,ℎ5𝑓3,ℎ4,ℎ5𝑓3,ℎ5ℎ5𝑓3,𝑔2,𝑔3,ℎ3,ℎ4,ℎ5𝑔2,𝑔3,ℎ4,ℎ5𝑔3,ℎ4,ℎ5𝑔3,ℎ5𝑓3,𝑔3,ℎ3,ℎ4,ℎ5𝑓3,𝑔3,ℎ4,ℎ5ℎ4,ℎ5

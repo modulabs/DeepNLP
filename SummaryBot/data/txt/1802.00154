@@ -1,0 +1,1285 @@
+Received: 00 Month 0000
+DOI:xxx/xxxx
+Revised: 00 Month 0000
+Accepted: 00 Month 0000
+ARTICLETYPE
+BootstrappingandMultipleImputationEnsembleApproaches
+forMissingData
+ShehrozS.Khan*1 | AmirAhmad2 | AlexMihailidis1
+1DepartmentofOccupationalSciencesand
+OccupationalTherapy,UniversityofToronto,
+Canada
+2CollegeofInformationTechnology,United
+ArabEmiratesUniversity,AlAin,UAE
+Correspondence
+*CorrespondingauthorEmail:
+shehroz.khan@utoronto.ca
+Presence of missing values in a dataset can adversely affect the performance of a classiﬁer; it
+deteriorates rapidly as missingness increases. Single and Multiple Imputation (MI) are normally
+performed to ﬁll in the missing values. In this paper, we present several variants of combining
+MI and bootstrapping to create ensemble that can model uncertainty and diversity in the data
+andthatarerobusttohighmissingnessinthedata.Wepresentthreeensemblestrategies:boot-
+strapping on incomplete data followed by single imputation and MI, and MI ensemble without
+bootstrapping. We use mean imputation, Gaussian random imputation and expectation maxi-
+mization as the base imputation methods to be used in these ensemble strategies. We perform
+an extensive evaluation of the performance of the proposed ensemble strategies on 8 datasets
+byvaryingthemissingnessratio.OurresultsshowthatbootstrappingfollowedbyaverageofMIs
+using expectation maximization is the most robust method that prevents the classiﬁer’s perfor-
+mance from degrading, even at high missingness ratio (30%). For small missingness ratio (up to
+10%) most of the ensemble methods perform equivalently but better than their single imputa-
+tioncounterparts.Kappa-errorplotssuggestthataccurateclassiﬁerswithreasonablediversityis
+thereasonforthisbehaviour.Aconsistentobservationinallthedatasetssuggeststhatforsmall
+missingness (up to 10%), bootstrapping on incomplete data without any imputation produces
+equivalentresultstootherensemblemethodswithimputations.
+KEYWORDS:
+Missingness,Ensemble,Bagging,MultipleImputation,ExpectationMaximization
+INTRODUCTION
+Predictivemodelsassumethatthedatatheyusearecomplete,i.e.,therearenomissingvaluespresentinit.However,missingnessindataiscommon
+anddifﬁculttodealwithDonders,vanderHeijden,Stijnen,andMoons(2006).Adatawithmissingattributevaluesiscalledincompletedata.Many
+predictivealgorithmscannothandleincompletedata,suchassupportvectormachines,neuralnetworks,logisticregression,etc.Someclassiﬁcation
+algorithmscanhandlemissingnessinthedata,suchasdecisiontrees(C4.5)andtheirvariants.However,presenceofalargeamountofmissingness
+inthedatacandeterioratetheperformanceofthosepredictivemethods.
+Thereareseveralstrategiestodealwithincompletedata.Anaivemethodistoremoveanydataobject(orobservation)withmissingvalues.This
+strategyreducesthetrainingdatasize;ifthemissingnessratioishighthengeneralizablemodelsaredifﬁculttolearn.Abetterstrategyistoreplace
+a missing attribute value with some value - this is called imputation. Imputation can be single or multiple. In single imputation, a missing value is
+replace by one value, whereas in MI, several values are imputed. MI performs better than single imputation in terms of modelling the uncertainty
+2
+and variation due to the missing value Rezvan, Lee, and Simpson (2015). Some common methods for imputation are ﬁxed-value / random imputa-
+tion, nearest neighbour imputation, mean imputation Gelman and Hill (2006); Schmitt, Mandel, and Guedj (2015) and expectation maximization
+imputationLin(2010)(seeSection3.1formoredetails).
+MultipleImputation(MI)methodsgeneratemultiplevaluescorrespondingtoamissingvalue.Tousemultipeimputeddatafortrainingaclassiﬁ-
+cationalgorithm,oneoptionistoaveragemultipleimputedvaluesandreplacethemissingattributevalueswithasinglevalue.Theotheroptionis
+totraindifferentclassiﬁersondifferentcopiesofimputedcompletedataandcreateanensembleKhan,Hoey,andLizotte(2012).Ithasbeenshown
+that combining bootstrapping with MI can result in accurate classiﬁers Wu and Jia (2013). The reason is that MI accounts for the uncertainty due
+tothemissingdata,whereasbootstrappingaccountsfortheuncertaintyduetosamplingﬂuctuationsWuandJia(2013).Combiningboththeideas
+result in more diverse classiﬁers that aides the ensemble to perform better than a base classiﬁer. In this paper, we discuss several ideas for creat-
+ing ensembles to handle missing data. The ensemble techniques we test are: (i) bootstrapping with single imputation and average of MI, (ii) MI on
+bootstrapsamplesofincompletedata,and(iii)anensembleofmultipleimputeddata.Weusethreepopulardataimputationtechniquestovalidate
+theensemblemethodsanddiscusstheirrelativeperformance.Wesystematicallyincreasetheamountofmissingnessindatasetsandevaluatethe
+performance of each of these methods. We also show a comparison of kappa-error graphs to explain the diversity and accuracy of the different
+ensemble methods at different level of missingness. The results on 8 UCI datasets Lichman (2013) show that MI after bootstrapping with expec-
+tation maximization imputation technique remains very robust despite increasing the missingness to a large value (up to 30%); however, it can be
+computationallyextensive.Kappaerrorgraphsshowthatbootstrappingwithexpectationmaximizationimputationtechniquecreateaccurateand
+diverse classiﬁers. MI after bootstrapping with mean imputation emerged as a robust and faster alternative when the missingness is low (up to
+10%).Weobtainedaconsistentobservationonallthedatasetsthatforlowmissingness(upto 10%),baggingensembleonincompletedata(i.e.no
+imputationandadecisiontreeasthebaseclassiﬁer)performsequivalenttootherimputationmethods.
+LITERATUREREVIEW
+MIformissingdatahasbeenstudiedextensivelyintheliterature(e.g.,Dondersetal.(2006); HarelandZhou(2007); HortonandLipsitz(2001)).In
+thisliteraturereview,wesurveyresearchpapersthatuseensemblelearningtogetherwithmultiple/singleimputationtodealwithmissingdata.
+Feelders Feelders (1999) compared surrogate splits in a decision tree with single and MI based on EM method. In the MI case, they compute
+theaverageoverdifferentimputations.Boththeimputationmethodsperformbetterthansurrogatesplit.TheycommentedthataveragingoverMI
+andreplacingwithonevaluereducesthevariance,inthesamewayasbagging,whichimprovestheperformance.TwalaandCartwrightTwalaand
+Cartwright(2010)proposedanensembleapproachbycreatingsub-samplesofincompletedatausingbootstrapsampling.Eachincompletesample
+is feed to a decision tree classiﬁer. The resulting ensemble is optimized in size by only choosing de-correlated decision trees and their output is
+combined to take a decision. In this method, direct imputation does not happen; however, they later incorporated additional MI techniques. The
+paper does not clearly state that at what stage MI was used in the ensemble. Although the proposed techniques are for classiﬁcation, the results
+wereshownonregressionproblemsbydiscretizingtheresponseattribute.WuandJianWuandJia(2013)presentedaprocedurethatperformsMI
+ontheincompletedatasetfollowedbynon-parametricbootstrapping,whichismuchfasterthanperformingbootstrappingfollowedbyMIs.Baneshi
+andTaleiBaneshiandTalei(2012)proposedtoperformMIsusingMICEmethodonincompletedatafollowedbybootstrappingandtheresultsare
+aggregatedusingstatisticaltechniques.Tranetal.Tran,Zhang,Andreae,Xue,andBui(2017)performedMIusingMICEfollowedbybootstrapping
+with C4.5 decision tree as the base classiﬁer. Their results show that better performance in comparison to MI method to generate single imputed
+dataset and other using single imputation to generate a complete dataset. Valdiviezo and Van Aelst Valdiviezo and Van Aelst (2015) combined
+missing data procedures with tree-based prediction methods after single and MI methods (MICE, MIST). They commented that if missingness is
+small,thensingleimputationissufﬁcient.However,ifthemissingessismoderatetolarge,thenMIfollowedbytree-baggingisuseful.Schomakerand
+HeumannSchomakerandHeumann(2016)commentedthatMIonbootstrappedsamplesandbootstrappedsamplesonmultipleimputeddatasets
+arethebestoptionstocalculaterandomizationvalidconﬁdenceintervalswhencombiningbootstrappingwithMI.TheyfurthersuggestthatMIof
+bootstrap samples may be preferred for large imputation uncertainty (or low missingness) and bootstrapping of MI may be preferred for smaller
+imputationuncertainty(highmissingness).
+Othertypesofclassiﬁerfusiontechniquesarealsoexploredbyresearchers.Suetal.Su,Khoshgoftaar,andGreiner(2009)proposedaclassiﬁer
+ensemble method to handle missing data. They start with an incomplete data, then remove further ﬁxed percentage of attribute values to create
+different versions of the original incomplete data. They impute these datasets separately, present them to separate classiﬁers and combine their
+classiﬁcation results. Their results suggest that ensemble learning with (bayesian) expectation maximization performs better than several single
+classiﬁersonmanydatasets.Anissuewiththisapproachisthat,itremovesmoremissingvaluesfromanincompletedatatocreatedifferentdatasets,
+whichcancompromisetheaccuracyofthemethods.TwalaandCartwrightTwalaandCartwright(2005)presentedanensemblemethodthatimpute
+incompletedatausingbayesianMIandnearestneighbourimputationseparately.Thesetwoimputationsarefeedtodecisiontreesandtheirresults
+3
+combined. Nanni et al.Nanni, Lumini, and Brahnam (2012) proposed a MI approach that uses random subspace. Their general idea is to cluster
+incompletedataintoaﬁxednumberofclustersandthenreplacethemissingvaluesofmissingdataobjectswithinaclusterwithitscenter(orsimply
+MEI). This can reduce the information loss introduced by MEI if the full data is replaced by the mean vector. Several runs of random subspace is
+thenperformedontheimputeddatatocreateanensemble.Theirmethodshowhighperformanceonseveralhealthdatasetsanditdoesnotdrop
+when the missingness is increased to 30%. Setz et al.Setz, Schumm, Lorenz, Arnrich, and Tröster (2009) presented a classiﬁer fusion of Linear and
+QuadraticclassiﬁerswithMEIandreducedfeaturemodelingforemotionrecognitiontask.Hassanetal.Hassan,Atiya,El-Gayar,andEl-Fouly(2007)
+proposedtoperformMIseveraltimestogenerateseveralsamplesoftheoriginaldataandthenfeedthemtoclassiﬁersandcreateanensembleof
+several neural networks. They proposed a univariate and multivariate version and showed that they perform better than MEI and EMI. Kumutha
+and Palaniammal Kumutha and Palaniammal (2013) performed KNN imputation on gene expression data followed by bootstrapping. Khan et al.
+Khan et al. (2012) proposed a bayesian MI ensemble method for one-class classiﬁcation problems. They created two types of ensemble: one that
+averagestheMIsandtrainsasingleclassiﬁerandtheotherthatlearnsdifferentclassiﬁersonmultipleimputeddatasets.Theirresultsshowbetter
+performanceofthesemethodsincomparisontomeanimputationasthemissingnessisincreased.
+Theliteraturereviewshowsthatseveralensemblemethodsexisttohandlemissingdata.BootstrappingtheMIandMIofthebootstrapsamples
+of the incomplete data are being used to learn better classiﬁers from incomplete data. Averaging MI and classiﬁer fusion are other plausible tech-
+niques. Most of the research papers we reviewed did not compare different techniques of ensemble and study the effect on performance as the
+missingness in the data increases. These papers also did not provide insights into the diversity and accuracy of classiﬁers within an ensemble that
+mightinﬂuenceitsperformance.Inthispaper,weconsiderthreetypesofensemblemethodstohandleincompletedata:(i)bootstrappingwithsin-
+gleoraverageofMI,(ii)bootstrappingwithMIs,and(iii)ensembleofMIs.Thesethreeapproachesspandifferentwaysofcreatingdiverseensemble
+onincompletedata.Withineachcategory,differenttypesofimputationmethodsareused,suchasmeanimputation,gaussianrandomimputation
+andexpectationimputation(seeSection3.1fordetails).Fusionofdifferenttypesofclassiﬁersisoutofthescopeofthispaper.
+IMPUTATIONMETHODS
+Missingnesscanoccurduetoseveralreasonsandcanbeofdifferenttypes,suchasMissingCompletelyatRandom,MissingatRandom,MissingNot
+AtRandomB(1976).RobinB(1976)proposeatopologyfordifferentkindsofmissingnessdistributions.Missingnessatrandom(MAR)allowsthe
+probabilities of missingness to depend on observed data but not on missing data. An important special case of MAR, called Missing completely at
+random(MCAR),occurswhenthedistributiondoesnotdependonanyvalueofthedata.Missingnotatrandom(MNAR)isdatathatisneitherMAR
+norMCAR.
+Inthispaper,weinvestigatetheuseofthefollowingfourbaseimputationmethods:
+1. MeanImputation(MEI)–IntheMEImethod,amissingattributevalueisreplacedbyitsmeanKhanetal.(2012).Iftherearemultiplemissing
+valuesinanattribute,theyallwillbereplacedbythesamevaluebecauseMEIgivesoneimputedvalue.
+2. GaussianRandomImputation(GRandI)–Inthismethod,weﬁndthemean(µ)andstandarddeviation(σ)ofanattributewithmissingvalues.
+Thenwegenerateauniformlydistributerandomstandardnormalvariate(z)between −Zand +Z.Weusethefollowingformulatoimputea
+missingvalue
+Thus, the imputed value follows a Gaussian distribution. If there are multiple missing values in an attribute, they will not be imputed with
+same value because every time a different z is generated. Similarly, if a missing value is imputed multiple times, GRandI will give different
+imputedvalues.
+x = σ ∗ z + µ
+3. Expectation Maximization Imputation (EMI) Dempster, Laird and Rubin Dempster, Laird, and Rubin (1977) proposed the use of an itera-
+tivesolution,ExpectationMaximization(EM)algorithm,forimputationfordatawithMARmissingness.TheestimationorE-stepoftheEM
+algorithmcomputestheexpectedvalueofthesumofthevariableswithmissingdataassumingthatwehaveavalueforthepopulationmean,
+and variance-covariance matrix. The maximization, or M-step, uses the expected value of the sum of a variable to estimate the population
+mean and covariance. When the fraction of missing values is large with one or more parameters, the convergence of this method is slower.
+DifferentinitializationtoEMproducedifferentimputationsforamissingvalue;hence,EMIcanproduceMIs.
+Theabovethreemethodswillbeusedasthebaseimputationmethods.Theywillbeusedindifferentwaystocreateensembles.
+4
+(a)SingleImputation
+(b)AverageofMI
+FIGURE1TwovariationsofSingleImputation
+SingleImputation
+3.1
+Single imputation refers to the approaches that impute one value for a given missing value in incomplete data. In these methods, either a single
+value or multiple values are generated. If multiple values are generated, then their average is used as a single value and imputed in place of the
+missingvalue.Afteraverageimputation,oneclassiﬁercanbetrainedonthecompletedataset.Weusethefollowingimputationmethodsforsingle
+imputation:
+1. MEI
+2. AverageofGRandI
+3. AverageofEMI
+MEI imputes one value for a given missing value; therefore, there is no need to take an average. Whereas GRandI and EMI generate multiple
+values for imputation. In these cases, the average of MI is taken and a missing value is replaced by a single value. Both the approaches for single
+imputationandaverageofMIareshowninFigure1
+NoImputation(No-Imp)isthesimplestmethodtohandlemissingnessinthedata,i.e.,theincompletedataisnotimputedforagivenmissingness
+ratio.Inthiscase,aclassiﬁeristrainedontheincompletedata.Thisservesasthebaselinemethodtocompareagainstotherimputationapproaches.
+WechooseaC4.5decisiontreeasthebaseclassiﬁerbecauseitcanhandlemissingattributevalues.
+BAGGINGANDMIENSEMBLE
+In a complete data set, ensemble approaches can improve classiﬁcation performance Kuncheva (2004). Bootstrapping or bagging is a popular
+ensemblelearningapproachwheredataisre-sampledwithsubstitutionseveraltimesBreiman(1996).Thereasonforgoodperformanceofbagging
+is that it introduces diversity in the data set and can lead to accurate classiﬁers. In this paper, we consider bagging on incomplete data for ensem-
+ble learning. A C4.5 decision tree is used as a base classiﬁer. Since C4.5 can handle missing values; it can be used to train a No-Imp equivalent of
+each ensemble methods for comparison purposes. Let us now deﬁne the following parameters that we will used to describe different ensemble
+approachesformissingdata: R–missingnessratio, M–numberofMIs,and B–sizeoftheensemble.
+Wenowdiscussthethreetypesofensemblelearningapproachestohandlemissingvalues:
+BaggingSingleImputation
+4.1
+Inthismethod,anincompletedatasetisre-sampled Btimes.Thiswillresultin Bsub-samplesoftheincompletedataset.Dependingonthevalueof
+R,somesub-samplesmaybecompleteorincomplete.Thenwecanperformaverage(single)imputationonalltheincompletesub-samplesandtrain
+5
+FIGURE2BaggingSingleImputation
+aclassiﬁeroneachofthesethem.Thisleadsto Bclassiﬁersandamajorityvotingcanbeusedtotakeaﬁnaldecision.Insummary,thismethodﬁrst
+performs bootstrapping on the incomplete data, followed by single imputation on each of the re-samples. Therefore, it retains the basic diversity
+aspectofbaggingandreplacesmissingvalueswithimputedvalues.Dependinguponaparticularimputationmethod,thiscanalsoleadtoaccurate
+classiﬁers.Combinedwithboththeideasofdiversityandaccuracy,weexpectthismethodtoperformbetterthantheaverageimputationmethod.
+TheNo-Impequivalentmethodforthisapproachdoesnotimputemissingvaluesinthe Bsub-samples.Figure2showsthedifferentcomponentsof
+BaggingSingleImputation.
+BaggingMI
+4.2
+In this method, an incomplete data set is re-sampled B/M times. Then, on each of these re-samples, MI is performed M times. This will result in
+B imputed (complete) data sets. Thus, B separate classiﬁers can be trained and their results combined with majority voting. As MEI does single
+imputation, only B/M sub-samples will be different in this case and MI on these bootstrap samples will generate same imputed values. Therefore,
+MEIisexcludedfromthisapproach.ThereisnoNo-Impequivalentofthismethodbecause,itwillhaveonlyuniqueincomplete B/Msub-samplesand
+therestofthemwillbeduplicates.Thismethodgenerates Bclassiﬁers,whichisthesamenumberasBaggingSingleImputationmethod.Therefore,
+both the methods can be fairly compared when the base classiﬁer is the same (C4.5 in our case). It is to be noted that this method generates less
+diversesub-samples;however,MIsonthesesub-samplescanleadtomoreaccurateclassiﬁer.Toavoidnumericalcalculationproblems, Bshouldbe
+amultipleof Minthismethod.Figure3showsthestepsinvolvedinperformingBaggingMI.
+The other possibility is to perform MI on the incomplete data followed by bootstrapping each of those samples. In our case, we are using small
+valueofMI, M,thatmeanstherewillbehigheruncertaintyintheestimates.AscommentedbySchomakerandHeumannSchomakerandHeumann
+(2016),bootstrappingofMImaybepreferredforsmallerimputationuncertainty(ormoderatetolargevaluesofM).Therefore,wedonotusethis
+typeofensembletechniqueinthispaper.
+4.3 MIEnsemble
+In this method, MI is performed on the original incomplete data M = B times. This is done to generate B sub-samples; hence B classiﬁers can be
+trained and fair comparison can be done with the two above approaches. The results of these B classiﬁers will be combined using majority voting.
+This method will have the least diversity in comparison to the Bagging Single Imputation and Bagging MI because the same data is always used
+forimputingmissingvalues.However,theindividualclassiﬁersmaybemoreaccurateiftheunderlyingimputationmethodgivegoodestimatesfor
+missing values. The MEI does not impute multiple times and No-Imp method would result in B copies of original incomplete data; therefore, both
+themethodscannotbeappliedwhileusingMIensemble.AgraphicalrepresentationofMIEnsembleisshowninFigure4
+6
+FIGURE3BaggingMI
+FIGURE4MIEnsemble
+Analysis
+4.4
+In general, all three types of ensemble methods will be computationally expensive than running a single decision tree on an incomplete dataset.
+However,theirperformanceisexpectedtobemuchhigherduetothediversityandaccuracymodelledbybootstrappingandMIensemble.Wekeep
+thenumberofclassiﬁersinalloftheseensembletechniquestobesame,sothatnoonetechniquemaybeneﬁtfromthemandthecomparisonsare
+fair.Thatis,bootstrappingandMI,whethercombinedornotshouldalwaysyieldexactly Bimputeddatasetsforagivenincompletedata.
+Bagging Single Imputation generates B bootstraps, perform M imputations on each of these sub-samples and averages them to a single value.
+Thereforeitgenerates B + (B × M)numberofdatasets.BaggingMIgenerates B/Mbootstrapsamplesfollowedby MMIsonthem;thereforethe
+numberofgeneratedare (B/M) + B.Whereas,MIensembleapproachgenerates BMIsub-samplesoftheoriginalincompletedataset.Performing
+MIstakesthemosttimeincreatinganensemble.Wemakesurethatthenumberofclassiﬁersamongtheseensemblemethodsremainsame;how-
+ever,theircomputationalcompelxitywillbedifferentduetogenerationofdifferentnumberofdatasets.BaggingSingleImputationwillbethemost
+computationallyexpensive,followedbyBaggingMIandMIEnsemble.AcomparisonbetweenthesemethodsisshowninTable1.
+TABLE1NumberofdatasetscreatedinthreedifferentensembleimputationapproachesdiscussedinSection4
+MethodName
+BaggingSingleImputation
+BaggingMI
+MIEnsemble
+#BootstrapSamples
+B/M
+#DatasetsCreated
+#MIs
+B × M
+B + (B × M)
+(B/M) × M B + (B/M)
+TABLE2Acronymsfordifferentimputationmethodsandtheirdescriptions.
+Number
+10
+11
+12
+Acronym
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+Description
+NoImputationonincompletedata
+MeanImputation
+AverageofGaussianRandomImputation
+Average of Expectation Maximization
+imputation
+EnsemblebyBaggingwithoutimputation
+Ensemble by Bagging with mean imputa-
+tion
+EnsemblebyBaggingwithGaussianRan-
+domImputation
+Ensembles by Bagging with Expecta-
+tion Maximization Imputation for each
+dataset
+Ensembles by MI over Bagging by Gaus-
+sianRandomImputation
+EnsemblesbyMIoverBaggingbyExpec-
+tationMaximizationImputation
+Ensembles by MI by Gaussian Random
+Imputation
+Ensembles by MI by Expectation Maxi-
+mizationImputation
+EXPERIMENTATION
+We use Weka API Developer version version 3.9.1 Hall et al. (2009) to implement different algorithms. The decision tree,J48 package in Weka, is
+used as a base classiﬁer because it can handle missing values. Weka uses TheEMImputation package for EMI. The initial parameters in the original
+implementationofthepackageareﬁxedi.e.allmeansarezero,allvariancesareone,andallcovariancesarezerobecausethedataisstandardized.
+Therefore,thismethodalwaysgivesoneﬁxedimputedvalueforagivenmissingvalueirrespectiveofmultipleruns.Thissettingpreventsvariation
+in the MI for the EMI method. Therefore, we changed the code of EMImputation, such that the elements of initial covariance matrix can randomly
+varybetween −1to 1(asthedataisalreadystandardized).ThisallowsEMItoproducedifferentvaluesforeveryrunofMIandallowforvariation.
+Thefullsourcecodealongwiththedatasetsusedinthispaperisavailableathttp://www.anonymized.com
+In this paper we discuss three base imputation methods (MEI, EMI, GRandI, see Section 3). The average imputations (or single imputation) for
+eachofthesemethodsalongwithNo-Impgivefourmethods.Similarly,theBaggingSingleImputationapproachgivesthreemethodscorresponding
+toeachofthethreeimputationandoneNo-Impmethod.ForboththeBaggingMIandMIEnsemble,therearenoNo-ImporMEImethods;therefore,
+theygivetwomethodseachcorrespondingtoEMIandGRandI.Therefore,intotal,wecompare 12differentimputationmethods,outofwhicheight
+aredifferentensembleimputationmethodsandfourmethodsdonotuseensembleimputation(SeeTable2fordetails).
+8
+TABLE3Datasetsdescription
+Domain
+Dataset
+BreastTissues
+NewThyroid
+Parkinsons
+PimaIndianadiabetes
+h Column
+Glass
+Seeds
+Wine
+#DataObjects
+#Features
+106
+215
+197
+768
+310
+214
+210
+178
+10
+23
+10
+13
+IntroducingMissingintheData
+5.1
+Tointroduce Ramountofmissingnessinthedata,weadoptthefollowingstrategy.Foreveryfeatureofthedata,werandomlyremove Rnumberof
+attributevalues.Theattributesvaluesareremovedsuchthatthesameattributevalueisnotremovedmorethanonce.Astheratioofmissingness
+increases, the probability for inducing missing values to an entire data object also increases. This situation, in particular, is problematic for EMI
+method because it will not impute such data objects and the same amount of training data may not be used for training the models. for MEI and
+GRandI, this situation is not a problem because they either replace all the missing values of entire missing data object with mean value of that
+attributeorwithgaussiandistributedrandomvalue.Toavoidthisproblem,wekeepaﬂagatthelastfeaturetocheckifsuchacaseishappening.If
+the ﬂag is set, then we do not remove that attribute value, rather set the index to the top of that feature and replace the ﬁrst available value. This
+will prevent from all the attribute values of a data object to be removed. Therefore, if the number of features are F, then for a given missingness
+ratio R,atotalof F × Rattributevalueswillberemoved.
+Parameters
+5.2
+Thefollowingvaluesaresetforthedifferentparametersusedintheexperiments
+1. R-missingnessratioisvariedfrom 0%, 5%, 10%, 15%, 20%, 25%, 30%.Itistobenotedthat 0%missingnessmeanscompletedatawithno
+missingness.
+2. M-numberofimputationsissetto 5Khanetal.(2012).
+3. B-sizeofensembleissetto 25.
+4. Z-forGRandI,itissetto [−4, 4].
+5. CV-Numberofcrossvalidationfoldsissetto 2.
+6. X-timestorepeattheexperimenttobalanceoutrandomvariations.Itissetto 30
+A 2-fold cross validation is performed for every imputation method (or corresponding No-Imp) and it is repeated X by randomizing the data.
+The average of performance across X times 2-folds is reported as the performance metric. Performance metrics used are accuracy and Kappa-
+error plots. Kappa-error plots are used to study the accuracy and diversity of members of an ensemble. Kappa-Error diagram shown in ﬁgures
+correspondstoX=1andCV=1i.e.foronefoldfortimes=1.
+Datasets
+5.3
+WeusefourdatasetsfromthehealthdomainandfourfromthegeneraldomainLichman(2013)toevaluatedifferentensembleimputationmethods.
+ThedescriptionofthesedatasetsispresentedinTable3.
+9
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+TABLE4BreastTissuesdata
+MissingnessRatio(%)
+20
+10
+0.565
+0.516
+0.504
+0.548
+0.468
+0.544
+0.61
+0.586
+0.562
+0.593
+0.553
+0.583
+0.595
+0.614
+0.638
+0.64
+0.577
+0.612
+0.629
+0.626
+0.609
+0.584
+0.617
+0.622
+15
+0.554
+0.525
+0.513
+0.6
+0.591
+0.576
+0.622
+0.647
+0.607
+0.631
+0.606
+0.614
+0.629
+0.629
+0.629
+0.629
+0.648
+0.648
+0.648
+0.648
+0.625
+0.625
+0.629
+0.629
+0.581
+0.579
+0.576
+0.625
+0.614
+0.613
+0.633
+0.642
+0.615
+0.624
+0.607
+0.626
+25
+0.51
+0.495
+0.436
+0.553
+0.541
+0.536
+0.561
+0.625
+0.567
+0.626
+0.56
+0.62
+30
+0.468
+0.474
+0.418
+0.524
+0.525
+0.526
+0.535
+0.614
+0.539
+0.608
+0.55
+0.594
+Results
+5.4
+Tables 4 - 11 show the results for each of the 8 datasets. The ﬁrst column represents the imputation method. The subsequent columns show the
+performance of each imputation method as the missingness ratio is increased from complete data (0%) to 30%. We summarize the results from
+thesetablesasfollows:
+1. Presence of large number of missing values can deteriorate the performance of a classiﬁcation algorithm. For example, for Breast Tissue
+data, the accuracy of EM algorithm reduce to 0.524 from 0.629 when 30% missingness was introduced in comparison to complete data.
+Similarperformancedegradationwasobservedforallthemethodsforallthedatasets.
+2. All the three ensemble methods performed better than their corresponding single imputation methods. Ensemble methods showed they
+theyaremorerobustasthemissingnessratioisincreasedascomparedtocorrespondingsingleimputationmethods.Forexample,forBreast
+Tissues dataset with 30% missingness ratio, the accuracy of single EM method decreases by around 17% (0.629 to 0.524), whereas the
+accuracyofBaggingSingleImputationwithEMmethoddecreasesbyaround 5%(0.648to0.614).
+3. For smaller missingness ratio (up to 10%), MI over bootstrap and MI ensemble with MEI, GRandI and EMI show no signiﬁcant superiority
+overeachother.ItistobenotedthatMEIorGRandIarelesscomputationallyextensivethanEM.Theyalsoperformbetterthanorequivalent
+totheircounterpartsthatuseaverageimputationonbootstrapsamplesofincompletedata.
+4. Forsmallermissingnessratio(upto 10),bootstrappingofincompletedatawithoutimputationgenerallyshowsimilarperformancetoother
+ensembleimputationtechniques.However,ensembleimputationmethodscanhaveslightadvantageforsomedatasets.
+5. Overall,MIofbootstrapsampleswithEMmethodemergeasthebestchoiceduetoitsrobustperformanceonhighmissingnessratio(upto
+30%).Forexample,with 30%missingness,forBreastTissuesdatasetwithno-imputationtheaccuracydegradesfrom 0.629to 0.468whereas
+theaccuracyofBagEMIdegradesfrom0.648to0.614.Thesimilarbehaviourisobservedforotherdatasets.
+However,largenumberofmissingnessratiomeansthattheEMmethodwilltakemoretimetoimputemissingvalues;withinabootstrapMI
+ensembleframeworkitcanbemorecomputationallyexpensive(asshowninTable1).
+EnsembleDiversity
+5.5
+Kappa-errorplotsMargineantuandDietterich(1997)isamethodtounderstandthediversity-errorbehaviourofanensemble.Theseplotsrepre-
+sentapointforeachpairofclassiﬁersintheensemble.Thexcoordinateisameasureofdiversityofthetwoclassiﬁers Di and Dj knownasthekappa
+(κ) measure (low values suggest high diversity). The y coordinate is the average error Ei,j of the two classiﬁers Di and Dj. When the agreement of
+10
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+TABLE5NewThyroiddata
+MissingnessRatio(%)
+20
+10
+0.902
+0.881
+0.888
+0.899
+0.798
+0.855
+0.904
+0.886
+0.896
+0.919
+0.901
+0.913
+0.89
+0.923
+0.927
+0.919
+0.892
+0.917
+0.912
+0.916
+0.916
+0.898
+0.893
+0.908
+15
+0.892
+0.885
+0.83
+0.898
+0.902
+0.902
+0.902
+0.922
+0.902
+0.912
+0.906
+0.899
+0.906
+0.907
+0.887
+0.906
+0.921
+0.918
+0.93
+0.922
+0.928
+0.921
+0.919
+0.907
+TABLE6Parkinsonsdata
+MissingnessRatio(%)
+10
+20
+0.814
+0.822
+0.796
+0.81
+0.754
+0.787
+0.824
+0.809
+0.833
+0.846
+0.841
+0.845
+0.852
+0.838
+0.857
+0.859
+0.832
+0.845
+0.841
+0.852
+0.836
+0.85
+0.827
+0.827
+15
+0.827
+0.806
+0.781
+0.829
+0.846
+0.837
+0.843
+0.858
+0.838
+0.845
+0.848
+0.829
+0.834
+0.824
+0.813
+0.833
+0.854
+0.856
+0.863
+0.865
+0.856
+0.852
+0.861
+0.836
+0.915
+0.915
+0.915
+0.915
+0.929
+0.929
+0.929
+0.929
+0.924
+0.924
+0.915
+0.915
+0.835
+0.835
+0.831
+0.831
+0.862
+0.862
+0.862
+0.862
+0.849
+0.849
+0.835
+0.835
+25
+0.867
+0.877
+0.772
+0.866
+0.884
+0.893
+0.881
+0.915
+0.874
+0.907
+0.888
+0.883
+25
+0.809
+0.79
+0.732
+0.804
+0.824
+0.825
+0.828
+0.85
+0.822
+0.843
+0.832
+0.836
+30
+0.857
+0.862
+0.74
+0.855
+0.867
+0.875
+0.855
+0.907
+0.859
+0.9
+0.866
+0.878
+30
+0.809
+0.794
+0.724
+0.785
+0.823
+0.828
+0.818
+0.845
+0.816
+0.841
+0.827
+0.838
+thetwoclassiﬁersequalsthatexpectedbychanceDietterich(2000), κ = 0;whentheyagreeoneveryinstance, κ = 1.Negativevaluesof κmeana
+systematicdisagreementbetweenthetwoclassiﬁers.
+Wedrawkappa-errorplotsforfourdatasets,i.e.,BreastTissue,New-Thyroid,Column,andSeeds,fordifferentensemblemethods.Thescalesof
+κand Ei,j aresameforeachgivendatasetsowecaneasilycomparedifferentensemblemethods.Figures5and6showthekappa-errorplotsofthe
+testingphaseofﬁrstrunoftheﬁrstcross-validationfoldforeachofthedataatmissingrationof 10%and 30%.Therowsshoweachofthedatasets
+andthecolumnsshowthekappa-errorplotsforthedifferentensembleimputationmethods.
+Someofthegraphsshowonlyfewpoints,itmeansthatonlyfewofclassiﬁershavedistinctresults.Generally,thesekindsofgraphsareforMIEM
+method. This suggests that this method is not creating diverse classiﬁers. These graphs suggest that most of the ensemble methods have similar
+diversitypattern.However,BagEMclassiﬁershavebetteraccuracyasgroupsofpointsarelowerascomparedtootherensemblemethods.Accurate
+classiﬁerswithreasonablediversityisthereasonfortherobustperformanceofBagEMathighmissingnessratio.
+11
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+TABLE7PimaIndianaDiabetesdata
+MissingnessRatio(%)
+20
+10
+0.723
+0.719
+0.7
+0.713
+0.681
+0.701
+0.719
+0.71
+0.737
+0.746
+0.731
+0.741
+0.728
+0.743
+0.744
+0.736
+0.727
+0.735
+0.722
+0.725
+0.738
+0.721
+0.71
+0.716
+15
+0.723
+0.711
+0.695
+0.713
+0.74
+0.735
+0.734
+0.742
+0.731
+0.727
+0.729
+0.717
+0.734
+0.727
+0.713
+0.721
+0.75
+0.749
+0.747
+0.743
+0.739
+0.731
+0.736
+0.72
+TABLE8Columndata
+MissingnessRatio(%)
+10
+20
+0.735
+0.767
+0.725
+0.762
+0.673
+0.734
+0.781
+0.74
+0.761
+0.79
+0.766
+0.789
+0.788
+0.764
+0.788
+0.81
+0.764
+0.787
+0.798
+0.779
+0.757
+0.783
+0.782
+0.754
+15
+0.751
+0.732
+0.704
+0.756
+0.769
+0.773
+0.772
+0.792
+0.77
+0.782
+0.761
+0.76
+0.785
+0.771
+0.767
+0.791
+0.81
+0.803
+0.807
+0.817
+0.8
+0.804
+0.788
+0.79
+0.731
+0.731
+0.731
+0.731
+0.754
+0.754
+0.754
+0.754
+0.733
+0.733
+0.731
+0.731
+0.804
+0.804
+0.804
+0.804
+0.83
+0.83
+0.83
+0.83
+0.819
+0.819
+0.804
+0.804
+25
+0.713
+0.695
+0.672
+0.698
+0.724
+0.721
+0.722
+0.725
+0.713
+0.715
+0.718
+0.703
+25
+0.715
+0.71
+0.664
+0.72
+0.737
+0.754
+0.75
+0.775
+0.744
+0.759
+0.738
+0.729
+30
+0.706
+0.691
+0.666
+0.69
+0.721
+0.714
+0.713
+0.721
+0.709
+0.717
+0.709
+0.705
+30
+0.699
+0.698
+0.62
+0.703
+0.721
+0.731
+0.725
+0.758
+0.716
+0.748
+0.717
+0.717
+CONCLUSIONANDFUTUREWORK
+Handling missing data is a challenging task in data mining application. MI methods are commonly employed because they can model the uncer-
+taintyduetomissingness.Bootstrappingisanother methodthroughwhichdiversitymaybeincorporatedintheincompletedata.Combining both
+theideastogethercanleadtomoreaccurateanddiverseclassiﬁer,thatcanleadtorobustensembleagainthighmissingnessratio.Inthispaper,we
+presentadifferentvariationsofcombiningideasfromMIandbootstrappingfordataimputation.OurresultsshowthatMIoverbootstrapsamples
+ofincompletedatawithEMasthebaseimputationmethodcangiveconsistentperformanceforupto 30%missingnessratio.Forsmallermissing-
+ness, i.e. up to 10%, ensemble based imputations perform better than their single counterparts. It is consistently observed that no imputation on
+incompletedatawithbootstrappingperformsbettertosingleimputationandequivalenttootherensembleimputationmethods.Thekappa-error
+plotsfurtherverifythatbaggingandMIleadtodiverseandaccurateclassiﬁers;thus,theirensemblearemorerobusttomissingness,incomparison
+toMIensembleorsingleimputationmethods.Infuture,weplantouseotherclassiﬁerswiththeseensemblemethods.
+12
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+TABLE9Glassdata
+MissingnessRatio(%)
+20
+10
+0.607
+0.575
+0.557
+0.594
+0.48
+0.548
+0.62
+0.594
+0.617
+0.66
+0.618
+0.652
+0.611
+0.659
+0.682
+0.668
+0.601
+0.646
+0.636
+0.66
+0.649
+0.615
+0.595
+0.618
+15
+0.59
+0.578
+0.499
+0.61
+0.64
+0.636
+0.639
+0.68
+0.629
+0.646
+0.633
+0.612
+0.623
+0.626
+0.592
+0.637
+0.683
+0.682
+0.682
+0.694
+0.67
+0.667
+0.661
+0.637
+TABLE10Seedsdata
+MissingnessRatio(%)
+10
+20
+0.83
+0.854
+0.828
+0.848
+0.752
+0.806
+0.889
+0.874
+0.867
+0.883
+0.854
+0.864
+0.883
+0.868
+0.89
+0.898
+0.861
+0.874
+0.89
+0.886
+0.866
+0.882
+0.891
+0.881
+15
+0.834
+0.842
+0.779
+0.873
+0.872
+0.865
+0.871
+0.896
+0.865
+0.884
+0.871
+0.881
+0.864
+0.858
+0.845
+0.893
+0.885
+0.872
+0.888
+0.901
+0.877
+0.889
+0.876
+0.893
+0.648
+0.648
+0.648
+0.648
+0.699
+0.699
+0.699
+0.699
+0.667
+0.667
+0.648
+0.648
+0.891
+0.891
+0.891
+0.891
+0.903
+0.903
+0.903
+0.903
+0.892
+0.892
+0.891
+0.891
+25
+0.546
+0.531
+0.447
+0.557
+0.592
+0.601
+0.583
+0.654
+0.579
+0.638
+0.59
+0.593
+25
+0.818
+0.817
+0.722
+0.853
+0.853
+0.846
+0.859
+0.889
+0.859
+0.888
+0.864
+0.875
+30
+0.532
+0.519
+0.419
+0.511
+0.587
+0.587
+0.567
+0.633
+0.557
+0.622
+0.577
+0.592
+30
+0.806
+0.808
+0.686
+0.836
+0.851
+0.842
+0.854
+0.888
+0.843
+0.883
+0.852
+0.874
+Iranianjournalofpublichealth,41(5),110.
+References
+B,R.D. (1976). Inferenceandmissingdata. Biometrika,581-592.
+Baneshi,M.,&Talei,A. (2012). Assessmentofinternalvalidityofprognosticmodelsthroughbootstrappingandmultipleimputationofmissingdata.
+Breiman,L. (1996). BaggingPredictors. MachineLearning,24(2),123–140.
+Dempster,A.,Laird,N.,&Rubin,D.B. (1977). Maximumlikelihoodestimationfromincompletedataviatheemalgorithm(withdiscussion). Journal
+Dietterich, T. G.
+(2000). An experimental comparison of three methods for constructing ensembles of decision trees: Bagging, boosting, and
+Donders,A.R.T.,vanderHeijden,G.J.,Stijnen,T.,&Moons,K.G. (2006). Review:Agentleintroductiontoimputationofmissingvalues. Journalof
+oftheRoyalStatisticalAssociation,B39,1-38.
+randomization. MachineLearning,40(2),139–157.
+13
+Imputation
+Methods
+No-Imp
+MEI
+GRandI
+EM
+BagNoImp
+BagMEI
+BagGRandI
+BagEM
+BagMIGRandI
+BagMIEM
+MIGrandI
+MIEM
+TABLE11Winedata
+MissingnessRatio(%)
+20
+10
+0.861
+0.84
+0.838
+0.859
+0.765
+0.827
+0.884
+0.864
+0.896
+0.913
+0.886
+0.903
+0.916
+0.929
+0.913
+0.928
+0.907
+0.921
+0.905
+0.896
+0.915
+0.913
+0.885
+0.884
+15
+0.851
+0.85
+0.788
+0.88
+0.902
+0.899
+0.922
+0.92
+0.911
+0.898
+0.921
+0.884
+0.889
+0.889
+0.889
+0.889
+0.919
+0.919
+0.919
+0.919
+0.901
+0.901
+0.889
+0.889
+0.883
+0.875
+0.861
+0.89
+0.917
+0.911
+0.931
+0.92
+0.917
+0.897
+0.91
+0.892
+25
+0.827
+0.825
+0.714
+0.834
+0.88
+0.88
+0.893
+0.924
+0.885
+0.911
+0.894
+0.862
+30
+0.809
+0.81
+0.672
+0.805
+0.868
+0.868
+0.881
+0.921
+0.881
+0.913
+0.886
+0.89
+ClinicalEpidemiology,59(10),1087-1091.
+knowledgediscovery(pp.329–334).
+explorationsnewsletter,11(1),10–18.
+(2009). The weka data mining software: an update. ACM SIGKDD
+2007.ijcnn2007.internationaljointconferenceon(pp.1261–1265).
+TheAmericanStatistician,55(3),244–254.
+intelligence(pp.331–336).
+andinformatics(iccci),2013internationalconferenceon(pp.1–8).
+Feelders,A. (1999). Handlingmissingdataintrees:surrogatesplitsorstatisticalimputation? InEuropeanconferenceonprinciplesofdataminingand
+Gelman,A.,&Hill,J. (2006). Dataanalysisusingregressionandmultilevel/hierarchicalmodels. Cambridgeuniversitypress.
+Hall, M., Frank, E., Holmes, G., Pfahringer, B., Reutemann, P., & Witten, I. H.
+Harel,O.,&Zhou,X.-H. (2007). Multipleimputation:reviewoftheory,implementationandsoftware. StatisticsinMedicine,26(16),3057–3077.
+Hassan,M.M.,Atiya,A.F.,El-Gayar,N.,&El-Fouly,R. (2007). Regressioninthepresencemissingdatausingensemblemethods. InNeuralnetworks,
+Horton,N.J.,&Lipsitz,S.R. (2001). Multipleimputationinpractice:comparisonofsoftwarepackagesforregressionmodelswithmissingvariables.
+Khan, S. S., Hoey, J., & Lizotte, D. (2012). Bayesian multiple imputation approaches for one-class classiﬁcation. In Canadian conference on artiﬁcial
+Kumutha,V.,&Palaniammal,S.(2013).Anenhancedapproachonhandlingmissingvaluesusingbaggingk-nnimputation.InComputercommunication
+Kuncheva,L.I. (2004). CombiningPatternClassiﬁers:MethodsandAlgorithms. Wiley-Interscience.
+Lichman,M. (2013). UCImachinelearningrepository. Retrievedfrom http://archive.ics.uci.edu/ml
+Lin,T.H. (2010). Acomparisonofmultipleimputationwithemalgorithmandmcmcmethodforqualityoflifemissingdata. Quality&Quantity,44(2),
+Margineantu,D.D.,&Dietterich,T.G. (1997). PruningAdaptiveBoosting. InProc.14thinternationalconferenceonmachinelearning (pp.211–218).
+Nanni,L.,Lumini,A.,&Brahnam,S. (2012). Aclassiﬁerensembleapproachforthemissingfeatureproblem. Artiﬁcialintelligenceinmedicine,55(1),
+Rezvan, P. H., Lee, K. J., & Simpson, J. A. (2015). The rise of multiple imputation: a review of the reporting and implementation of the method in
+Schmitt,P.,Mandel,J.,&Guedj,M. (2015). Acomparisonofsixmethodsformissingdataimputation. JournalofBiometrics&Biostatistics,6(1),1.
+Schomaker,M.,&Heumann,C. (2016). Bootstrapinferencewhenusingmultipleimputation. arXivpreprintarXiv:1602.07933.
+Setz,C.,Schumm,J.,Lorenz,C.,Arnrich,B.,&Tröster,G. (2009). Usingensembleclassiﬁersystemsforhandlingmissingdatainemotionrecognition
+In Affective computing and intelligent interaction and workshops, 2009. acii 2009. 3rd
+Su, X., Khoshgoftaar, T. M., & Greiner, R. (2009). Making an accurate classiﬁer ensemble by voting on classiﬁcations from imputed learning sets.
+277–287.
+MorganKaufmann.
+37–50.
+medicalresearch. BMCmedicalresearchmethodology,15(1),30.
+from physiology: one step towards a practical system.
+internationalconferenceon(pp.1–8).
+14
+15
+16
+311,163–181.
+Multivariatebehavioralresearch,48(5),663–691.
+InternationalJournalofInformationandDecisionSciences,1(3),301–322.
+Intelligentandevolutionarysystems:The20thasiapaciﬁcsymposium,ies2016,canberra,australia,november2016,proceedings(pp.401–415).
+internationalsymposium(pp.10–pp).
+Tran,C.T.,Zhang,M.,Andreae,P.,Xue,B.,&Bui,L.T. (2017). Multipleimputationandensemblelearningforclassiﬁcationwithincompletedata. In
+In Software metrics, 2005. 11th ieee
+Twala, B., & Cartwright, M.
+Twala,B.,&Cartwright,M. (2010). Ensemblemissingdatatechniquesforsoftwareeffortprediction. IntelligentDataAnalysis,14(3),299–331.
+Valdiviezo, H. C., & Van Aelst, S. (2015). Tree-based prediction on incomplete data using imputation or surrogate decisions. Information Sciences,
+Wu, W., & Jia, F.
+(2013). A new procedure to test mediation with missing data through nonparametric bootstrapping and multiple imputation.
+(2005). Ensemble imputation methods for missing software engineering data.

@@ -1,0 +1,18 @@
+
+Sensitivity based sampling is crucial for constructing nearly-optimal coreset for k-means /
+median clustering.
+In this paper, we provide a novel data structure that enables sensitivity
+sampling over a dynamic data stream, where points from a high dimensional discrete Euclidean
+space can be either inserted or deleted. Based on this data structure, we provide a one-pass
+coreset construction for k-means clustering using space (cid:101)O(k poly(d)) over d-dimensional geo-
+metric dynamic data streams. While previous best known result is only for k-median[BFL+17],
+which cannot be directly generalized to k-means to obtain algorithms with space nearly linear
+in k. To the best of our knowledge, our algorithm is the ﬁrst dynamic geometric data stream
+algorithm for k-means using space polynomial in dimension and nearly optimal in k.
+We further show that our data structure for maintaining coreset can be extended as a uniﬁed
+approach for a more general classes of k-clustering, including k-median, M-estimator clustering,
+and clusterings with a more general set of cost functions over distances. For all these tasks, the
+space/time of our algorithm is similar to k-means with only poly(d) factor diﬀerence.
+∗Work done while the author was visiting IBM Almaden and hosted by David P. Woodruﬀ.
+Contents
+1 

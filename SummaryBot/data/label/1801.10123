@@ -1,0 +1,11 @@
+
+We present a novel algorithm, called Links, designed to perform
+online clustering on unit vectors in a high-dimensional Euclidean
+space. The algorithm is appropriate when it is necessary to clus-
+ter data efﬁciently as it streams in, and is to be contrasted with tra-
+ditional batch clustering algorithms that have access to all data at
+once. For example, Links has been successfully applied to embed-
+ding vectors generated from face images or voice recordings for the
+purpose of recognizing people, thereby providing real-time identiﬁ-
+cation during video or audio capture.
+1. 

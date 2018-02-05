@@ -1,0 +1,23 @@
+
+Deep learning involves a difﬁcult non-convex optimization problem with a
+large number of weights between any two adjacent layers of a deep structure. To
+handle large data sets or complicated networks, distributed training is needed, but
+the calculation of function, gradient, and Hessian is expensive. In particular, the
+communication and the synchronization cost may become a bottleneck. In this
+paper, we focus on situations where the model is distributedly stored, and propose
+a novel distributed Newton method for training deep neural networks. By variable
+and feature-wise data partitions, and some careful designs, we are able to explicitly
+use the Jacobian matrix for matrix-vector products in the Newton method. Some
+techniques are incorporated to reduce the running time as well as the memory con-
+sumption. First, to reduce the communication cost, we propose a diagonalization
+method such that an approximate Newton direction can be obtained without com-
+munication between machines. Second, we consider subsampled Gauss-Newton
+matrices for reducing the running time as well as the communication cost. Third,
+to reduce the synchronization cost, we terminate the process of ﬁnding an ap-
+proximate Newton direction even though some nodes have not ﬁnished their tasks.
+Details of some implementation issues in distributed environments are thoroughly
+investigated. Experiments demonstrate that the proposed method is effective for
+the distributed training of deep neural networks. In compared with stochastic gra-
+dient methods, it is more robust and may give better test accuracy.
+Keywords: Deep Neural Networks, Distributed Newton methods, Large-scale clas-
+siﬁcation, Subsampled Hessian.

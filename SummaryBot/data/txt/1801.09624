@@ -1,0 +1,1723 @@
+Learning the Reward Function for a Misspeciﬁed Model
+Erik Talvitie 1
+Abstract
+In model-based reinforcement learning it is typi-
+cal to treat the problems of learning the dynamics
+model and learning the reward function separately.
+However, when the dynamics model is ﬂawed, it
+may generate erroneous states that would never
+occur in the true environment. A reward func-
+tion trained only to map environment states to
+rewards (as is typical) would have little guidance
+in such states. This paper presents a novel error
+bound that accounts for the reward model’s be-
+havior in states sampled from the model. This
+bound is used to extend the existing Hallucinated
+DAgger-MC algorithm, which offers theoretical
+performance guarantees in deterministic MDPs
+that do not assume a perfect model can be learned.
+Empirically, this approach to reward learning can
+yield dramatic improvements in control perfor-
+mance when the dynamics model is ﬂawed.
+1. Introduction
+In the reinforcement learning problem, an agent interacts
+with an environment, receiving rewards along the way that
+indicate the quality of its decisions. The agent’s task is to
+learn to behave in a way that maximizes reward. Model-
+based reinforcement learning (MBRL) techniques approach
+this problem by learning a predictive model of the envi-
+ronment and applying a planning algorithm to the model
+to make decisions. Intuitively and theoretically (Szita &
+Szepesv´ari, 2010) there are many advantages to learning
+a model of the environment, but MBRL is challenging in
+practice, since even seemingly minor ﬂaws in the model or
+the planner can result in catastrophic failure. As a result
+model-based methods have generally not been successful
+in large-scale problems, with only a few notable exceptions
+(e.g. Abbeel et al., 2007).
+This paper addresses an important but understudied problem
+in MBRL: learning a reward function. It is common for
+1Department of Computer Science, Franklin & Marshall Col-
+lege, Lancaster, Pennsylvania, USA. Correspondence to: Erik
+Talvitie <erik.talvitie@fandm.edu>.
+Preliminary work, currently under review.
+Figure 1. The Shooter domain.
+work in model learning to ignore the reward function (e.g.
+Bellemare et al., 2014; Oh et al., 2015; Chiappa et al., 2017)
+or, if the model will be used for planning, to assume the
+reward function is given (e.g. Ross & Bagnell, 2012; Talvitie,
+2017; Ebert et al., 2017). Indeed, it is true that if an accurate
+model of the environment’s dynamics can be learned, reward
+learning is relatively straightforward – the two problems can
+be productively decoupled. However, in this paper we will
+see that when the model class is mispeciﬁed (i.e. that the
+representation does not admit a perfectly accurate model),
+as is inevitable in problems of genuine interest, learning a
+reward function becomes more complicated.
+1.1. An Example
+To better understand how the limitations of the dynamics
+model impact reward learning, consider the simpliﬁed video
+game Shooter (Talvitie, 2015), pictured in Figure 1. At the
+bottom of the screen is a spaceship which can move left and
+right and ﬁre bullets, which ﬂy upward. When the ship ﬁres
+a bullet the agent receives -1 reward. Near the top of the
+screen are three targets. When a bullet hits a target in the
+middle (bullseye), the target explodes and the agent receives
+20 reward; otherwise a hit is worth 10 reward. Figure 1
+shows the explosions that indicate how much reward the
+agent receives.
+It is typical to treat predicting the next state and the predict-
+ing the reward as separate learning problems. In the former
+the agent must learn to map an input state and action to the
+next state. In the latter the agent must learn to map a state
+and action to reward. In this example the agent might learn
+to associate the presence of explosions with reward. How-
+ever, this decomposed approach can fail when the dynamics
+model is imperfect.
+For instance, say the dynamics model in this case is a fac-
+Learning the Reward Function for a Misspeciﬁed Model
+tored MDP, which predicts the value of each pixel in the
+next image based on the 7 × 5 neighborhood centered on
+the pixel. Figure 2b shows a short sample rollout from
+such a model, sampling each state based on the previous
+sampled state. The second image in the rollout illustrates
+the model’s ﬂaw: when predicting the pixel marked with a
+question mark the model cannot account for the presence
+of the bullet under the target. Hence, errors appear in the
+subsequent image (marked with red outlines).
+What reward should be associated with this erroneous im-
+age? The value the learned model assigns will have a dra-
+matic impact on the extent to which the model is useful for
+planning and yet it is clear that no amount of traditional data
+associating environment states with rewards can answer this
+question. Even a provided, “perfect” reward function would
+not answer this question; a reward function could assign any
+value to this state and still be perfectly accurate in states
+that are reachable in the environment. Intuitively it seems
+that the best case for the sake of planning would be for the
+reward model to predict 20 reward for the ﬂawed state, thus
+preserving the semantics that a target has been hit in the
+bullseye. In order to achieve this, the reward model must be
+trained in states the environment would never generate.
+The remainder of this paper formalizes this intuition. Sec-
+tion 3 presents a novel error bound on value estimates in
+terms of reward error, taking into accout the rewards in
+ﬂawed states generated by the model. In Section 4.1 the prac-
+tical implications of this theoretical insight are discussed,
+leading to an extension of the existing Hallucinated DAgger-
+MC algorithm, which provides theoretical guarantees in
+deterministic MDPs, even when the model class is misspec-
+iﬁed. Section 5 demonstrates empirically that the approach
+suggested by the theoretical results can produce good plan-
+ning performance with a ﬂawed model, while reward models
+learned in the typical manner (or even “perfect” reward func-
+tions) can lead to catastrophic planning failure.
+2. Background
+We focus on Markov decision processes (MDP). The en-
+vironment’s initial state s1 is drawn from a distribution µ.
+At each step t the environment is in a state st. The agent
+selects an action at which causes the environment to transi-
+tion to a new state sampled from the transition distribution:
+st+1 ∼ P at
+st . The environment also emits a reward, Rat
+st .
+We assume that rewards are bounded within [0, M ].
+A policy π speciﬁes a way to behave in the MDP. Let
+π(a | s) be the probability that π chooses action a in state s.
+For a sequence of actions a1:t let P (s(cid:48) | s, a1:t) = P a1:t
+(s(cid:48))
+be the probability of reaching s(cid:48) by starting in s and taking
+the actions in the sequence. For any state s, action a, and
+policy π, let Dt
+s,a,π be the state-action distribution obtained
+Figure 2. A ﬂawed model may generate states for which the reward
+function is undeﬁned.
+T (s, a) = (cid:80)T
+s,a,π
+ξ,π = E(s,a)∼ξ Dt
+t=1 γt−1 E(s(cid:48),a(cid:48))∼Dt
+T (s) = Ea∼πs [Qπ
+after t steps, starting with state s and action a and thereafter
+following policy π. For a state action distribution ξ, let
+s,a,π. We let S be the set of states reach-
+Dt
+able in ﬁnite time by some policy with non-zero probability.
+One may only observe the behavior of P and R in states
+contained in S.
+The T -step state-action value of a policy, Qπ
+T (s, a) repre-
+sents the expected discounted sum of rewards obtained by
+taking action a in state s and executing π for an additional
+T − 1 steps: Qπ
+Ra(cid:48)
+s(cid:48) .
+Let the T -step state value V π
+T (s, a)]. Let
+Qπ = Qπ∞, and V π = V π∞. The agent’s goal will be to
+learn a policy π that maximizes Es∼µ[V π(s)].
+In MBRL we seek to learn a dynamics model ˆP , approx-
+imating P , and a reward model ˆR, approximating R, and
+then to use the combined model ( ˆP , ˆR) to produce a policy
+via a planning algorithm. We let ˆD, ˆQ, and ˆV represent
+the corresponding quantities using the learned model. We
+assume that ˆP and ˆR are deﬁned over ˆS ⊇ S; there may
+be states in ˆS for which P and R are effectively undeﬁned,
+and it may not be known a priori which states these are.
+Let P represent the dynamics model class, the set of models
+the learning algorithm could possibly produce and corre-
+spondingly let R be the reward model class. In this work we
+are most interested in the common case that the dynamics
+model is misspeciﬁed: there is no ˆP ∈ P that matches P in
+every s ∈ S. In this case it is impossible to learn a perfectly
+accurate model; the agent must make good decisions despite
+ﬂaws in the learned model. The results in this paper also
+permit the reward model to be similarly misspeciﬁed.
+2.1. Bounding Planning Performance
+For ease of analysis we focus our attention on the simple one-
+ply Monte Carlo planning algorithm (one-ply MC), similar
+to the “rollout algorithm” (Tesauro & Galperin, 1996). For
+every state-action pair (s, a), the planner executes N T -step
+Learning the Reward Function for a Misspeciﬁed Model
+sample rollouts using ˆP , starting at s, taking action a, and
+then following a rollout policy ρ. At each step of the rollout,
+ˆR gives the reward. Let ¯Q(s, a) be the average discounted
+return of the rollouts starting with state s and action a. For
+large N, ¯Q will closely approximate ˆQρ
+T (Kakade, 2003).
+The execution policy ˆπ will be greedy with respect to ¯Q.
+Talvitie (2015) bounds the quality of ˆπ.
+For a policy π and state-action distribution ξ, let ξ,π,T
+be
+the error in the T -step state-action values the model assigns
+to the policy: ξ,π,T
+Then the following can be straightforwardly adapted from
+an existing bound (Talvitie, 2015).
+Lemma 1. Let ¯Q be the value function returned by applying
+depth T one-ply Monte Carlo to the model ˆP with rollout
+policy ρ. Let ˆπ be greedy w.r.t. ¯Q. For any policy π and
+state-distribution µ,
+T (s, a)|(cid:3).
+T (s, a) − ˆQπ
+val = E(s,a)∼ξ
+(cid:2)|Qπ
+val
+(cid:2)V π(s) − V ˆπ(s)(cid:3) ≤ 4
+s∼µ
+1 − γ
+ξ,ρ,T
+val + mc,
+(cid:16)
+ξ(s, a)
+(1 − γ)µ(s)ˆπs(a) + γ(cid:80)
+where
+1−γ(cid:107) ¯Q − ˆQρ
+and mc = 4
+B is the Bellman operator).
+2 Dµ,ˆπ(s, a) + 1
+z,b Dµ,π(z, b)P b
+T(cid:107)∞ + 2
+1−γ(cid:107)BV ρ
+4 Dµ,π(s, a) +
+z (s)ˆπs(a)
+(cid:17)
+T (cid:107)∞ (here
+T − V ρ
+The mc term captures error due to properties of the one-ply
+MC algorithm: error in the sample average ¯Q and the sub-
+optimality of the T -step value function with respect to ρ.
+The ξ,ρ,T
+term captures error due to the model. We see that
+the model’s usefulness for planning is tied to the accuracy
+of the value it assigns to the rollout policy. Thus, in order
+to obtain a good plan ˆπ, we aim to learn a model for which
+ξ,ρ,T
+val
+is small.
+val
+2.2. Error in the Dynamics Model
+Assuming the reward function is known, a bound on ξ,ρ,T
+can be straightforwardly adapted from Ross & Bagnell
+(2012) in terms of the one-step prediction error of the dy-
+namics model.
+Lemma 2. For any policy π and state-action distribution ξ,
+val
+T−1(cid:88)
+t=1
+val ≤ M
+ξ,π,T
+1 − γ
+(γt − γT ) E
+(s,a)∼Dt
+ξ,π
+s − ˆP a
+s (cid:107)1
+(cid:2)(cid:107)P a
+(cid:3).
+Combining Lemmas 1 and 2 yields an overall bound on con-
+trol performance in terms of model error. However, recent
+work (Talvitie, 2017) offers a tighter bound in a special case.
+Let the true dynamics P be deterministic, and let the rollout
+policy ρ be blind (Bowling et al., 2006); the action selected
+by ρ is conditionally independent of the current state, given
+the history of actions. Then for any state-action distribu-
+tion ξ, let H t
+ξ,ρ be the joint distribution over environment
+(cid:2)(cid:80)
+state, model state, and action if a single action sequence is
+sampled from ρ and then executed in both the model and
+ξ,ρ(s1, z1, a1) = ξ(s1, a1) when
+the environment. So, H 1
+z1 = s1 (0 otherwise) and for all t ≥ 2, H t
+ξ,ρ(st, zt, at) =
+| a1)P a1:t−1
+(st) ˆP a1:t−1
+E(s1,a1)∼ξ
+Since P is deterministic, let σa1:t
+be the unique state that re-
+sults from starting in state s and taking the action sequence
+a1:t. Then Talvitie (2017) offers the following result:
+Theorem 3. If P is deterministic, then for any blind policy
+ρ and any state-action distribution ξ,
+(zt)(cid:3).
+ρ(a2:t
+a2:t−1
+s1
+s1
+T(cid:88)
+t=1
+val ≤ M
+ξ,ρ,T
+T−1(cid:88)
+T−1(cid:88)
+≤ 2M
+t=1
+≤ 2M
+1 − γ
+γt
+t=1
+(cid:2)(cid:107)Dt
+(cid:2)1 − ˆP a
+γt−1 E
+(s,a)∼ξ
+(s,z,a)∼H t
+ξ,ρ
+(γt − γT ) E
+(s,a)∼Dt
+ξ,ρ
+s,a,ρ − ˆDt
+s,a,ρ(cid:107)1
+z (σa
+s )(cid:3)
+(cid:2)1 − ˆP a
+s )(cid:3).
+s (σa
+(1)
+(2)
+(3)
+(cid:3)
+Inequality 3 is Lemma 2 specialized to the deterministic
+case, expressing the bound in terms of the one-step pre-
+diction error of ˆP . Inequality 1 gives the bound in terms
+of the error in the discounted distribution of states along
+T -step rollouts. Though this is the tightest bound of the
+three, in practice it is difﬁcult to optimize this objective di-
+rectly. Inequality 2 gives the bound in terms of hallucinated
+one-step error, so called because it considers the accuracy
+of the model’s predictions based on states generated from
+its own sample rollouts (z), rather than states generated by
+the environment (s).
+To optimize hallucinated error, the model can be rolled out
+in parallel with the environment, and trained to predict the
+next environment state from each “hallucinated” state in the
+model rollout. Talvitie (2017) shows that this approach can
+dramatically improve planning performance when the model
+class is mispeciﬁed. Similar approaches have also had em-
+pirical success in MBRL tasks (Talvitie, 2014; Venkatraman
+et al., 2016) and sequence prediction tasks (Venkatraman
+et al., 2015; Oh et al., 2015; Bengio et al., 2015).
+Talvitie (2017) shows that the relative tightness of the hal-
+lucinated error bound does not hold for general stochastic
+dynamics or for arbitrary rollout policies. However, note
+that these assumptions are not as limiting as they ﬁrst appear.
+By far the most common rollout policy chooses actions uni-
+formly randomly, and is thus blind. Furthermore, though P
+is assumed to be deterministic, it is also assumed to be too
+complex to be practically captured by ˆP . From the agent’s
+perspective, un-modeled complexity will manifest as ap-
+parent stochasticity. For example Oh et al. (2015) learned
+dynamics models of Atari 2600 games, which are fully de-
+terministic (Hausknecht et al., 2014); human players often
+Learning the Reward Function for a Misspeciﬁed Model
+perceive them to be stochastic due to their complexity. For
+the remainder of the paper we focus on the special case of
+deterministic dynamics and blind rollout policies.
+3. Incorporating Reward Error
+As suggested by Talvitie (2017), there is a straightforward
+extension of Theorem 3 to account for reward error.
+Theorem 4. If P is deterministic, then for any blind policy
+ρ and any state-action distribution ξ,
+val ≤ T(cid:88)
+ξ,ρ,T
+s,a,ρ(cid:107)1
+s(cid:48) − ˆRa(cid:48)
+s(cid:48) − ˆRa(cid:48)
+s(cid:48)(cid:12)(cid:12)(cid:3)
+s,a,ρ − ˆDt
+(cid:2)(cid:12)(cid:12)Ra(cid:48)
+(cid:2)(cid:107)Dt
+(cid:2)(cid:12)(cid:12)Ra(cid:48)
+s(cid:48)(cid:12)(cid:12)(cid:3)
+(cid:2)1 − ˆP a
+s(cid:48)(cid:12)(cid:12)(cid:3)
+(cid:2)(cid:12)(cid:12)Ra(cid:48)
+(cid:2)1 − ˆP a
+s(cid:48) − ˆRa(cid:48)
+s )(cid:3)
+z (σa
+ξ,ρ
+t=1
++ M
+≤ T(cid:88)
+t=1
+(s(cid:48),a(cid:48))∼Dt
+ξ,ρ
+γt−1 E
+(s,a)∼ξ
+(s(cid:48),a(cid:48))∼Dt
+ξ,ρ
+γt−1
+T(cid:88)
+t=1
+γt−1
+T−1(cid:88)
+γt
+(s,z,a)∼H t
++ 2M
+≤ T(cid:88)
+t=1
+γt−1
+t=1
+2M
+1 − γ
+T−1(cid:88)
+t=1
+(s(cid:48),a(cid:48))∼Dt
+ξ,ρ
+(γt − γT ) E
+(s,a)∼Dt
+ξ,ρ
+(cid:3)
+(4)
+(5)
+(6)
+s )(cid:3).
+s (σa
+Proof. The derivation of inequality 4 is below. The rest
+follow immediately from Theorem 3.
+T (s, a)|(cid:3)
+s,a,ρ(s(cid:48), a(cid:48))Ra(cid:48)
+Dt
+s(cid:48)
+(cid:16)
+− ˆDt
+s,a,ρ(s(cid:48), a(cid:48)) ˆRa(cid:48)
+s(cid:48)
+s,a,ρ(s(cid:48), a(cid:48))Ra(cid:48)
+Dt
+s(cid:48)
+s(cid:48) + Dt
+− ˆDt
+s,a,ρ(s(cid:48), a(cid:48)) ˆRa(cid:48)
+s(cid:48)
+s,a,ρ(s(cid:48), a(cid:48)) ˆRa(cid:48)
+s(cid:48)
+ξ,ρ,T
+val = E
+(s,a)∼ξ
+T (s, a) − ˆQρ
+(cid:16)
+(cid:2)|Qρ
+(cid:34)(cid:12)(cid:12)(cid:12)(cid:12) T(cid:88)
+γt−1 (cid:88)
+(cid:34)(cid:12)(cid:12)(cid:12)(cid:12) T(cid:88)
+γt−1 (cid:88)
+t=1
+t=1
+(s(cid:48),a(cid:48))
+(s(cid:48),a(cid:48))
+= E
+(s,a)∼ξ
+= E
+(s,a)∼ξ
+− Dt
+s,a,ρ(s(cid:48), a(cid:48)) ˆRa(cid:48)
+(cid:16)
+γt−1 (cid:88)
+(cid:34)(cid:12)(cid:12)(cid:12)(cid:12) T(cid:88)
+t=1
+= E
+(s,a)∼ξ
+s,a,ρ(s(cid:48), a(cid:48))(Ra(cid:48)
+Dt
+s(cid:48) − ˆRa(cid:48)
+s(cid:48) )
+(s(cid:48),a(cid:48))
+s,a,ρ(s(cid:48), a(cid:48)) − ˆDt
++ (Dt
+s,a,ρ(s(cid:48), a(cid:48))) ˆRa(cid:48)
+s(cid:48)
+(cid:35)
+(cid:17)(cid:12)(cid:12)(cid:12)(cid:12)
+(cid:35)
+(cid:17)(cid:12)(cid:12)(cid:12)(cid:12)
+(cid:17)(cid:12)(cid:12)(cid:12)(cid:12)
+≤ T(cid:88)
+t=1
+γt−1
+(cid:12)(cid:12)Ra(cid:48)
+s(cid:48) − ˆRa(cid:48)
+s(cid:48)(cid:12)(cid:12)
+(cid:2)(cid:13)(cid:13)Dt
+(s(cid:48),a(cid:48))∼Dt
+ξ,ρ
+T(cid:88)
++ M
+γt−1 E
+(s,a)∼ξ
+s,a,ρ − ˆDt
+s,a,ρ
+(cid:13)(cid:13)(cid:3),
+t=1
+which gives the result.
+As is typical, these bounds break the value error into two
+parts: reward error and dynamics error. The reward error
+measures the accuracy of the reward model in environment
+states encountered by policy ρ. The dynamics error mea-
+sures the probability that the model will generate the correct
+states in rollouts, effectively assigning maximum reward
+error (M) when the dynamics model generates incorrect
+states. This view corresponds to common MBRL practice:
+separately train the dynamics model to assign high proba-
+bility to correct states and the reward model to accurately
+map environment states to rewards. However, as discussed
+in Section 1.1, these bounds are overly conservative (and
+thus loose): generating an erroneous state need not be catas-
+trophic if the associated reward is still reasonable. We can
+derive a bound that accounts for this.
+Theorem 5. If P is deterministic, then for any blind policy
+ρ and any state-action distribution ξ,
+ξ,ρ,T
+γt−1 E(s,z,a)∼H t
+ξ,ρ
+Proof.
+ξ,ρ,T
+val = E(s1,a1)∼ξ
+ρ (s1, a1) − ˆQT
+s − ˆRa
+(cid:2)(cid:12)(cid:12)Ra
+(cid:12)(cid:12)(cid:3).
+ρ (s1, a1)(cid:12)(cid:12)(cid:3)
+= E
+(s1,a1)∼ξ
+= E
+(s1,a1)∼ξ
+st,at
+t=1
+t=1
+val ≤ T(cid:88)
+(cid:2)(cid:12)(cid:12)QT
+(cid:34)(cid:12)(cid:12)(cid:12)(cid:12)(cid:12) T(cid:88)
+γt−1(cid:88)
+(cid:34)(cid:12)(cid:12)(cid:12)(cid:12)(cid:12)(cid:0)Ra1
+(cid:18)(cid:88)
+−(cid:88)
+(cid:88)
+−(cid:88)
+zt
+(st)Rat
+st
+− ˆRa1
+(st)Rat
+st
+P a1:t−1
+P a1:t−1
+s1
+s1
+s1
+s1
+s1
+zt
+st
+zt
+(st) ˆP a1:t−1
+s1
+P a1:t−1
+s1
+(cid:88)
+st
+(cid:88)
+st,zt
+(cid:35)
+Now note that for t ≥ 2,
+P a1:t−1
+s1
+ˆP a1:t−1
+zt
+(zt) ˆRat
+zt
+Dt
+s1,a1,ρ(st, at)Rat
+st
+zt,at
+ˆDt
+−(cid:88)
+γt−1(cid:88)
+T(cid:88)
+(cid:1) +
+−(cid:88)
+a2:t
+t=2
+s1,a1,ρ(zt, at) ˆRat
+zt
+ρ(a2:t | a1)
+(cid:35)
+(cid:12)(cid:12)(cid:12)(cid:12)(cid:12)
+(cid:35)
+(cid:19)(cid:12)(cid:12)(cid:12)(cid:12)(cid:12)
+(st)Rat
+st
+ˆP a1:t−1
+s1
+(zt) ˆRat
+zt
+ˆP a1:t−1
+s1
+(zt)
+s1
+ˆP a1:t−1
+(zt)(cid:0)Rat
+st
+(zt) ˆRat
+zt
+− ˆRat
+zt
+(cid:88)
+(cid:1)
+st
+P a1:t−1
+s1
+(st)
+Learning the Reward Function for a Misspeciﬁed Model
+(cid:12)(cid:12) +
+T(cid:88)
+t=2
+− ˆRa1
+s1
+(cid:34)(cid:12)(cid:12)Ra1
+(cid:88)
+s1
+st,zt
+Thus
+(s1,a1)∼ξ
+val ≤ E
+ξ,ρ,T
+(cid:88)
+T(cid:88)
+ρ(a2:t | a1)
+a2:t
+γt−1
+t=1
+P a1:t−1
+s1
+(st) ˆP a1:t−1
+s1
+(cid:2)(cid:12)(cid:12)Ra
+s − ˆRa
+(cid:12)(cid:12)(cid:3).
+(s,z,a)∼H t
+ξ,ρ
+γt−1
+(zt)(cid:12)(cid:12)Rat
+st
+(cid:12)(cid:12)(cid:35)
+− ˆRat
+zt
+Similar to the hallucinated one-step error for the dynamics
+model (inequality 2), Theorem 5 imagines that the model
+and the environment are rolled out in parallel. It measures
+the error between the rewards generated in the model rollout
+and the rewards in the corresponding steps of the environ-
+ment rollout. We call this the hallucinated reward error.
+However, unlike the bound in Theorem 4, which is focused
+on the model placing high probability on “correct” states,
+the hallucinated reward error may be small even if the state
+sequence sampled from the dynamics model is “incorrect”,
+as long as the sequence of rewards is similar. As such, we
+can show that this bound is tighter than inequality 5.
+Theorem 6. If P is deterministic, then for any blind policy
+ρ and any state-action distribution ξ,
+γt−1 E(s,z,a)∼H t
+ξ,ρ
+T(cid:88)
+t=1
+≤ T(cid:88)
+t=1
+(cid:12)(cid:12)(cid:3)
+s − ˆRa
+(cid:2)(cid:12)(cid:12)Ra
+(cid:2)(cid:12)(cid:12)Ra(cid:48)
+s(cid:48) − ˆRa(cid:48)
+γt−1
+(s(cid:48),a(cid:48))∼Dt
+ξ,ρ
+T−1(cid:88)
+t=1
++ 2M
+γt
+(s,z,a)∼H t
+ξ,ρ
+s(cid:48)(cid:12)(cid:12)(cid:3)
+(cid:2)1 − ˆP a
+s )(cid:3).
+z (σa
+Proof.
+T(cid:88)
+γt−1
+t=1
+H t
+(cid:2)(cid:12)(cid:12)R(s, a) − ˆR(z, a)(cid:12)(cid:12)(cid:3)
+ξ,ρ(s, z, a)(cid:12)(cid:12)R(s, a) − ˆR(z, a)(cid:12)(cid:12)
+ξ,ρ(s, s, a)(cid:12)(cid:12)R(s, a) − ˆR(s, a)(cid:12)(cid:12)
+ξ,ρ(s, z, a)(cid:12)(cid:12)R(s, a) − ˆR(z, a)(cid:12)(cid:12).
+H t
+ξ,ρ
+t=1
+s,z,a
+(s,z,a)∼H t
+γt−1(cid:88)
+T(cid:88)
+γt−1(cid:88)
+T(cid:88)
+T(cid:88)
+γt−1 (cid:88)
+t=1
+s,a
+H t
+t=1
+s,z(cid:54)=s,a
+This breaks the expression into two terms. Now consider
+the ﬁrst term:
+s,a
+t=1
+Dt
+H t
+γt−1(cid:88)
+T(cid:88)
+ξ,ρ(s, s, a)(cid:12)(cid:12)R(s, a) − ˆR(s, a)(cid:12)(cid:12)
+γt−1(cid:88)
+≤ T(cid:88)
+γt−1 (cid:88)
+T(cid:88)
+T(cid:88)
+ξ,ρ(s, a)(cid:12)(cid:12)R(s, a) − ˆR(s, a)(cid:12)(cid:12).
+ξ,ρ(s, z, a)(cid:12)(cid:12)R(s, a) − ˆR(z, a)(cid:12)(cid:12)
+γt−1 (cid:88)
+≤ M
+s,z(cid:54)=s,a
+ξ,ρ(s, z, a).
+H t
+H t
+t=1
+t=1
+s,a
+Now consider the second term:
+t=1
+s,z(cid:54)=s,a
+(7)
+Recall that H 1
+ξ,ρ(s, z, a) = 0 if s (cid:54)= z. Thus,
+t=1
+t=1
+s,z(cid:54)=s,a
+s,z(cid:54)=s,a
+T(cid:88)
+γt−1 (cid:88)
+γt (cid:88)
+T−1(cid:88)
+(cid:32) (cid:88)
+(cid:88)
+(cid:88)
+(cid:0)1 − ˆP a(cid:48)
+T−1(cid:88)
+s(cid:48),z(cid:48),a(cid:48)
+s(cid:48),z(cid:48),a(cid:48)
+s,z(cid:54)=s
+= M
+= M
+= M
+= M
+γt
+(s,z,a)∼H t
+ξ,ρ
+t=1
+H t
+ξ,ρ(s, z, a)
+(cid:33) T−1(cid:88)
+H t+1
+ξ,ρ (s, z, a)
+P a(cid:48)
+s(cid:48) (s) ˆP a(cid:48)
+z(cid:48) (z)
+s(cid:48) )(cid:1) T−1(cid:88)
+z(cid:48) (σa(cid:48)
+t=1
+γtH t
+ξ,ρ(s(cid:48), z(cid:48), a(cid:48))
+γtH t
+ξ,ρ(s(cid:48), z(cid:48), a(cid:48))
+t=1
+[1 − ˆP a
+z (σa
+s )].
+(8)
+Combining lines 7 and 8 yields the result.
+The next section discusses the practical implications of this
+result for MBRL algorithms and extends an existing MBRL
+algorithm to incorporate this insight.
+4. Implications for MBRL
+This is not the ﬁrst observation of the difﬁculties inherent
+in reward learning. Sorg et al. (2010b) argued as we have
+that when the model or planner are limited in some way,
+reward functions other than the true reward may lead to
+better planning performance. Accordingly, policy gradient
+approaches have been employed to learn reward functions
+for use with online planning algorithms, providing a beneﬁt
+even when the reward function is known (Sorg et al., 2010a;
+2011; Bratman et al., 2012; Guo et al., 2016). Tamar et al.
+(2016) take this idea to its logical extreme, treating the en-
+tire model and even the planning algorithm itself as a policy
+parameterization, adapting them to directly improve control
+Learning the Reward Function for a Misspeciﬁed Model
+performance rather than to minimize any measure of predic-
+tion error. Though appealing in its directness, this approach
+offers little theoretical insight into what makes a model
+useful for planning. Furthermore, there are advantages to
+optimizing quantities other than planning performance; this
+allows the model to exploit incoming data even when it
+is unclear how to improve the agent’s policy (for instance
+if the agent has seen little reward). Theorem 5 provides
+more speciﬁc guidance about how to choose amongst a set
+of ﬂawed models. Rather than attempting to directly opti-
+mize control performance, this result suggests that we can
+take advantage of model error signals while still offering
+guarantees in terms of control performance.
+It is notable that, unlike Theorem 4, Theorem 5 does not
+contain a term measuring dynamics error. Certainly the
+dynamics model is implicitly important; for some choices
+of ˆP the hallucinated reward error can be made very small
+while for others it may be irreducibly high (for instance if
+ˆP simply loops on a single state). Nevertheless, low halluci-
+nated reward error does not require that the dynamics model
+place high probability on “correct” states. In fact, it may be
+that dynamics entirely unrelated to the environment yield
+the best reward predictions. This intriguingly suggests that
+the dynamics model and reward model parameters could
+be adapted together to optimize hallucinated reward error.
+Arguably, the recently introduced Predictrons (Silver et al.,
+2017) and Value Prediction Networks (Oh et al., 2017) are
+attempts to do just this – they adapt the model’s dynamics
+solely to improve reward prediction. We can see Theorem
+5 as theoretical support for these approaches and encour-
+agement of more study in this direction. Still, in practice it
+may be much harder to learn to predict reward sequences
+than state sequences, especially when the reward signal is
+sparse. It may also be difﬁcult to tie reward prediction er-
+ror to dynamics model parameters in a way that allows for
+theoretical performance guarantees.
+Another possible interpretation of Theorem 5 is that the
+reward model should be customized to the dynamics model.
+That is, if we hold the dynamics model ﬁxed, then the result
+gives a clear objective for the reward model. Theorem 6
+suggests an algorithmic structure where the dynamics model
+is trained via its own objective, and the reward model is then
+trained to minimize hallucinated error with respect to the
+learned dynamics model. The clear downside of this ap-
+proach is that it will not in general ﬁnd the best combination
+of dynamics model and reward model; it could be that a
+less accurate dynamics model results in lower hallucinated
+reward error. The advantage is that it allows us to effectively
+exploit the prediction error signal for the dynamics model
+and removes the circular dependence between the dynamics
+model and the reward model.
+In this paper we explore this third option by extending the ex-
+isting Hallucinated DAgger-MC algorithm (Talvitie, 2017).
+Because the resulting algorithm is very similar to the orig-
+inal, we leave a detailed description and analysis to the
+appendix and here focus on key, high-level points. Section 5
+presents empirical results illustrating the impact of training
+the reward model to minimize hallucinated error.
+4.1. Hallucinated DAgger-MC with Reward Learning
+The “Data Aggregator” (DAgger) algorithm (Ross & Bag-
+nell, 2012) was the ﬁrst practically implementable MBRL al-
+gorithm with performance guarantees agnostic to the model
+class. It did, however, require that the planner be near opti-
+mal. DAgger-MC (Talvitie, 2015) relaxed this assumption,
+accounting for the limitations of a particular suboptimal
+planner (one-ply MC). Hallucinated DAgger-MC (or H-
+DAgger-MC) (Talvitie, 2017) altered DAgger-MC to opti-
+mize the hallucinated error, rather than the one-step error.
+All of these algorithms were presented under the assump-
+tion that the reward function was known a priori. As we
+will see in Section 5, the reward function cannot be ignored.
+Even when the reward function is given, these algorithms
+can fail catastrophically due to issues like the one described
+in Section 1.1.
+At a high level, H-DAgger-MC proceeds in iterations. In
+each iteration a batch of data is gathered by sampling state-
+action pairs using a mixture of the current plan and an
+“exploration distribution” (to ensure that important states
+are visited, even if the plan would not visit them). The
+rollout policy is used to generate parallel rollouts in the
+environment and model from these sampled state-action
+pairs, which form the training examples. The collected data
+is used to update the dynamics model, which is then used to
+produce a new plan to be used in the next iteration.
+We augment H-DAgger-MC, adding a reward learning step
+to each iteration (rather than assuming the reward is given).
+In each rollout, training examples mapping “hallucinated”
+model states to the real environment rewards are collected
+and used to update the reward model. The extended H-
+DAgger-MC algorithm offers theoretical guarantees similar
+to those of the original algorithm. Essentially, if
+• the exploration distribution is similar to the state visita-
+tion distribution of a good policy,
+• mc is small,
+• the learning algorithms for the dynamics model and
+reward model are both no-regret, and
+• the reward model class R contains a low hallucinated
+reward error model with respect to the lowest halluci-
+nated prediction error model in P,
+then in the limit H-DAgger-MC will produce a good policy.
+Learning the Reward Function for a Misspeciﬁed Model
+As discussed in Section 4, this does not guarantee that H-
+DAgger-MC will ﬁnd the best performing combination of
+dynamics model and reward model, since the training of the
+dynamics model does not take hallucinated reward error into
+account. It is, however, an improvement over the original
+H-DAgger-MC result in that good performance can still be
+assured even if there is no low error dynamics model in P,
+as long as there is a low error reward model in R.
+For completeness’ sake, a more detailed description of anal-
+ysis of the algorithm can be found in the appendix. Here we
+turn to an empirical evaluation of the algorithm.
+5. Experiments
+In this section we illustrate the impact of optimizing hallu-
+cinated reward error in the Shooter example described in
+Section 1 using both DAgger-MC and H-DAgger-MC1. The
+one-ply MC planner used 50 uniformly random rollouts of
+depth 20 per action at every step. The exploration distri-
+bution was generated by following the optimal policy with
+(1− γ) probability of termination at each step. The discount
+factor was γ = 0.9. In each iteration 500 training rollouts
+were generated and the resulting policy was evaluated in an
+episode of length 30. The discounted return obtained by the
+policy in each iteration is reported, averaged over 50 trials.
+The dynamics model for each pixel was learned using Con-
+text Tree Switching (Veness et al., 2012), similar to the
+FAC-CTW algorithm (Veness et al., 2011). At each position
+the model takes as input the values of the pixels in a w × h
+neighborhood around the position in the previous timestep.
+Data was shared across all positions. The reward was ap-
+proximated with a linear function for each action, learned
+via stochastic weighted gradient descent. The feature repre-
+sentation contained a binary feature for each possible 3 × 3
+conﬁguration of pixels at each position. This representation
+admits a perfectly accurate reward model. The qualitative
+observations presented in this section were robust to a wide
+range of choices of step size for gradient descent. Here,
+in each experiment the best performing step size for each
+approach is selected from 0.005, 0.01, 0.05, 0.1, and 0.5.
+In the experiments a practical alteration has been made
+to the H-DAgger-MC algorithm. H-DAgger-MC requires
+an “unrolled” dynamics model (with a separate model for
+each step of the rollout, each making predictions based on
+the output of the previous model). While this is important
+for H-DAgger-MC’s theoretical guarantees, Talvitie (2017)
+found empirically that a single dynamics model for all steps
+could be learned, provided that the training rollouts had
+limited depth. Following Talvitie (2017), in the ﬁrst 10
+iterations only the ﬁrst example from each training rollout
+1Source code for these experiments will be available upon
+publication.
+is added to the dynamics model dataset; thereafter only the
+ﬁrst two examples are added. The entire rollout was used
+to train the reward model. DAgger-MC does not require an
+unrolled dynamics model or truncated training rollouts and
+was implemented as originally presented (Talvitie, 2015),
+with a single dynamics model and full training rollouts.
+5.1. Results
+We consider both DAgger-MC and H-DAgger-MC with
+a perfect reward model, a reward model trained only on
+environment states during rollouts, and a reward model
+trained on “hallucinated” states as in Algorithm 1. The
+perfect reward model is one that someone familiar with the
+rules of the game would likely specify; it simply checks for
+the presence of explosions in the three target positions and
+gives the appropriate value if an explosion is present or 0
+otherwise (subtracting 1 if the action is “shoot”). Results
+are presented in three variations on the Shooter problem.
+5.1.1. NO MODEL LIMITATIONS
+In the ﬁrst experiment we apply these algorithms to Shooter,
+as described in Section 1. Here, the dynamics model uses a
+7 × 7 neighborhood, which is sufﬁcient to make perfectly
+accurate predictions. Figure 3a shows the discounted return
+of the policies generated by DAgger-MC and H-DAgger-
+MC, averaged over 50 independent trials. The shaded region
+surrounding each curve represents a 95% conﬁdence inter-
+val. The gray line marked “Random” shows the average
+discounted return of the uniform random policy (with a 95%
+conﬁdence interval). The gray line marked “Perfect Model”
+shows the average discounted return of the one-ply MC
+planner using a perfect model.
+Unsurprisingly, the performance DAgger-MC is compara-
+ble with that of planning with the perfect model. As ob-
+served by Talvitie (2017), with the perfect reward model
+H-DAgger-MC performs slightly worse than DAgger-MC;
+the dynamics model in H-DAgger-MC receives noisier data
+and is thus less accurate. Interestingly, we can now see
+that the learned reward model yields better performance
+than the perfect reward model, even without hallucinated
+training! The perfect reward model relies on speciﬁc screen
+conﬁguations that are less likely to appear in ﬂawed sample
+rollouts, but the learned reward model generalizes to screens
+not seen during training. Of course, it is coincidental that
+this generalization is beneﬁcial; under standard training the
+reward model is only trained in environment states, giving
+no guidance in erroneous model states. Hallucinated train-
+ing speciﬁcally trains the reward model to make reasonable
+predictions during model rollouts, so it yields better per-
+formance, comparable with that of DAgger-MC. Thus we
+see that learning the reward function in this way mitigates a
+shortcoming of H-DAgger-MC, making it more effective in
+Learning the Reward Function for a Misspeciﬁed Model
+(a) No model limitations
+(b) Moving bullseyes (2nd-order Markov)
+(c) Pixel models use 5 × 7 neighborhood
+Figure 3. Performance of DAgger-MC and H-DAgger-MC in three variations on the Shooter domain.
+practice when a perfectly accurate model can be learned.
+5.1.2. FAILURE OF THE MARKOV ASSUMPTION
+Next we consider a version of shooter presented by Talvitie
+(2017) in which the bullseye in each target moves from
+side to side, making the environment second-order Markov.
+Because the model is Markov, it cannot accurately predict
+the movement of the bullseyes, though the representation is
+sufﬁcient to accurately predict every other pixel.
+In Figure 3b shows the results. As Talvitie (2017) observed,
+DAgger-MC fails catastrophically in this case. Though the
+model’s limitation only prevents it from accurately predict-
+ing the bullseyes, the resulting errors compound during
+rollouts, quickly rendering them useless. As previously ob-
+served, H-DAgger-MC performs much better, as it trains the
+model to produce more stable rollouts. In both cases we see
+again that the learned reward models outperform the perfect
+reward model, and hallucinated reward training yields the
+best performance, even helping to mitigate impact of the
+ﬂaws in DAgger-MC’s model.
+5.1.3. FLAWED FACTORED STRUCTURE
+We can see the importance of hallucinated reward training
+even more clearly when we consider the original Shooter
+domain (with static bullseyes), but limit the size of the neigh-
+borhood used to predict each pixel, as described in Section
+1.1. Figure 3c shows the results. Once again DAgger-MC
+fails. Again we see that the learned reward models yield bet-
+ter performance than the perfect reward function, and that
+hallucinated training guides the reward model to be useful
+for planning, despite the ﬂaws in the dynamics model.
+In this case, we can see that H-DAgger-MC also fails when
+combined with the perfect reward model, and performs
+poorly with the reward model trained only on environment
+states. Hallucinated training helps the dynamics model
+produce stable sample rollouts, but does not correct the fun-
+damental limitation: the dynamics model cannot accurately
+predict the shape of the explosion when a target is hit. As
+a result, a reward model that bases its predictions only the
+explosions that occur in the environment will consistently
+fail to predict reward when the agent hits a target in sample
+rollouts. Hallucinated training, in contrast, specializes the
+reward model to the ﬂawed dynamics model, allowing for
+performance comparable to planning with a perfect model.
+6. Conclusion
+This paper has introduced hallucinated reward error, which
+measures the extent to which the rewards in a sample rollout
+from the model match the rewards in a parallel rollout from
+the environment. Under some conditions, this quantity is
+more tightly related to control performance than the more
+traditional measure of model quality (reward error in envi-
+ronment states plus error in state transition). Empirically we
+have seen that when the dynamics model is ﬂawed, reward
+functions learned in the typical manner and even “perfect”
+reward functions given a priori can lead to catastrophic
+planning failure. When the reward function is trained to
+minimize hallucinated reward error, it speciﬁcally accounts
+for the model’s ﬂaws, signiﬁcantly improving performance.
+050100150200Iteration024681012Avg.DiscountedReturnPerfectModelRandomPerfectRewardStandardTrainingHallucinatedDAgger-MC050100150200Iteration024681012Avg.DiscountedReturnPerfectModelRandomPerfectRewardStandardTrainingHallucinatedH-DAgger-MC050100150200Iteration024681012Avg.DiscountedReturnPerfectModelRandomPerfectRewardStandardTrainingHallucinatedDAgger-MC050100150200Iteration024681012Avg.DiscountedReturnPerfectModelRandomPerfectRewardStandardTrainingHallucinatedH-DAgger-MC050100150200Iteration024681012Avg.DiscountedReturnPerfectModelRandomPerfectRewardStandardTrainingHallucinatedDAgger-MC050100150200Iteration024681012Avg.DiscountedReturnPerfectModelRandomPerfectRewardStandardTrainingHallucinatedH-DAgger-MCLearning the Reward Function for a Misspeciﬁed Model
+References
+Abbeel, Pieter, Coates, Adam, Quigley, Morgan, and Ng,
+Andrew Y. An application of reinforcement learning to
+aerobatic helicopter ﬂight. In Advances in Neural Infor-
+mation Processing Systems 20 (NIPS), pp. 1–8, 2007.
+Bellemare, Marc G., Veness, Joel, and Talvitie, Erik. Skip
+context tree switching. In Proceedings of the 31st Inter-
+national Conference on Machine Learning (ICML), pp.
+1458–1466, 2014.
+Bengio, Samy, Vinyals, Oriol, Jaitly, Navdeep, and Shazeer,
+Noam. Scheduled sampling for sequence prediction with
+recurrent neural networks. In Advances in Neural Infor-
+mation Processing Systems 28 (NIPS), pp. 1171–1179,
+2015.
+Bowling, Michael, McCracken, Peter, James, Michael,
+Neufeld, James, and Wilkinson, Dana. Learning pre-
+dictive state representations using non-blind policies. In
+Proceedings of the 23rd International Conference on Ma-
+chine Learning (ICML), pp. 129–136, 2006.
+Bratman, Jeshua, Singh, Satinder, Sorg, Jonathan, and
+Lewis, Richard. Strong mitigation: Nesting search for
+good policies within search for good reward. In Proceed-
+ings of the 11th International Conference on Autonomous
+Agents and Multiagent Systems (AAMAS), pp. 407–414,
+2012.
+Chiappa, Silvia, Racani`ere, S´ebastien, Wierstra, Daan, and
+Mohamed, Shakir. Recurrent environment simulators. In
+Proceedigns of the International Conference on Learning
+Representations (ICLR), 2017.
+Ebert, Frederik, Finn, Chelsea, Lee, Alex X., and Levine,
+Sergey. Self-supervised visual planning with temporal
+skip connections. In Proceedings of the 1st Annual Con-
+ference on Robot Learning (CoRL), volume 78 of Pro-
+ceedings of Machine Learning Research (PMLR), pp.
+344–356, 2017.
+Guo, Xiaoxiao, Singh, Satinder P., Lewis, Richard L., and
+Lee, Honglak. Deep learning for reward design to im-
+prove monte carlo tree search in ATARI games. In Pro-
+ceedings of the Twenty-Fifth International Joint Confer-
+ence on Artiﬁcial Intelligence (IJCAI), pp. 1519–1525,
+2016.
+Hausknecht, Matthew, Lehman, Joel, Miikkulainen, Risto,
+and Stone, Peter. A neuroevolution approach to general
+atari game playing. IEEE Transactions on Computational
+Intelligence and AI in Games, 6(4):355–366, 2014.
+Kakade, Sham Machandranath. On the sample complexity
+of reinforcement learning. PhD thesis, University of
+London, 2003.
+Oh, Junhyuk, Guo, Xiaoxiao, Lee, Honglak, Lewis,
+Richard L, and Singh, Satinder. Action-conditional video
+prediction using deep networks in atari games. In Ad-
+vances in Neural Information Processing Systems 28
+(NIPS), pp. 2845–2853, 2015.
+Oh, Junhyuk, Singh, Satinder, and Lee, Honglak. Value
+prediction network. In Advances in Neural Information
+Processing Systems 30, pp. 6120–6130, 2017.
+Ross, Stephane and Bagnell, Drew. Agnostic system iden-
+tiﬁcation for model-based reinforcement learning.
+In
+Proceedings of the 29th International Conference on Ma-
+chine Learning (ICML), pp. 1703–1710, 2012.
+Silver, David, van Hasselt, Hado, Hessel, Matteo, Schaul,
+Tom, Guez, Arthur, Harley, Tim, Dulac-Arnold, Gabriel,
+Reichert, David P., Rabinowitz, Neil, Barreto, Andr´e, and
+Degris, Thomas. The predictron: End-to-end learning and
+planning. In Proceedings of the 34th International Con-
+ference on Machine Learning (ICML), pp. 3191–3199,
+2017.
+Sorg, Jonathan, Lewis, Richard L, and Singh, Satinder. Re-
+ward design via online gradient ascent. In Advances in
+Neural Information Processing Systems 23 (NIPS), pp.
+2190–2198, 2010a.
+Sorg, Jonathan, Singh, Satinder P, and Lewis, Richard L.
+Internal rewards mitigate agent boundedness. In Proceed-
+ings of the 27th International Conference on Machine
+Learning (ICML), pp. 1007–1014, 2010b.
+Sorg, Jonathan, Singh, Satinder P, and Lewis, Richard L.
+Optimal rewards versus leaf-evaluation heuristics in plan-
+ning agents. In Proceedings of the Twenty-Fifth AAAI
+Conference on Artiﬁcial Intelligence (AAAI), pp. 465–470,
+2011.
+Szita, Istv´an and Szepesv´ari, Csaba. Model-based reinforce-
+ment learning with nearly tight exploration complexity
+bounds. In Proceedings of the 27th International Con-
+ference on Machine Learning (ICML), pp. 1031–1038,
+2010.
+Talvitie, Erik. Model regularization for stable sample roll-
+outs. In Proceedings of the 30th Conference on Uncer-
+tainty in Artiﬁcial Intelligence (UAI), pp. 780–789, 2014.
+Talvitie, Erik. Agnostic system identiﬁcation for monte
+carlo planning. In Proceedings of the 29th AAAI Con-
+ference on Artiﬁcial Intelligence (AAAI), pp. 2986–2992,
+2015.
+Talvitie, Erik. Self-correcting models for model-based re-
+inforcement learning. In Proceedings of the Thirty-First
+AAAI Conference on Artiﬁcial Intelligence (AAAI), pp.
+2597–2603, 2017.
+Learning the Reward Function for a Misspeciﬁed Model
+Tamar, Aviv, Wu, Yi, Thomas, Garrett, Levine, Sergey, and
+Abbeel, Pieter. Value iteration networks. In Advances
+in Neural Information Processing Systems 29 (NIPS), pp.
+2154–2162, 2016.
+Tesauro, Gerald and Galperin, Gregory R. On-line policy
+In Advances
+improvement using monte-carlo search.
+in Neural Information Processing Systems 9 (NIPS), pp.
+1068–1074, 1996.
+Veness, Joel, Ng, Kee Siong, Hutter, Marcus, Uther, William
+T. B., and Silver, David. A Monte-Carlo AIXI Approxi-
+mation. Journal of Artiﬁcial Intelligence Research (JAIR),
+40:95–142, 2011.
+Veness, Joel, Ng, Kee Siong, Hutter, Marcus, and Bowling,
+Michael. Context tree switching. In Proceedings of the
+2012 Data Compression Conference (DCC), pp. 327–336,
+2012.
+Venkatraman, Arun, Hebert, Martial, and Bagnell, J. An-
+drew. Improving multi-step prediction of learned time
+series models. In Proceedings of the 29th AAAI Confer-
+ence on Artiﬁcial Intelligence (AAAI), pp. 3024–3030,
+2015.
+Venkatraman, Arun, Capobianco, Roberto, Pinto, Lerrel,
+Hebert, Martial, Nardi, Daniele, and Bagnell, J Andrew.
+Improved learning of dynamics models for control. In
+2016 International Symposium on Experimental Robotics,
+pp. 703–713. Springer, 2016.
+A. Hallucinated DAgger-MC Details
+Hallucinated DAgger-MC, like earlier variations on DAgger,
+requires the ability to reset to the initial state distribution µ
+and also the ability to reset to an “exploration distribution”
+ν. The exploration distribution ideally ensures that the agent
+will encounter states that would be visited by a good policy.
+The performance bound for H-DAgger-MC depends in part
+on the quality of the selected ν.
+In addition to assuming a particular form for the planner
+(one-ply MC with a blind rollout policy), H-DAgger-MC
+requires the dynamics model to be “unrolled”. Rather
+than learning a single ˆP , H-DAgger-MC learns a set
+{ ˆP 1, . . . , ˆP T−1} ⊆ P, where model ˆP i is responsible for
+predicting the outcome of step i of a rollout, given the state
+sampled from ˆP i−1. While this impractical assumption is
+important theoretically, Talvitie (2017) showed that in prac-
+tice a single P can be used for all steps; the experiments in
+Section 5 make use of this practical alteration.
+Algorithm 1 augments H-DAgger-MC to learn a reward
+model as well as a dynamics model.
+In particular, H-
+DAgger-MC proceeds in iterations, each iteration producing
+, ˆR1).
+for k ← 1 . . . K do
+With probability... (cid:46) First sample from ξ
+Algorithm 1 Hallucinated DAgger-MC (+ reward learning)
+Require: LEARN-DYNAMICS, LEARN-REWARD, explo-
+ration distr. ν, MC-PLANNER(blind rollout policy ρ,
+depth T ), # iterations N, # rollouts per iteration K.
+and E1 (maybe using ν)
+← LEARN-DYNAMICS(D1:T−1
+).
+1: Get initial datasets D1:T−1
+2: Initialize ˆP 1:T−1
+3: Initialize ˆR1 ← LEARN-REWARD(E1).
+4: Initialize ˆπ1 ← MC-PLANNER( ˆP 1:T−1
+5: for n ← 2 . . . N do
+6:
+7:
+8:
+9:
+10:
+11:
+12:
+13:
+14:
+15:
+16:
+1/2: Sample (x, b) ∼ D ˆπn
+1/4: Reset to (x, b) ∼ ν.
+(1−γ)/4: Sample x ∼ µ, b ∼ ˆπn(· | x).
+γ/4: Reset to (y, c) ∼ ν
+Sample x ∼ P (· | y, c), b ∼ ˆπn(· | x)
+Let s ← x, z ← x, a ← b.
+for t ← 1 . . . T − 1 do (cid:46) Parallel rollouts...
+Sample s(cid:48) ∼ P (· | s, a).
+Add (cid:104)z, a, s(cid:48)(cid:105) to Dt
+n.
+(cid:46) (DAgger-MC adds (cid:104)s, a, s(cid:48)(cid:105))
+Add (cid:104)z, a, Ra
+s , γt−1(cid:105))
+(cid:46) (Standard approach adds (cid:104)s, a, Ra
+Sample z(cid:48) ∼ ˆP t
+Let s ← s(cid:48), z ← z(cid:48), and sample a ∼ ρ.
+s , γt−1(cid:105) to En.
+n−1(· | z, a).
+17:
+18:
+19:
+20:
+21:
+end for
+Add (cid:104)z, a, Ra
+s , γT−1(cid:105) to En.
+(cid:46) (Standard approach adds (cid:104)s, a, Ra
+end for
+← LEARN-DYNAMICS( ˆP 1:T−1
+ˆP 1:T−1
+n−1
+ˆRn ← LEARN-REWARD( ˆRn−1, En)
+ˆπn ← MC-PLANNER( ˆP 1:T−1
+, ˆRn).
+22:
+23:
+24:
+25:
+26: end for
+27: return the sequence ˆπ1:N
+s , γT−1(cid:105))
+, D1:T−1
+a new plan, which is turn used to collect data to train a new
+model. In each iteration state-action pairs are sampled using
+the current plan and the exploration distribution (lines 7-13),
+and then the world and model are rolled out in parallel to
+generate hallucinated training examples (lines 14-21). The
+resulting data is used to update the model. We simply add
+a reward model learning process, and collect training ex-
+amples along with the state transition examples during the
+rollout. After both parts of the model have been updated,
+a new plan is generated for the subsequent iteration. Note
+that while the dynamics model is “unrolled”, there is only
+a single reward model that is responsible for predicting the
+reward at every step of the rollout. We assume that the re-
+ward learning algorithm is performing a weighted regression
+(where each training example is weighted by γt−1 for the
+rollout step t in which it occurred).
+Learning the Reward Function for a Misspeciﬁed Model
+A.1. Analysis of H-DAgger-MC
+We now derive theoretical guarantees for this new version
+of H-DAgger-MC. The analysis is similar to that of existing
+DAgger variants (Ross & Bagnell, 2012; Talvitie, 2015;
+2017), but the proof is included for completeness. Let H t
+be the distribution from which H-DAgger-MC samples a
+training example at depth t (lines 7-13 to pick an initial
+state-action pair, lines 14-21 to roll out). Deﬁne the average
+error of the dynamics model at depth t to be
+where
+ξπ,ˆπn
+(s, a) =
+(cid:16)
+Dµ,ˆπn(s, a) +
+Dµ,π(s, a)
+(1 − γ)µ(s)ˆπn(a | s)
++ γ
+Dµ,π(z, b)P b
+(cid:17)
+z (s)ˆπn(a | s)
+(cid:88)
+z,b
+Then, combining the above with Theorem 5,
+N(cid:88)
+N(cid:88)
+n=1
+1 − γ
+≤ 1
+1 − γ
+n=1
+T(cid:88)
+t=1
+(s,a)∼ξπ,ˆπn
+[| ˆQρ
+T,n(s, a) − Qρ
+T (s, a)|] + ¯mc
+γt−1
+(s, z, a)
+∼ H t,n
+π,ˆπn
+[ ˆRn
+(s, z, a)] + ¯mc
+,ρ
+Now note that for any t and any n,
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(s,z,a)∼H t,n
+π,ˆπn
+,ρ
+(cid:88)
+(cid:88)
+(cid:88)
+s(cid:48),a(cid:48)
+s(cid:48),a(cid:48)
+(cid:88)
+s(cid:48),a(cid:48)
+s(cid:48)(cid:48),a(cid:48)(cid:48)
+Dµ,ˆπn (s(cid:48), a(cid:48))
+(s,z,a)∼H t,n
+s(cid:48) ,a(cid:48) ,ρ
+Dµ,π(s(cid:48), a(cid:48))
+(s,z,a)∼H t,n
+Dµ,π(s(cid:48)(cid:48), a(cid:48)(cid:48))P a(cid:48)(cid:48)
+s(cid:48) ,a(cid:48),ρ
+s(cid:48)(cid:48) (s(cid:48))ˆπn(a(cid:48) | s(cid:48))
+(cid:88)
+s(cid:48),a(cid:48)
+1 − γ
+(s,z,a)∼H t,n
+s(cid:48) ,a(cid:48),ρ
+µ(s(cid:48))ˆπn(a(cid:48) | s(cid:48))
+Dµ,ˆπn (s(cid:48), a(cid:48))
+(s,z,a)∼H t,n
+s(cid:48) ,a(cid:48) ,ρ
+(s,z,a)∼H t,n
+s(cid:48) ,a(cid:48) ,ρ
+(cid:88)
+s(cid:48),a(cid:48)
+cπ
+cπ
+≤ 1
+(cid:88)
+(cid:88)
+s(cid:48),a(cid:48)
+s(cid:48),a(cid:48)
+s(cid:48)(cid:48),a(cid:48)(cid:48)
+(cid:88)
+s(cid:48),a(cid:48)
+1 − γ
+(s,z,a)∼H t,n
+s(cid:48) ,a(cid:48) ,ρ
+µ(s(cid:48))ˆπn(a(cid:48) | s(cid:48))
+(s,z,a)∼H t,n
+s(cid:48) ,a(cid:48) ,ρ
+ν(s(cid:48), a(cid:48))
+(cid:88)
+(s,z,a)∼H t,n
+ν(s(cid:48)(cid:48), a(cid:48)(cid:48))P a(cid:48)(cid:48)
+s(cid:48) ,a(cid:48) ,ρ
+s(cid:48)(cid:48) (s(cid:48))ˆπn(a(cid:48) | s(cid:48))
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+N(cid:88)
+n=1
+N(cid:88)
+T(cid:88)
+n=1
+t=1
+¯t
+prd =
+E(s,z,a)∼H t
+[1 − ˆP t
+s | z, a)].
+n(σa
+Let  ˆRn
+(s, z, a) = |R(s, a) − ˆRn(z, a)| and let
+¯hrwd =
+γt−1 E(s,z,a)∼H t
+[ ˆRn
+(s, z, a)|]
+be the average reward model error. Finally, let Dt
+n be the
+distribution from which H-DAgger-MC samples s and a
+during the rollout in lines 14-21. The error of the reward
+model with respect to these environment states is
+γt−1 E(s,a)∼Dt
+[|R(s, a) − ˆR(s, a)|].
+N(cid:88)
+T(cid:88)
+n=1
+t=1
+¯erwd =
+Dµ,π(s,a)
+ν(s,a)
+ν = sups,a
+For a policy π, let cπ
+represent the mis-
+match between the discounted state-action distribution under
+π and the exploration distribution ν. Now, consider the se-
+quence of policies ˆπ1:N generated by H-DAgger-MC. Let ¯π
+be the uniform mixture over all policies in the sequence. Let
+T (cid:107)∞
+¯mc = 1
+be the error induced by the choice of planning algorithm,
+averaged over all iterations.
+Lemma 7. In H-DAgger-MC, the policies ˆπ1:N are such
+that for any policy π,
+(cid:80)N
+n=1 (cid:107) ¯Qn− ˆQρ
+T,n(cid:107)∞ + 2
+1−γ(cid:107)BV ρ
+T −V ρ
+1−γ
+(cid:2)V π(s) − V ¯π(s)(cid:3) ≤ 4
+s∼µ
+(cid:16)
+cπ
+ν ¯hrwd + ¯mc
+1 − γ
+T−1(cid:88)
+(cid:17)
+≤ 4
+1 − γ
+cπ
+¯erwd + 2M
+γt−1¯t
+prd
++ ¯mc.
+t=1
+s∼µ
+(cid:2)V π(s) − V ˆπn(s)(cid:3).
+N(cid:88)
+Proof. Recall that
+(cid:2)V π(s) − V ¯π(s)(cid:3) =
+(cid:2)V π(s) − V ˆπn (s)(cid:3) ≤
+s∼µ
+and by Lemma 1 for any n ≥ 1,
+s∼µ
+n=1
+1 − γ
+(s,a)∼ξπ,ˆπn
+[| ˆQρ
+T,n(s, a) − Qρ
+T (s, a)|] + ¯mc,
+(cid:18) 1
+(cid:88)
+s(cid:48),a(cid:48)
+≤ cπ
+Dµ,ˆπn (s(cid:48), a(cid:48))
+Learning the Reward Function for a Misspeciﬁed Model
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:2) ˆRn
+(s,z,a)∼H t,n
+s(cid:48),a(cid:48) ,ρ
+ν(s(cid:48), a(cid:48))
+(cid:88)
+(s,z,a)∼H t,n
+ν(s(cid:48)(cid:48), a(cid:48)(cid:48))P a(cid:48)(cid:48)
+s(cid:48) ,a(cid:48) ,ρ
+s(cid:48)(cid:48) (s(cid:48))ˆπn(a(cid:48) | s(cid:48))
+(cid:88)
+(cid:88)
+s(cid:48),a(cid:48)
+s(cid:48),a(cid:48)
+s(cid:48)(cid:48),a(cid:48)(cid:48)
+(cid:88)
+s(cid:48),a(cid:48)
+1 − γ
+(s,z,a)∼H t,n
+s(cid:48),a(cid:48) ,ρ
+µ(s(cid:48))ˆπn(a(cid:48) | s(cid:48))
+(cid:2) ˆRn
+(s,z,a)∼H t,n
+(s, z, a)(cid:3).
+s(cid:48),a(cid:48) ,ρ
+(cid:2) ˆRn
+(s, z, a)(cid:3) =
+(cid:2) ˆRn
+(s, z, a)(cid:3).
+(s,a)∼ξn(s,a)
+= cπ
+(s,z,a)∼H t,n
+ξn ,ρ
+When t = 1,
+(s,z,a)∼H t,n
+ξn,ρ
+When t > 1,
+(s,z,a)∼H t,n
+ξn ,ρ
+(cid:88)
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+(cid:20) (cid:88)
+Theorem 3,
+¯hrwd =
+n=1
+N(cid:88)
+T(cid:88)
+(cid:18) T(cid:88)
+T−1(cid:88)
+t=1
+t=1
+t=1
+N(cid:88)
+n=1
+N(cid:88)
+n=1
++ 2M
+T(cid:88)
+T−1(cid:88)
+t=1
+t=1
++ 2M
+≤ 1
+(s,z,a)∼H t
+γt−1 E
+(s,a)∼Dt
+γt−1
+(s,z,a)∼H t
+(cid:2) ˆRn(s, z, a)(cid:3)
+(cid:2)|R(s, a) − ˆRn(s, a)|(cid:3)
+s | z, a)|(cid:3)(cid:19)
+(cid:2)1 − ˆP t
+n(σa
+(cid:2)|R(s, a) − ˆRn(s, a)|(cid:3)
+(cid:2)1 − ˆP t
+s | z, a)|(cid:3)
+n(σa
+(s,z,a)∼H t
+γt−1 E
+(s,a)∼Dt
+N(cid:88)
+n=1
+γt−1 1
+T−1(cid:88)
+≤ ¯erwd + 2M
+γt−1¯t
+prd.
+t=1
+This gives the second inequality.
+Note that this result holds for any comparison policy π.
+Thus, if ¯mc is small and the learned models have low error,
+then if ν is similar to the state-action distribution under
+some good policy, ¯π will compare favorably to it. That
+said, Lemma 7 shares the limitations of the comparable
+results for the other DAgger algorithms. It focuses on the L1
+loss, which is not always a practical learning objective. It
+also assumes that the expected loss at each iteration can be
+computed exactly (i.e. that there are inﬁnitely many samples
+per iteration). It also applies to the average policy ¯π, rather
+than ˆπN . Ross & Bagnell (2012) discuss extensions that
+address more practical loss functions, ﬁnite sample bounds,
+and results for ˆπN .
+Lemma 7 effectively says that if the models have low train-
+ing error, the resulting policy will be good. It does not
+promise that the models will have low training error. Fol-
+lowing Ross & Bagnell (2012) note that ¯t
+prd and ¯hrwd can
+each be interpreted as the average loss of an online learner
+on the problem deﬁned by the aggregated datasets. Then
+for each horizon depth t let ¯t
+pmdl be the error of the best
+dynamics model in P under the training distribution at that
+depth, in retrospect. Speciﬁcally,
+¯tP = inf
+P (cid:48)∈P
+(s,z,a)∼H t
+[1 − P (cid:48)(σa
+s | z, a)].
+N(cid:88)
+n=1
+(s1,a1)∼ξn
+st,zt,at
+a1:t−1
+ρ(a2:t | a1)
+P a0:t−1
+s1
+(st | s1, a0:t−1) ˆP 1:t−1
+(cid:2) ˆRn
+(s, z, a)(cid:3).
+(s,z,a)∼H t
+(zt | s1, a0:t−1)
+(cid:21)
+ ˆRn
+(st, zt, at)
+Thus, putting it all together, we have shown that
+(cid:2)V π(s) − V ¯π(s)(cid:3)
+N(cid:88)
+T(cid:88)
+s∼µ
+≤ 4
+1 − γ
+cπ
+n=1
+t=1
+1 − γ
+cπ
+ν ¯hrwd + ¯mc.
+(cid:2) ˆRn
+(s, z, a)(cid:3)
+γt−1
+(s,z,a)∼H t
++ ¯mc
+Similarly, let
+¯R = inf
+R(cid:48)∈R
+N(cid:88)
+T(cid:88)
+n=1
+t=1
+γt−1
+(s,z,a)∼ ˜H t
+[R(cid:48)(s, z, a)]
+Thus we have proven the ﬁrst inequality. Furthermore, by
+be the error of the best reward model in R in retrospect.
+Learning the Reward Function for a Misspeciﬁed Model
+The average regret for the dynamics model at depth t is
+prd − ¯tP. For the reward model it is ¯rrgt =
+prgt = ¯t
+¯t
+¯hrwd − ¯R. For a no-regret online learning algorithm,
+average regret approaches 0 as N → ∞. This gives the
+following bound on H-DAgger-MC’s performance in terms
+of model regret.
+Theorem 8. In H-DAgger-MC, the policies ˆπ1:N are such
+that for any policy π,
+(cid:2)V π(s) − V ¯π(s)(cid:3)
+s∼µ
+≤ 4
+1 − γ
+≤ 4
+1 − γ
+(cid:16)
+cπ
+ν (¯R + ¯rrgt) + ¯mc
+T−1(cid:88)
+t=1
+(cid:17)
+cπ
+¯erwd + 2M
+γt−1(¯tP + ¯t
+prgt)
++ ¯mc
+prgt → 0 for each 1 ≤ t ≤ T − 1.
+and if the learning algorithms are no-regret then as N → ∞,
+¯rrgt → 0 and ¯t
+Theorem 8 says that if R contains a low-error reward model
+relative to the learned dynamics models then, as discussed
+above, if ¯mc is small and ν visits important states, the
+resulting policy will yield good performance. If P and R
+contain perfect models, ¯π will be comparable to the plan
+generated by the perfect model.
+As noted by Talvitie (2017), this result does not promise that
+H-DAgger-MC will eventually achieve the performance of
+the best available set of dynamics models. The model at each
+rollout depth is trained to minimize prediction error given
+the input distribution provided by the shallower models
+without regard for the effect on deeper models. It is possible
+that better overall error could be achieved by increasing the
+prediction error at one depth in exchange for a favorable
+state distribution for deeper models. Similarly, as discussed
+in Section 4, H-DAgger-MC will not necessarily achieve the
+performance of the best available combination of dynamics
+and reward models. The dynamics model is trained without
+regard for the impact on the reward model. It could be that
+a dynamics model with higher prediction error would allow
+for lower hallucinated reward error. H-DAgger-MC does
+not take this possibility into account.

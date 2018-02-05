@@ -1,0 +1,15 @@
+
+Dimensionality reduction is in demand to reduce the complexity of solving large-
+scale problems with data lying in latent low-dimensional structures in machine learning
+and computer version. Motivated by such need, in this work we study the Restricted
+Isometry Property (RIP) of Gaussian random projections for low-dimensional subspaces
+in RN , and rigorously prove that the projection Frobenius norm distance between any
+two subspaces spanned by the projected data in Rn (n < N ) remain almost the same
+as the distance between the original subspaces with probability no less than 1− e−O(n).
+Previously the well-known Johnson-Lindenstrauss (JL) Lemma and RIP for sparse vec-
+tors have been the foundation of sparse signal processing including Compressed Sensing.
+As an analogy to JL Lemma and RIP for sparse vectors, this work allows the use of
+random projections to reduce the ambient dimension with the theoretical guarantee
+that the distance between subspaces after compression is well preserved.
+Keywords Restricted Isometry Property, Gaussian random matrix, random pro-
+jection, low-dimensional subspaces, dimensionality reduction, subspace clustering

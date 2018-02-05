@@ -1,0 +1,1326 @@
+Published as a conference paper at ICLR 2018
+EVALUATING THE ROBUSTNESS OF NEURAL NET-
+WORKS: AN EXTREME VALUE THEORY APPROACH
+Tsui-Wei Weng1∗, Huan Zhang2∗, Pin-Yu Chen3, Jinfeng Yi4, Dong Su3, Yupeng Gao3,
+Cho-Jui Hsieh2, Luca Daniel1
+1Massachusetts Institute of Technology, Cambridge, MA 02139
+2University of California, Davis, CA 95616
+3IBM Research AI, Yorktown Heights, NY 10598
+4Tencent AI Lab, Bellevue, WA 98004
+twweng@mit.edu, ecezhang@ucdavis.edu,
+pin-yu.chen@ibm.com, jinfengyi.ustc@gmail.com,
+{dong.su,yupeng.gao}@ibm.com, chohsieh@ucdavis.edu, dluca@mit.edu
+ABSTRACT
+The robustness of neural networks to adversarial examples has received great at-
+tention due to security implications. Despite various attack approaches to crafting
+visually imperceptible adversarial examples, little has been developed towards a
+comprehensive measure of robustness.
+In this paper, we provide a theoretical
+justiﬁcation for converting robustness analysis into a local Lipschitz constant es-
+timation problem, and propose to use the Extreme Value Theory for efﬁcient eval-
+uation. Our analysis yields a novel robustness metric called CLEVER, which is
+short for Cross Lipschitz Extreme Value for nEtwork Robustness. The proposed
+CLEVER score is attack-agnostic and computationally feasible for large neural
+networks. Experimental results on various networks, including ResNet, Inception-
+v3 and MobileNet, show that (i) CLEVER is aligned with the robustness indica-
+tion measured by the (cid:96)2 and (cid:96)∞ norms of adversarial examples from powerful
+attacks, and (ii) defended networks using defensive distillation or bounded ReLU
+indeed achieve better CLEVER scores. To the best of our knowledge, CLEVER
+is the ﬁrst attack-independent robustness metric that can be applied to any neural
+network classiﬁer.
+INTRODUCTION
+Recent studies have highlighted the lack of robustness in state-of-the-art neural network models, e.g.,
+a visually imperceptible adversarial image can be easily crafted to mislead a well-trained network
+(Szegedy et al., 2013; Goodfellow et al., 2015; Chen et al., 2017a). Even worse, researchers have
+identiﬁed that these adversarial examples are not only valid in the digital space but also plausible
+in the physical world (Kurakin et al., 2016a; Evtimov et al., 2017). The vulnerability to adversarial
+examples calls into question safety-critical applications and services deployed by neural networks,
+including autonomous driving systems and malware detection protocols, among others.
+In the literature, studying adversarial examples of neural networks has twofold purposes: (i) se-
+curity implications: devising effective attack algorithms for crafting adversarial examples, and (ii)
+robustness analysis: evaluating the intrinsic model robustness to adversarial perturbations to normal
+examples. Although in principle the means of tackling these two problems are expected to be inde-
+pendent, that is, the evaluation of a neural network’s intrinsic robustness should be agnostic to attack
+methods, and vice versa, existing approaches extensively use different attack results as a measure
+of robustness of a target neural network. Speciﬁcally, given a set of normal examples, the attack
+success rate and distortion of the corresponding adversarial examples crafted from a particular at-
+tack algorithm are treated as robustness metrics. Consequently, the network robustness is entangled
+with the attack algorithms used for evaluation and the analysis is limited by the attack capabilities.
+More importantly, the dependency between robustness evaluation and attack approaches can cause
+∗Tsui-Wei Weng and Huan Zhang contributed equally
+Published as a conference paper at ICLR 2018
+biased analysis. For example, adversarial training is a commonly used technique for improving the
+robustness of a neural network, accomplished by generating adversarial examples and retraining the
+network with corrected labels. However, while such an adversarially trained network is made robust
+to attacks used to craft adversarial examples for training, it can still be vulnerable to unseen attacks.
+Motivated by the evaluation criterion for assessing the quality of text and image generation that
+is completely independent of the underlying generative processes, such as the BLEU score for
+texts (Papineni et al., 2002) and the INCEPTION score for images (Salimans et al., 2016), we aim
+to propose a comprehensive and attack-agnostic robustness metric for neural networks. Stemming
+from a perturbation analysis of an arbitrary neural network classiﬁer, we derive a universal lower
+bound on the minimal distortion required to craft an adversarial example from an original one, where
+the lower bound applies to any attack algorithm and any (cid:96)p norm for p ≥ 1. We show that this lower
+bound associates with the maximum norm of the local gradients with respect to the original ex-
+ample, and therefore robustness evaluation becomes a local Lipschitz constant estimation problem.
+To efﬁciently and reliably estimate the local Lipschitz constant, we propose to use extreme value
+theory (De Haan & Ferreira, 2007) for robustness evaluation. In this context, the extreme value
+corresponds to the local Lipschitz constant of our interest, which can be inferred by a set of inde-
+pendently and identically sampled local gradients.With the aid of extreme value theory, we propose
+a robustness metric called CLEVER, which is short for Cross Lipschitz Extreme Value for nEtwork
+Robustness. We note that CLEVER is an attack-independent robustness metric that applies to any
+neural network classiﬁer. In contrast, the robustness metric proposed in Hein & Andriushchenko
+(2017), albeit attack-agnostic, only applies to a neural network classiﬁer with one hidden layer.
+We highlight the main contributions of this paper as follows:
+• We propose a novel robustness metric called CLEVER, which is short for Cross Lipschitz
+Extreme Value for nEtwork Robustness. To the best of our knowledge, CLEVER is the
+ﬁrst robustness metric that is attack-independent and can be applied to any arbitrary neural
+network classiﬁer and scales to large networks for ImageNet.
+• The proposed CLEVER score is well supported by our theoretical analysis on formal ro-
+bustness guarantees and the use of extreme value theory. Our robustness analysis extends
+the results in Hein & Andriushchenko (2017) from continuously differentiable functions to
+a special class of non-differentiable functions – neural+ networks with ReLU activations.
+• We corroborate the effectiveness of CLEVER by conducting experiments on state-of-the-
+art models for ImageNet, including ResNet (He et al., 2016), Inception-v3 (Szegedy et al.,
+2016) and MobileNet (Howard et al., 2017). We also use CLEVER to investigate defended
+networks against adversarial examples, including the use of defensive distillation (Papernot
+et al., 2016) and bounded ReLU (Zantedeschi et al., 2017). Experimental results show that
+our CLEVER score well aligns with the attack-speciﬁc robustness indicated by the (cid:96)2 and
+(cid:96)∞ distortions of adversarial examples.
+2 BACKGROUND AND RELATED WORK
+2.1 ATTACKING NEURAL NETWORKS USING ADVERSARIAL EXAMPLES
+One of the most popular formulations found in literature for crafting adversarial examples to mis-
+lead a neural network is to formulate it as a minimization problem, where the variable δ ∈ Rd to
+be optimized refers to the perturbation to the original example, and the objective function takes into
+account unsuccessful adversarial perturbations as well as a speciﬁc norm on δ for assuring similar-
+ity. For instance, the success of adversarial examples can be evaluated by their cross-entropy loss
+(Szegedy et al., 2013; Goodfellow et al., 2015) or model prediction (Carlini & Wagner, 2017b). The
+norm constraint on δ can be implemented in a clipping manner (Kurakin et al., 2016b) or treated as a
+i=1 |δi|p)1/p
+In particular, when p = ∞,
+for any p ≥ 1, is often used for crafting adversarial examples.
+(cid:107)δ(cid:107)∞ = maxi∈{1,...,d} |δi| measures the maximal variation among all dimensions in δ. When
+i=1 |δi| measures the
+total variation of δ. The state-of-the-art attack methods for (cid:96)∞, (cid:96)2 and (cid:96)1 norms are the iterative
+fast gradient sign method (I-FGSM) (Goodfellow et al., 2015; Kurakin et al., 2016b), Carlini and
+Wagner’s attack (CW attack) (Carlini & Wagner, 2017b), and elastic-net attacks to deep neural net-
+works (EAD) (Chen et al., 2017b), respectively. These attacks fall into the category of white-box
+attacks since the network model is assumed to be transparent to an attacker. Adversarial examples
+penalty function (Carlini & Wagner, 2017b). The (cid:96)p norm of δ, deﬁned as (cid:107)δ(cid:107)p = ((cid:80)d
+p = 2, (cid:107)δ(cid:107)2 becomes the Euclidean norm of δ. When p = 1, (cid:107)δ(cid:107)1 = (cid:80)p
+Published as a conference paper at ICLR 2018
+can also be crafted from a black-box network model using an ensemble approach (Liu et al., 2016),
+training a substitute model (Papernot et al., 2017), or employing zeroth-order optimization based
+attacks (Chen et al., 2017c).
+2.2 EXISTING DEFENSE METHODS
+Since the discovery of vulnerability to adversarial examples (Szegedy et al., 2013), various defense
+methods have been proposed to improve the robustness of neural networks. The rationale for defense
+is to make a neural network more resilient to adversarial perturbations, while ensuring the resulting
+defended model still attains similar test accuracy as the original undefended network. Papernot et al.
+proposed defensive distillation (Papernot et al., 2016), which uses the distillation technique (Hinton
+et al., 2015) and a modiﬁed softmax function at the ﬁnal layer to retrain the network parameters with
+the prediction probabilities (i.e., soft labels) from the original network. Zantedeschi et al. (2017)
+showed that by changing the ReLU function to a bounded ReLU function, a neural network can be
+made more resilient. Another popular defense approach is adversarial training, which generates and
+augments adversarial examples with the original training data during the network training stage. On
+MNIST, the adversarially trained model proposed by Madry et al. (2017) can successfully defend
+a majority of adversarial examples at the price of increased network capacity. Model ensemble has
+also been discussed to increase the robustness to adversarial examples (Tram`er et al., 2017; Liu
+et al., 2017). In addition, detection methods such as feature squeezing (Xu et al., 2017) and example
+reforming (Meng & Chen, 2017) can also be used to identify adversarial examples. However, the
+CW attack is shown to be able to bypass 10 different detection methods (Carlini & Wagner, 2017a).
+In this paper, we focus on evaluating the intrinsic robustness of a neural network model to adversarial
+examples. The effect of detection methods is beyond our scope.
+2.3 THEORETICAL ROBUSTNESS GUARANTEES FOR NEURAL NETWORKS
+Szegedy et al. (2013) compute global Lipschitz constant for each layer and use their product to
+explain the robustness issue in neural networks, but the global Lipschitz constant often gives a very
+loose bound. Hein & Andriushchenko (2017) gave a robustness lower bound using a local Lipschitz
+continuous condition and derived a closed-form bound for a multi-layer perceptron (MLP) with a
+single hidden layer and softplus activation. Nevertheless, a closed-form bound is hard to derive
+for a neural network with more than one hidden layer. Wang et al. (2016) utilized terminologies
+from topology to study robustness. However, no robustness bounds or estimates were provided for
+neural networks. On the other hand, works done by Ehlers (2017); Katz et al. (2017a;b); Huang
+et al. (2017) focus on formally verifying the viability of certain properties in neural networks for
+any possible input, and transform this formal veriﬁcation problem into satisﬁability modulo theory
+(SMT) and large-scale linear programming (LP) problems. These SMT or LP based approaches
+have high computational complexity and are only plausible for very small networks.
+Intuitively, we can use the distortion of adversarial examples found by a certain attack algorithm as a
+robustness metric. For example, Bastani et al. (2016) proposed a linear programming (LP) formula-
+tion to ﬁnd adversarial examples and use the distortions as the robustness metric. They observe that
+the LP formulation can ﬁnd adversarial examples with smaller distortions than other gradient-based
+attacks like L-BFGS (Szegedy et al., 2013). However, the distortion found by these algorithms is
+an upper bound of the true minimum distortion and depends on speciﬁc attack algorithms. These
+methods differ from our proposed robustness measure CLEVER, because CLEVER is an estimation
+of the lower bound of the minimum distortion and is independent of attack algorithms. Additionally,
+unlike LP-based approaches which are impractical for large networks, CLEVER is computationally
+feasible for large networks like Inception-v3. The concept of minimum distortion and upper/lower
+bound will be formally deﬁned in Section 3.
+3 ANALYSIS OF FORMAL ROBUSTNESS GUARANTEES FOR A CLASSIFIER
+In this section, we provide formal robustness guarantees of a classiﬁer in Theorem 3.2. Our robust-
+ness guarantees are general since they only require a mild assumption on Lipschitz continuity of
+the classiﬁcation function. For differentiable classiﬁcation functions, our results are consistent with
+the main theorem in (Hein & Andriushchenko, 2017) but are obtained by a much simpler and more
+Published as a conference paper at ICLR 2018
+Table 1: Table of Notation
+Notation
+Notation
+Deﬁnition
+dimensionality of the input vector ∆p,min
+number of output classes
+f : Rd → RK neural network classiﬁer
+x0 ∈ Rd
+xa ∈ Rd
+δ ∈ Rd
+(cid:107)δ(cid:107)p
+original input vector
+adversarial example
+distortion := xa − x0
+(cid:96)p norm of distortion, p ≥ 1
+Deﬁnition
+minimum (cid:96)p distortion of x0
+lower bound of minimum distortion
+upper bound of minimum distortion
+Lipschitz constant
+local Lipschitz constant
+βL
+βU
+Lj
+Lj
+Bp(x0, R) hyper-ball with center x0 and radius R
+CDF
+cumulative distribution function
+q,x0
+intuitive manner1. Furthermore, our robustness analysis can be easily extended to non-differentiable
+classiﬁcation functions (e.g. neural networks with ReLU) as in Lemma 3.3, whereas the analysis
+in Hein & Andriushchenko (2017) is restricted to differentiable functions. Speciﬁcally, Corollary
+3.2.1 shows that the robustness analysis in (Hein & Andriushchenko, 2017) is in fact a special case
+of our analysis. We start our analysis by deﬁning the notion of adversarial examples, minimum (cid:96)p
+distortions, and lower/upper bounds. All the notations are summarized in Table 1.
+Deﬁnition 3.1 (perturbed example and adversarial example). Let x0 ∈ Rd be an input vector
+of a K-class classiﬁcation function f : Rd → RK and the prediction is given as c(x0) =
+argmax1≤i≤K fi(x0). Given x0, we say xa is a perturbed example of x0 with noise δ ∈ Rd
+and (cid:96)p-distortion ∆p if xa = x0 + δ and ∆p = (cid:107)δ(cid:107)p. An adversarial example is a perturbed exam-
+ple xa that changes c(x0). A successful untargeted attack is to ﬁnd a xa such that c(xa) (cid:54)= c(x0)
+while a successful targeted attack is to ﬁnd a xa such that c(xa) = t given a target class t (cid:54)= c(x0).
+Deﬁnition 3.2 (minimum adversarial distortion ∆p,min). Given an input vector x0 of a classiﬁer f,
+the minimum (cid:96)p adversarial distortion of x0, denoted as ∆p,min, is deﬁned as the smallest ∆p over
+all adversarial examples of x0.
+Deﬁnition 3.3 (lower bound of ∆p,min). Suppose ∆p,min is the minimum adversarial distortion of
+x0. A lower bound of ∆p,min, denoted by βL where βL ≤ ∆p,min, is deﬁned such that any perturbed
+examples of x0 with (cid:107)δ(cid:107)p ≤ βL are not adversarial examples.
+Deﬁnition 3.4 (upper bound of ∆p,min). Suppose ∆p,min is the minimum adversarial distortion of
+x0. An upper bound of ∆p,min, denoted by βU where βU ≥ ∆p,min, is deﬁned such that there exists
+an adversarial example of x0 with (cid:107)δ(cid:107)p ≥ βU .
+The lower and upper bounds are instance-speciﬁc because they depend on the input x0. While βU
+can be easily given by ﬁnding an adversarial example of x0 using any attack method, βL is not easy
+to ﬁnd. βL guarantees that the classiﬁer is robust to any perturbations with (cid:107)δ(cid:107)p ≤ βL, certifying
+the robustness of the classiﬁer. Below we show how to derive a formal robustness guarantee of a
+classiﬁer with Lipschitz continuity assumption. Speciﬁcally, our analysis obtains a lower bound of
+(cid:96)p minimum adversarial distortion βL = minj(cid:54)=c
+Lemma 3.1 (Lipschitz continuity and its relationship with gradient norm (Paulaviˇcius & ˇZilinskas,
+2006)). Let S ⊂ Rd be a convex bounded closed set and let h(x) : S → R be a continuously
+differentiable function on an open set containing S. Then, h(x) is a Lipschitz function with Lipschitz
+constant Lq if the following inequality holds for any x, y ∈ S:
+fc(x0)−fj (x0)
+Lj
+(1)
+)(cid:62) is the gradient of h(x),
+|h(x) − h(y)| ≤ Lq(cid:107)x − y(cid:107)p,
+where Lq = max{(cid:107)∇h(x)(cid:107)q : x ∈ S},∇h(x) = ( ∂h(x)
+and 1
+∂x1
+p + 1
+q = 1, 1 ≤ p, q ≤ ∞.
+,··· , ∂h(x)
+∂xd
+Given Lemma 3.1, we then provide a formal guarantee to the lower bound βL.
+Theorem 3.2 (Formal guarantee on lower bound βL for untargeted attack). Let x0 ∈ Rd and
+f : Rd → RK be a multi-class classiﬁer with continuously differentiable components fi and let
+c = argmax1≤i≤K fi(x0) be the class which f predicts for x0. For all δ ∈ Rd with
+(cid:107)δ(cid:107)p ≤ min
+j(cid:54)=c
+fc(x0) − fj(x0)
+Lj
+(2)
+1 The authors in Hein & Andriushchenko (2017) implicitly assume Lipschitz continuity and use Mean Value
+Theorem and H¨older’s Inequality to prove their main theorem. Here we provide a simple and direct proof with
+Lipschitz continuity assumption and without involving Mean Value Theorem and H¨older’s Inequality.
+Published as a conference paper at ICLR 2018
+argmax1≤i≤K fi(x0 + δ) = c holds with 1
+q = 1, 1 ≤ p, q ≤ ∞ and Lj
+for the function fc(x) − fj(x) in (cid:96)p norm. In other words, βL = minj(cid:54)=c
+bound of minimum distortion.
+p + 1
+q is the Lipschitz constant
+fc(x0)−fj (x0)
+is a lower
+Lj
+The intuitions behind Theorem 3.2 is shown in
+Figure 1 with an one-dimensional example. The
+function value g(x) = fc(x) − fj(x) near point
+x0 is inside a double cone formed by two lines
+passing (x0, g(x0)) and with slopes equal
+to
+±Lq, where Lq is the (local) Lipschitz constant of
+g(x) near x0. In other words, the function value
+of g(x) around x0, i.e. g(x0 + δ) can be bounded
+by g(x0), δ and the Lipschitz constant Lq. When
+g(x0 + δ) is decreased to 0, an adversarial exam-
+ple is found and the minimal change of δ is g(x0)
+Lq
+The complete proof is deferred to Appendix A.
+Remark 1. Lj
+we also call it cross Lipschitz constant following (Hein & Andriushchenko, 2017).
+q is the Lipschitz constant of the function involving cross terms: fc(x) − fj(x), hence
+Figure 1: Intuitions behind Theorem 3.2.
+To distinguish our analysis from (Hein & Andriushchenko, 2017), we show in Corollary 3.2.1 that
+we can obtain the same result in (Hein & Andriushchenko, 2017) by Theorem 3.2.
+In fact, the
+analysis in (Hein & Andriushchenko, 2017) is a special case of our analysis because the authors
+implicitly assume Lipschitz continuity on fi(x) when requiring fi(x) to be continuously differen-
+tiable. They use local Lipschitz constant (Lq,x0) instead of global Lipschitz constant (Lq) to obtain
+a tighter bound in the adversarial perturbation δ.
+Corollary 3.2.1 (Formal guarantee on βL for untargeted attack). 2 Let Lj
+be local Lipschitz
+constant of function fc(x)−fj(x) at x0 over some ﬁxed ball Bp(x0, R) := {x ∈ Rd | (cid:107)x−x0(cid:107)p ≤
+R} and let δ ∈ Bp(0, R). By Theorem 3.2, we obtain the bound in (Hein & Andriushchenko, 2017):
+(3)
+fc(x0) − fj(x0)
+(cid:26)
+(cid:27)
+, R
+q,x0
+(cid:107)δ(cid:107)p ≤ min
+min
+j(cid:54)=c
+Lj
+q,x0
+An important use case of Theorem 3.2 and Corollary 3.2.1 is the bound for targeted attack:
+Corollary 3.2.2 (Formal guarantee on βL for targeted attack). Assume the same notation as
+For a speciﬁed target class j, we have (cid:107)δ(cid:107)p ≤
+in Theorem 3.2 and Corollary 3.2.1.
+min(cid:8) fc(x0)−fj (x0)
+, R(cid:9).
+Lj
+q,x0
+In addition, we further extend Theorem 3.2 to a special case of non-differentiable functions – neural
+networks with ReLU activations.
+In this case the Lipchitz constant used in Lemma 3.1 can be
+replaced by the maximum norm of directional derivative, and our analysis above will go through.
+Lemma 3.3 (Formal guarantee on βL for ReLU networks). 3 Let h(·) be a l-layer ReLU neural
+network with Wi as the weights for layer i. We ignore bias terms as they don’t contribute to gradient.
+h(x) = σ(Wlσ(Wl−1 . . . σ(W1x)))
+where σ(u) = max(0, u). Let S ⊂ Rd be a convex bounded closed set, then equation (1) holds
+is the
+with Lq = supx∈S{| sup(cid:107)d(cid:107)p=1 D+h(x; d)|} where D+h(x; d) := limt→0+
+one-sided directional direvative, then Theorem 3.2, Corollary 3.2.1 and Corollary 3.2.2 still hold.
+h(x+td)−h(x)
+4 THE CLEVER ROBUSTNESS METRIC VIA EXTREME VALUE THEORY
+In this section, we provide an algorithm to compute the robustness metric CLEVER with the aid of
+extreme value theory, where CLEVER can be viewed as an efﬁcient estimator of the lower bound βL
+and is the ﬁrst attack-agnostic score that applies to any neural network classiﬁers. Recall in Section 3
+2 proof deferred to Appendix B 3 proof deferred to Appendix C
+Published as a conference paper at ICLR 2018
+we show that the lower bound of network robustness is associated with g(x0) and its cross Lipschitz
+q,x0, where g(x0) = fc(x0) − fj(x0) is readily available at the output of a classiﬁer and
+constant Lj
+q,x0 is deﬁned as maxx∈Bp(x0,R) (cid:107)∇g(x)(cid:107)q. Although ∇g(x) can be calculated easily via back
+Lj
+q,x0 is more involved because it requires to obtain the maximum value of
+propagation, computing Lj
+(cid:107)∇g(x)(cid:107)q in a ball. Exhaustive search on low dimensional x in Bp(x0, R) seems already infeasible,
+not to mention the image classiﬁers with large feature dimensions of our interest. For instance, the
+feature dimension d = 784, 3072, 150528 for MNIST, CIFAR and ImageNet respectively.
+q,x0 is through sampling a set of points x(i) in a ball Bp(x0, R) around
+One approach to compute Lj
+x0 and taking the maximum value of (cid:107)∇g(x(i))(cid:107)q. However, a signiﬁcant amount of samples might
+be needed to obtain a good estimate of max(cid:107)∇g(x)(cid:107)q and it is unknown how good the estimate
+is compared to the true maximum. Fortunately, Extreme Value Theory ensures that the maximum
+value of random variables can only follow one of the three extreme value distributions, which is
+useful to estimate max(cid:107)∇g(x)(cid:107)q with only a tractable number of samples.
+It is worth noting that although Wood & Zhang (1996) also applied extreme value theory to estimate
+the Lipschitz constant. However, there are two main differences between their work and this paper.
+First of all, the sampling methodology is entirely different. Wood & Zhang (1996) calculates the
+slopes between pairs of sample points whereas we directly take samples on the norm of gradient as in
+Lemma 3.1. Secondly, the functions considered in Wood & Zhang (1996) are only one-dimensional
+as opposed to the high-dimensional classiﬁcation functions considered in this paper. For compari-
+son, we show in our experiment that the approach in Wood & Zhang (1996), denoted as SLOPE in
+Table 3 and Figure 4, perform poorly for high-dimensional classiﬁers such as deep neural networks.
+4.1 ESTIMATE Lj
+q,x0
+VIA EXTREME VALUE THEORY
+When sampling a point x uniformly in Bp(x0, R), (cid:107)∇g(x)(cid:107)q can be viewed as a random vari-
+able characterized by a cumulative distribution function (CDF). For the purpose of illustration,
+we derived the CDF for a 2-layer neural network in Theorem D.1.4 For any neural networks,
+suppose we have n samples {(cid:107)∇g(x(i))(cid:107)q}, and denote them as a sequence of independent and
+identically distributed (iid) random variables Y1, Y2,··· , Yn, each with CDF FY (y). The CDF of
+max{Y1,··· , Yn}, denoted as F n
+Y (y), is called the limit distribution of FY (y). Fisher-Tippett-
+Gnedenko theorem says that F n
+Y (y), if exists, can only be one of the three family of extreme value
+distributions – the Gumbel class, the Fr´echet class and the reverse Weibull class.
+Theorem 4.1 (Fisher-Tippett-Gnedenko Theorem). If there exists a sequence of pairs of real num-
+Y (any + bn) = G(y), where G is a non-degenerate
+bers (an, bn) such that an > 0 and limn→∞ F n
+distribution function, then G belongs to either the Gumbel class (Type I), the Fr´echet class (Type II)
+or the Reverse Weibull class (Type III) with their CDFs as follows:
+y − aW
+(cid:3)(cid:9),
+Gumbel class (Type I): G(y) = exp(cid:8)
+− exp(cid:2)
+(cid:110) 0,
+(cid:0) y−aW
+(cid:0) aW −y
+(cid:110) exp{−
+Fr´echet class (Type II): G(y) =
+exp{−
+Reverse Weibull class (Type III): G(y) =
+bW
+(cid:1)−cW},
+(cid:1)cW},
+y ∈ R,
+if y < aW ,
+if y ≥ aW ,
+if y < aW ,
+if y ≥ aW ,
+bW
+bW
+1,
+where aW ∈ R, bW > 0 and cW > 0 are the location, scale and shape parameters, respectively.
+Theorem 4.1 implies that the maximum values of the samples follow one of the three families of
+distributions. If g(x) has a bounded Lipschitz constant, (cid:107)∇g(x(i))(cid:107)q is also bounded, thus its limit
+distribution must have a ﬁnite right end-point. We are particularly interested in the reverse Weibull
+class, as its CDF has a ﬁnite right end-point (denoted as aW ). The right end-point reveals the upper
+limit of the distribution, known as the extreme value. The extreme value is exactly the unknown local
+cross Lipschitz constant Lj
+q,x0, we ﬁrst
+generate Ns samples of x(i) over a ﬁxed ball Bp(x0, R) uniformly and independently in each batch
+with a total of Nb batches. We then compute (cid:107)∇g(x(i))(cid:107)q and store the maximum values of each
+batch in set S. Next, with samples in S, we perform a maximum likelihood estimation of reverse
+Weibull distribution parameters, and the location estimate ˆaW is used as an estimate of Lj
+4 The theorem and proof are deferred to Appendix D.
+q,x0 we would like to estimate in this paper. To estimate Lj
+q,x0.
+Published as a conference paper at ICLR 2018
+4.2 COMPUTE CLEVER: A ROBUSTNESS SCORE OF NEURAL NETWORK CLASSIFIERS
+Given an instance x0, its classiﬁer f (x0) and a target class j, a targeted CLEVER score of the
+classiﬁer’s robustness can be computed via g(x0) and Lj
+q,x0. Similarly, untargeted CLEVER scores
+can be computed. With the proposed procedure of estimating Lj
+q,x0 described in Section 4.1, we
+summarize the ﬂow of computing CLEVER score for both targeted attacks and un-targeted attacks
+in Algorithm 1 and 2, respectively.
+Nb, number of samples per batch Ns, perturbation norm p, maximum perturbation R
+Algorithm 1: CLEVER-t, compute CLEVER score for targeted attack
+Input: a K-class classiﬁer f (x), data example x0 with predicted class c, target class j, batch size
+Result: CLEVER Score µ ∈ R+ for target class j
+1 S ← {∅}, g(x) ← fc(x) − fj(x), q ← p
+p−1.
+2 for i ← 1 to Nb do
+for k ← 1 to Ns do
+randomly select a point x(i,k) ∈ Bp(x0, R)
+compute bik ← (cid:107)∇g(x(i,k))(cid:107)q via back propagation
+end
+S ← S ∪ {maxk{bik}}
+8 end
+9 ˆaW ← MLE of location parameter of reverse Weibull distribution on S
+10 µ ← min( g(x0)
+, R)
+ˆa
+Algorithm 2: CLEVER-u, compute CLEVER score for un-targeted attack
+Input: Same as Algorithm 1, but without a target class j
+Result: CLEVER score ν ∈ R+ for un-targeted attack
+1 for j ← 1 to K, j (cid:54)= c do
+3 end
+4 ν ← minj{µj}
+µj ← CLEVER-t(f, x0, c, j, Nb, Ns, p, R)
+5 EXPERIMENTAL RESULTS
+5.1 NETWORKS AND PARAMETER SETUP
+We conduct experiments on CIFAR-10 (CIFAR for short), MNIST, and ImageNet data sets. For
+the former two smaller datasets CIFAR and MNIST, we evaluate CLEVER scores on four relatively
+small networks: a single hidden layer MLP with softplus activation (with the same number of hidden
+units as in (Hein & Andriushchenko, 2017)), a 7-layer AlexNet-like CNN (with the same structure
+as in (Carlini & Wagner, 2017b)), and the 7-layer CNN with defensive distillation (Papernot et al.,
+2016) (DD) and bounded ReLU (Zantedeschi et al., 2017) (BReLU) defense techniques employed.
+For ImageNet data set, we use three popular deep network architectures: a 50-layer Residual Net-
+work (He et al., 2016) (ResNet-50), Inception-v3 (Szegedy et al., 2016) and MobileNet (Howard
+et al., 2017). They were chosen for the following reasons: (i) they all yield (close to) state-of-the-
+art performance among equal-sized networks; and (ii) their architectures are signiﬁcantly different
+with unique building blocks, i.e., residual block in ResNet, inception module in Inception net, and
+depthwise separable convolution in MobileNet. Therefore, their diversity in network architectures is
+appropriate to test our robustness metric. For MobileNet, we set the width multiplier to 1.0, achiev-
+ing a 70.6% accuracy on ImageNet. We used public pretrained weights for all ImageNet models5.
+In all our experiments, we set the sampling parameters Nb = 500, Ns = 1024 and R = 5. For
+targeted attacks, we use 500 test-set images for CIFAR and MNIST and use 100 test-set images for
+ImageNet; for each image, we evaluate its targeted CLEVER score for three targets: a random target
+class, a least likely class (the class with lowest probability when predicting the original example),
+5 Pretrained models can be downloaded at https://github.com/tensorﬂow/models/tree/master/research/slim
+Published as a conference paper at ICLR 2018
+and the top-2 class (the class with largest probability except for the true class, which is usually the
+easiest target to attack). We also conduct untargeted attacks on MNIST and CIFAR for 100 test-set
+images, and evaluate their untargeted CLEVER scores. Our experiment code is publicly available6.
+5.2 FITTING GRADIENT NORM SAMPLES WITH REVERSE WEIBULL DISTRIBUTIONS
+We ﬁt the cross Lipschitz constant samples in S (see Algorithm 1) with reverse Weibull class dis-
+tribution to obtain the maximum likelihood estimate of the location parameter ˆaW , scale parameter
+ˆbW and shape parameter ˆcW , as introduced in Theorem 4.1. To validate that reverse Weibull distri-
+bution is a good ﬁt to the empirical distribution of the cross Lipschitz constant samples, we conduct
+Kolmogorov-Smirnov goodness-of-ﬁt test (a.k.a. K-S test) to calculate the K-S test statistics D and
+corresponding p-values. The null hypothesis is that samples S follow a reverse Weibull distribution.
+Figure 2 plots the probability distribution function of the cross Lipschitz constant samples and the
+ﬁtted Reverse Weibull distribution for images from various data sets and network architectures.
+The estimated MLE parameters, p-values, and the K-S test statistics D are also shown. We also
+calculate the percentage of examples whose estimation have p-values greater than 0.05, as illustrated
+in Figure 3. If the p-value is greater than 0.05, the null hypothesis cannot be rejected, meaning that
+the underlying data samples ﬁt a reverse Weibull distribution well. Figure 3 shows that all numbers
+are close to 100%, validating the use of reverse Weibull distribution as an underlying distribution
+of gradient norm samples empirically. Therefore, the ﬁtted location parameter of reverse Weibull
+distribution (i.e., the extreme value), ˆaW , can be used as a good estimation of local cross Lipschitz
+constant to calculate the CLEVER score. The exact numbers are shown in Table 5 in Appendix E.
+(a) CIFAR-MLP
+(b) MNIST-CNN
+(c) ImageNet-MobileNet
+Figure 2: The cross Lipschitz constant samples for three images from CIFAR, MNIST and ImageNet
+datasets, and their ﬁtted Reverse Weibull distributions with the corresponding MLE estimates of
+location, scale and shape parameters (aW , bW , cW ) shown on the top of each plot. The D-statistics
+of K-S test and p-values are denoted as ks and pval. With small ks and high p-value, the hypothesized
+reverse Weibull distribution ﬁts the empirical distribution of cross Lipschitz constant samples well.
+(a) Least likely target
+(b) Random target
+(c) Top 2 target
+Figure 3: The percentage of examples whose null hypothesis (the samples S follow a reverse Weibull
+distribution) cannot be rejected by K-S test with a signiﬁcance level of 0.05 for p = 2 and p = ∞.
+All numbers for each model are close to 100%, indicating S ﬁts reverse Weibull distributions well.
+6 Source code is available at https://github.com/huanzhang12/CLEVER
+80859095100percentage(%)MobileNetResnetInceptionCIFAR-BReLUCIFAR-DDCIFAR-CNNCIFAR-MLPMNIST-BReLUMNIST-DDMNIST-CNNMNIST-MLPp=∞p=280859095100percentage(%)MobileNetResnetInceptionCIFAR-BReLUCIFAR-DDCIFAR-CNNCIFAR-MLPMNIST-BReLUMNIST-DDMNIST-CNNMNIST-MLPp=∞p=280859095100percentage(%)MobileNetResnetInceptionCIFAR-BReLUCIFAR-DDCIFAR-CNNCIFAR-MLPMNIST-BReLUMNIST-DDMNIST-CNNMNIST-MLPp=∞p=2Published as a conference paper at ICLR 2018
+5.3 COMPARING CLEVER SCORE WITH ATTACK-SPECIFIC NETWORK ROBUSTNESS
+We apply the state-of-the-art white-box attack methods, iterative fast gradient sign method (I-
+FGSM) (Goodfellow et al., 2015; Kurakin et al., 2016b) and Carlini and Wagner’s attack (CW)
+(Carlini & Wagner, 2017b), to ﬁnd adversarial examples for 11 networks, including 4 networks
+trained on CIFAR, 4 networks trained on MNIST, and 3 networks trained on ImageNet. For
+CW attack, we run 1000 iterations for ImageNet and CIFAR, and 2000 iterations for MNIST,
+as MNIST has shown to be more difﬁcult to attack (Chen et al., 2017b). Attack learning rate
+is individually tuned for each model: 0.001 for Inception-v3 and ResNet-50, 0.0005 for Mo-
+bileNet and 0.01 for all other networks. For I-FGSM, we run 50 iterations and choose the optimal
+ ∈ {0.01, 0.025, 0.05, 0.1, 0.3, 0.5, 0.8, 1.0} to achieve the smallest (cid:96)∞ distortion for each individ-
+ual image. For defensively distilled (DD) networks, 50 iterations of I-FGSM are not sufﬁcient; we
+use 250 iterations for CIFAR-DD and 500 iterations for MNIST-DD to achieve a 100% success rate.
+For the problem to be non-trivial, images that are classiﬁed incorrectly are skipped. We report 100%
+attack success rates for all the networks, and thus the average distortion of adversarial examples can
+indicate the attack-speciﬁc robustness of each network. For comparison, we compute the CLEVER
+scores for the same set of images and attack targets. To the best of our knowledge, CLEVER is the
+ﬁrst attack-independent robustness score that is capable of handling the large networks studied in
+this paper, so we directly compare it with the attack-induced distortion metrics in our study.
+We evaluate the effectiveness of our CLEVER score by comparing the upper bound βU (found by
+attacks) and CLEVER score, where CLEVER serves as an estimated lower bound, βL. Table 3
+compares the average (cid:96)2 and (cid:96)∞ distortions of adversarial examples found by targeted CW and
+I-FGSM attacks and the corresponding average targeted CLEVER scores for (cid:96)2 and (cid:96)∞ norms,
+and Figure 4 visualizes the results for (cid:96)∞ norm. Similarly, Table 2 compares untargeted CW and
+I-FGSM attacks with untargeted CLEVER scores. As expected, CLEVER is smaller than the dis-
+tortions of adversarial images in most cases. More importantly, since CLEVER is independent of
+attack algorithms, the reported CLEVER scores can roughly indicate the distortion of the best pos-
+sible attack in terms of a speciﬁc (cid:96)p distortion. The average (cid:96)2 distortion found by CW attack is
+close to the (cid:96)2 CLEVER score, indicating CW is a strong (cid:96)2 attack. In addition, when a defense
+mechanism (Defensive Distillation or Bounded ReLU) is used, the corresponding CLEVER scores
+are consistently increased (except for CIFAR-BReLU), indicating that the network is indeed made
+more resilient to adversarial perturbations. For CIFAR-BReLU, both CLEVER scores and (cid:96)p norm
+of adversarial examples found by CW attack decrease, implying that bound ReLU is an ineffective
+defense for CIFAR. CLEVER scores can be seen as a security checkpoint for unseen attacks. For
+example, if there is a substantial gap in distortion between the CLEVER score and the considered
+attack algorithms, it may suggest the existence of a more effective attack that can close the gap.
+Since CLEVER score is derived from an estimation of the robustness lower bound, we further verify
+the viability of CLEVER per each example, i.e., whether it is usually smaller than the upper bound
+found by attacks. Table 4 shows the percentage of inaccurate estimations where the CLEVER score
+is larger than the distortion of adversarial examples found by CW and I-FGSM attacks in three
+ImageNet networks. We found that CLEVER score provides an accurate estimation for most of the
+examples. For MobileNet and Resnet-50, our CLEVER score is a strict lower bound of these two
+attacks for more than 96% of tested examples. For Inception-v3, the condition of strict lower bound
+Table 2: Comparison between the average untargeted CLEVER score and distortion found by CW
+and I-FGSM untargeted attacks. DD and BReLU represent Defensive Distillation and Bounded
+ReLU defending methods applied to the baseline CNN network.
+CW
+I-FGSM
+(cid:96)2
+(cid:96)2
+1.113
+MNIST-MLP
+1.500
+MNIST-CNN
+MNIST-DD
+1.548
+MNIST-BReLU 1.337
+0.253
+CIFAR-MLP
+0.195
+CIFAR-CNN
+CIFAR-DD
+0.285
+CIFAR-BReLU 0.159
+(cid:96)∞
+0.215
+0.455
+0.409
+0.433
+0.018
+0.023
+0.032
+0.019
+3.564
+4.439
+5.617
+3.851
+0.885
+0.721
+1.136
+0.519
+(cid:96)∞
+0.178
+0.288
+0.283
+0.285
+0.016
+0.018
+0.024
+0.013
+CLEVER
+(cid:96)∞
+(cid:96)2
+0.041
+0.057
+0.063
+0.065
+0.005
+0.002
+0.004
+0.001
+0.819
+0.721
+0.865
+0.833
+0.219
+0.072
+0.130
+0.045
+Published as a conference paper at ICLR 2018
+Table 3: Comparison of the average targeted CLEVER scores with average (cid:96)∞ and (cid:96)2 distortions
+found by CW, I-FSGM attacks, and the average scores calculated by using the algorithm in Wood &
+Zhang (1996) (denoted as SLOPE) to estimate Lipschitz constant. DD and BReLU denote Defensive
+Distillation and Bounded ReLU defending methods applied to the CNN network. We did not include
+SLOPE in ImageNet networks because it has been shown to be ineffective even for smaller networks.
+(a) avergage (cid:96)∞ distortion of CW and I-FGSM targeted attacks, and CLEVER and SLOPE estimation. Some
+very large SLOPE estimates (in parentheses) exceeding the maximum possible (cid:96)∞ distortion are reported as 1.
+Least Likely Target
+CW I-FGSM CLEVER
+0.475
+MNIST-MLP
+MNIST-CNN
+0.601
+MNIST-DD
+0.578
+MNIST-BReLU 0.601
+0.086
+CIFAR-MLP
+0.053
+CIFAR-CNN
+CIFAR-DD
+0.091
+CIFAR-BReLU 0.045
+0.023
+Inception-v3
+0.031
+Resnet-50
+MobileNet
+0.025
+0.071
+0.090
+0.103
+0.257
+0.014
+0.005
+0.011
+0.004
+0.002
+0.002
+0.003
+0.223
+0.313
+0.283
+0.276
+0.039
+0.033
+0.053
+0.030
+0.011
+0.015
+0.010
+SLOPE
+0.808
+0.996
+1 (1.090)
+1 (5.327)
+0.294
+0.153
+0.278
+0.250
+Random Target
+CW I-FGSM CLEVER SLOPE
+0.337
+0.813
+0.982
+0.550
+0.953
+0.531
+3.907
+0.544
+0.284
+0.051
+0.148
+0.042
+0.255
+0.066
+0.034
+0.173
+0.021
+0.025
+0.018
+0.173
+0.264
+0.238
+0.238
+0.024
+0.023
+0.032
+0.022
+0.012
+0.012
+0.010
+0.072
+0.088
+0.091
+0.187
+0.014
+0.005
+0.010
+0.003
+0.002
+0.002
+0.002
+Top-2 Target
+CW I-FGSM CLEVER
+0.218
+0.451
+0.412
+0.442
+0.019
+0.022
+0.033
+0.018
+0.010
+0.010
+0.006
+0.119
+0.211
+0.165
+0.196
+0.013
+0.013
+0.014
+0.012
+0.011
+0.010
+0.010
+0.069
+0.070
+0.091
+0.117
+0.014
+0.004
+0.007
+0.002
+0.001
+0.001
+0.001
+SLOPE
+0.786
+0.826
+0.984
+1 (2.470)
+0.286
+0.129
+0.184
+0.095
+(b) average (cid:96)2 distortion of CW and I-FGSM targeted attacks, and CLEVER and SLOPE estimation. Some very
+large SLOPE estimates (in parentheses) exceeding the sampling radius R = 5 are reported as 5.
+Least Likely Target
+CW I-FGSM CLEVER
+2.575
+MNIST-MLP
+2.377
+MNIST-CNN
+MNIST-DD
+2.644
+MNIST-BReLU 2.349
+1.123
+CIFAR-MLP
+0.836
+CIFAR-CNN
+CIFAR-DD
+2.065
+CIFAR-BReLU 0.407
+0.628
+Inception-v3
+0.767
+Resnet-50
+MobileNet
+0.837
+1.409
+1.257
+1.532
+3.312
+0.620
+0.156
+0.347
+0.140
+0.524
+0.357
+0.617
+4.273
+4.417
+4.957
+5.170
+1.896
+1.067
+1.540
+0.928
+2.244
+2.410
+2.195
+SLOPE
+5 (8.028)
+5 (9.947)
+5 (10.628)
+5 (52.058)
+5 (5.013)
+2.630
+4.735
+4.125
+Random Target
+CW I-FGSM CLEVER
+1.833
+2.005
+2.240
+1.923
+0.673
+0.372
+0.624
+0.303
+0.595
+0.647
+0.603
+3.369
+3.902
+4.253
+4.544
+1.214
+0.837
+1.097
+0.732
+2.261
+2.098
+2.066
+1.432
+1.227
+1.340
+2.565
+0.597
+0.146
+0.307
+0.103
+0.466
+0.299
+0.439
+SLOPE
+5 (8.102)
+5 (9.619)
+5 (9.493)
+5 (37.531)
+4.806
+2.497
+4.279
+2.944
+Top-2 Target
+CW I-FGSM CLEVER
+1.128
+1.504
+1.542
+1.404
+0.262
+0.188
+0.296
+0.152
+0.287
+0.212
+0.190
+2.374
+3.242
+3.010
+3.778
+0.689
+0.552
+0.582
+0.494
+2.073
+1.682
+1.771
+1.383
+0.987
+1.330
+1.583
+0.599
+0.123
+0.220
+0.052
+0.234
+0.134
+0.144
+SLOPE
+5 (7.853)
+5 (7.921)
+5 (9.646)
+5 (23.548)
+4.949
+2.195
+3.083
+1.564
+(a) MNIST: Least likely target
+(b) MNIST: Random target
+(c) MNIST: Top 2 target
+(d) CIFAR: Least likely target
+(e) CIFAR: Random target
+(f) CIFAR: Top 2 target
+Figure 4: Comparison of (cid:96)∞ distortion obtained by CW and I-FGSM attacks, CLEVER score and the
+slope based Lipschitz constant estimation (SLOPE) by Wood & Zhang (1996). SLOPE signiﬁcantly
+exceeds the distortions found by attacks, thus it is an inappropriate estimation of lower bound βL.
+is worse (still more than 75%), but we found that in these cases the attack distortion only differs from
+our CLEVER score by a fairly small amount. In Figure 5 we show the empirical CDF of the gap
+between CLEVER score and the (cid:96)2 norm of adversarial distortion generated by CW attack for the
+same set of images in Table 4. In Figure 6, we plot the (cid:96)2 distortion and CLEVER scores for each
+10
+Published as a conference paper at ICLR 2018
+Table 4: Percentage of images in ImageNet where the CLEVER score for that image is greater than
+the adversarial distortion found by different attacks.
+Least Likely Target
+CW
+I-FGSM
+Random Target
+CW
+I-FGSM
+Top-2 Target
+CW
+I-FGSM
+MobileNet
+Resnet-50
+Inception-v3
+(a) MobileNet
+L∞ L2
+L∞ L2
+0% 0% 0% 2%
+0% 0% 0% 2%
+L∞ L2
+L∞
+L2
+0% 0% 0%
+4%
+4%
+0% 0% 0%
+25% 0% 0% 0% 23% 0% 0% 0% 15% 0% 0% 0%
+(c) Inception-v3
+L∞ L2
+L∞ L2
+0% 0% 0% 0%
+0% 0% 0% 1%
+(b) ResNet-50
+Figure 5: The empirical CDF of the gap between CLEVER score and the (cid:96)2 norm of adversarial
+distortion generated by CW attack with random targets for 100 images on 3 ImageNet networks.
+(a) MobileNet
+(b) ResNet-50
+(c) Inception-v3
+Figure 6: Comparison of the CLEVER scores (circle) and the (cid:96)2 norm of adversarial distortion
+generated by CW attack (triangle) with random targets for 100 images. The x-axis is image ID and
+the y-axis is the (cid:96)2 distortion metric.
+(a) Least likely target
+(b) Random target
+(c) Top-2 target
+Figure 7: Comparison of the CLEVER score calculated by Nb = {50, 100, 250, 500} and the (cid:96)2
+norm of adversarial distortion found by CW attack (CW) on 3 ImageNet models and 3 target types.
+individual image. A positive gap indicates that CLEVER (estimated lower bound) is indeed less
+than the upper bound found by CW attack. Most images have a small positive gap, which signiﬁes
+the near-optimality of CW attack in terms of (cid:96)2 distortion, as CLEVER sufﬁces for an estimated
+capacity of the best possible attack.
+5.4 TIME V.S. ESTIMATION ACCURACY
+In Figure 7, we vary the number of samples (Nb = 50, 100, 250, 500) and compute the (cid:96)2 CLEVER
+scores for three large ImageNet models, Inception-v3, ResNet-50 and MobileNet. We observe that
+11
+−0.50.00.51.0gap0.00.20.40.60.81.0CDF−0.50.00.51.0gap0.00.20.40.60.81.0CDF−0.50.00.51.0gap0.00.20.40.60.81.0CDFPublished as a conference paper at ICLR 2018
+50 or 100 samples are usually sufﬁcient to obtain a reasonably accurate robustness estimation despite
+using a smaller number of samples. On a single GTX 1080 Ti GPU, the cost of 1 sample (with
+Ns = 1024) is measured as 2.9 s for MobileNet, 5.0 s for ResNet-50 and 8.9 s for Inception-v3, thus
+the computational cost of CLEVER is feasible for state-of-the-art large-scale deep neural networks.
+Additional ﬁgures for MNIST and CIFAR datasets are given in Appendix E.
+6 CONCLUSION
+In this paper, we propose the CLEVER score, a novel and generic metric to evaluate the robustness
+of a target neural network classiﬁer to adversarial examples. Compared to the existing robustness
+evaluation approaches, our metric has the following advantages: (i) attack-agnostic; (ii) applicable
+to any neural network classiﬁer; (iii) comes with strong theoretical guarantees; and (iv) is computa-
+tionally feasible for large neural networks. Our extensive experiments show that the CLEVER score
+well matches the practical robustness indication of a wide range of natural and defended networks.
+Acknowledgment. Luca Daniel and Tsui-Wei Weng are partially supported by MIT-Skoltech pro-
+gram and MIT-IBM Watson AI Lab. Cho-Jui Hsieh and Huan Zhang acknowledge the support of
+NSF via IIS-1719097.
+REFERENCES
+Osbert Bastani, Yani Ioannou, Leonidas Lampropoulos, Dimitrios Vytiniotis, Aditya Nori, and An-
+tonio Criminisi. Measuring neural net robustness with constraints. In Advances in Neural Infor-
+mation Processing Systems, pp. 2613–2621, 2016.
+Nicholas Carlini and David Wagner. Adversarial examples are not easily detected: Bypassing ten
+detection methods. arXiv preprint arXiv:1705.07263, 2017a.
+Nicholas Carlini and David Wagner. Towards evaluating the robustness of neural networks. In IEEE
+Symposium on Security and Privacy (SP), pp. 39–57, 2017b.
+Hongge Chen, Huan Zhang, Pin-Yu Chen, Jinfeng Yi, and Cho-Jui Hsieh. Show-and-fool: Crafting
+adversarial examples for neural image captioning. CoRR, abs/1712.02051, 2017a.
+Pin-Yu Chen, Yash Sharma, Huan Zhang, Jinfeng Yi, and Cho-Jui Hsieh. Ead: Elastic-net attacks
+to deep neural networks via adversarial examples. arXiv preprint arXiv:1709.04114, 2017b.
+Pin-Yu Chen, Huan Zhang, Yash Sharma, Jinfeng Yi, and Cho-Jui Hsieh. Zoo: Zeroth order op-
+timization based black-box attacks to deep neural networks without training substitute models.
+arXiv preprint arXiv:1708.03999, 2017c.
+Laurens De Haan and Ana Ferreira. Extreme value theory: an introduction. Springer Science &
+Business Media, 2007.
+Ruediger Ehlers. Formal veriﬁcation of piece-wise linear feed-forward neural networks. arXiv
+preprint arXiv:1705.01320, 2017.
+Ivan Evtimov, Kevin Eykholt, Earlence Fernandes, Tadayoshi Kohno, Bo Li, Atul Prakash, Amir
+Rahmati, and Dawn Song. Robust physical-world attacks on machine learning models. arXiv
+preprint arXiv:1707.08945, 2017.
+Ian J Goodfellow, Jonathon Shlens, and Christian Szegedy. Explaining and harnessing adversarial
+examples. ICLR’15; arXiv preprint arXiv:1412.6572, 2015.
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun. Deep residual learning for image recog-
+nition. In Proceedings of the IEEE conference on computer vision and pattern recognition, pp.
+770–778, 2016.
+Matthias Hein and Maksym Andriushchenko. Formal guarantees on the robustness of a classiﬁer
+against adversarial manipulation. arXiv preprint arXiv:1705.08475, 2017.
+12
+Published as a conference paper at ICLR 2018
+Geoffrey Hinton, Oriol Vinyals, and Jeff Dean. Distilling the knowledge in a neural network. arXiv
+preprint arXiv:1503.02531, 2015.
+Andrew G Howard, Menglong Zhu, Bo Chen, Dmitry Kalenichenko, Weijun Wang, Tobias Weyand,
+Marco Andreetto, and Hartwig Adam. Mobilenets: Efﬁcient convolutional neural networks for
+mobile vision applications. arXiv preprint arXiv:1704.04861, 2017.
+Xiaowei Huang, Marta Kwiatkowska, Sen Wang, and Min Wu. Safety veriﬁcation of deep neural
+networks. In International Conference on Computer Aided Veriﬁcation, pp. 3–29. Springer, 2017.
+Guy Katz, Clark Barrett, David Dill, Kyle Julian, and Mykel Kochenderfer. Reluplex: An efﬁcient
+smt solver for verifying deep neural networks. arXiv preprint arXiv:1702.01135, 2017a.
+Guy Katz, Clark Barrett, David L Dill, Kyle Julian, and Mykel J Kochenderfer. Towards proving
+the adversarial robustness of deep neural networks. arXiv preprint arXiv:1709.02802, 2017b.
+Alexey Kurakin, Ian Goodfellow, and Samy Bengio. Adversarial examples in the physical world.
+arXiv preprint arXiv:1607.02533, 2016a.
+Alexey Kurakin, Ian Goodfellow, and Samy Bengio. Adversarial machine learning at scale.
+ICLR’17; arXiv preprint arXiv:1611.01236, 2016b.
+Xuanqing Liu, Minhao Cheng, Huan Zhang, and Cho-Jui Hsieh. Towards robust neural networks
+via random self-ensemble. arXiv preprint arXiv:1712.00673, 2017.
+Yanpei Liu, Xinyun Chen, Chang Liu, and Dawn Song. Delving into transferable adversarial exam-
+ples and black-box attacks. arXiv preprint arXiv:1611.02770, 2016.
+Aleksander Madry, Aleksandar Makelov, Ludwig Schmidt, Dimitris Tsipras, and Adrian Vladu.
+Towards deep learning models resistant to adversarial attacks. arXiv preprint arXiv:1706.06083,
+2017.
+Dongyu Meng and Hao Chen. Magnet: a two-pronged defense against adversarial examples. arXiv
+preprint arXiv:1705.09064, 2017.
+Nicolas Papernot, Patrick McDaniel, Xi Wu, Somesh Jha, and Ananthram Swami. Distillation as
+In IEEE Symposium on
+a defense to adversarial perturbations against deep neural networks.
+Security and Privacy (SP), pp. 582–597, 2016.
+Nicolas Papernot, Patrick McDaniel, Ian Goodfellow, Somesh Jha, Z Berkay Celik, and Ananthram
+Swami. Practical black-box attacks against machine learning. In ACM Asia Conference on Com-
+puter and Communications Security, pp. 506–519, 2017.
+Kishore Papineni, Salim Roukos, Todd Ward, and Wei-Jing Zhu. Bleu: a method for automatic
+evaluation of machine translation. In Proceedings of the 40th annual meeting on association for
+computational linguistics, pp. 311–318. Association for Computational Linguistics, 2002.
+Remigijus Paulaviˇcius and Julius ˇZilinskas. Analysis of different norms and corresponding lipschitz
+constants for global optimization. Technological and Economic Development of Economy, 12(4):
+301–306, 2006.
+Tim Salimans, Ian Goodfellow, Wojciech Zaremba, Vicki Cheung, Alec Radford, and Xi Chen.
+Improved techniques for training gans. In Advances in Neural Information Processing Systems,
+pp. 2234–2242, 2016.
+Christian Szegedy, Wojciech Zaremba, Ilya Sutskever, Joan Bruna, Dumitru Erhan, Ian Goodfellow,
+and Rob Fergus. Intriguing properties of neural networks. arXiv preprint arXiv:1312.6199, 2013.
+Christian Szegedy, Vincent Vanhoucke, Sergey Ioffe, Jon Shlens, and Zbigniew Wojna. Rethink-
+ing the inception architecture for computer vision. In Proceedings of the IEEE Conference on
+Computer Vision and Pattern Recognition, pp. 2818–2826, 2016.
+Florian Tram`er, Alexey Kurakin, Nicolas Papernot, Dan Boneh, and Patrick McDaniel. Ensemble
+adversarial training: Attacks and defenses. arXiv preprint arXiv:1705.07204, 2017.
+13
+Published as a conference paper at ICLR 2018
+Beilun Wang, Ji Gao, and Yanjun Qi. A theoretical framework for robustness of (deep) classiﬁers
+under adversarial noise. arXiv preprint arXiv:1612.00334, 2016.
+GR Wood and BP Zhang. Estimation of the lipschitz constant of a function. Journal of Global
+Optimization, 8(1):91–103, 1996.
+Weilin Xu, David Evans, and Yanjun Qi. Feature squeezing: Detecting adversarial examples in deep
+neural networks. arXiv preprint arXiv:1704.01155, 2017.
+Valentina Zantedeschi, Maria-Irina Nicolae, and Ambrish Rawat. Efﬁcient defenses against adver-
+sarial attacks. arXiv preprint arXiv:1707.06728, 2017.
+14
+Published as a conference paper at ICLR 2018
+APPENDIX
+A PROOF OF THEOREM 3.2
+Proof. According to Lemma 3.1, the assumption that g(x) := fc(x)−fj(x) is Lipschitz continuous
+with Lipschitz constant Lj
+(4)
+q gives
+Let x = x0 + δ and y = x0 in (4), we get
+which can be rearranged into the following form
+q(cid:107)x − y(cid:107)p.
+|g(x) − g(y)| ≤ Lj
+|g(x0 + δ) − g(x0)| ≤ Lj
+q(cid:107)δ(cid:107)p ≤ g(x0 + δ) ≤ g(x0) + Lj
+q(cid:107)δ(cid:107)p,
+q(cid:107)δ(cid:107)p.
+g(x0) − Lj
+(5)
+When g(x0 + δ) = 0, an adversarial example is found. As indicated by (5), g(x0 + δ) is lower
+q(cid:107)δ(cid:107)p ≥ 0, no adversarial
+bounded by g(x0)−Lj
+examples can be found:
+q(cid:107)δ(cid:107)p. If (cid:107)δ(cid:107)p is small enough such that g(x0)−Lj
+g(x0) − Lj
+q(cid:107)δ(cid:107)p ≥ 0 ⇒ (cid:107)δ(cid:107)p ≤
+g(x0)
+q ⇒ (cid:107)δ(cid:107)p ≤
+Lj
+fc(x0) − fj(x0)
+Lj
+Finally, to achieve argmax1≤i≤K fi(x0 + δ) = c, we take the minimum of the bound on (cid:107)δ(cid:107)p in
+(A) over j (cid:54)= c. I.e. if
+(cid:107)δ(cid:107)p ≤ min
+j(cid:54)=c
+fc(x0) − fj(x0)
+Lj
+the classiﬁer decision can never be changed and the attack will never succeed.
+B PROOF OF COROLLARY 3.2.1
+Proof. By Lemma 3.1 and let g = fc − fj, we get Lj
+= maxy∈Bp(x0,R) (cid:107)∇g(y)(cid:107)q =
+maxy∈Bp(x0,R) (cid:107)∇fj(y) − ∇fc(y)(cid:107)q, which then gives the bound in Theorem 2.1 of (Hein & An-
+driushchenko, 2017).
+q,x0
+C PROOF OF LEMMA 3.3
+Proof. For any x, y, let d = y−x
+be the unit vector pointing from x to y and r = (cid:107)y − x(cid:107)p.
+(cid:107)y−x(cid:107)p
+Deﬁne uni-variate function u(z) = h(x + zd), then u(0) = h(x) and u(r) = h(y) and observe
+that D+h(x + zd; d) and D+h(x + zd;−d) are the right-hand and left-hand derivatives of u(z),
+we have
+(cid:26)D+h(x + zd; d) ≤ Lq
+undeﬁned
+u(cid:48)(z) =
+if D+h(x + zd; d) = D+h(x + zd;−d)
+if D+h(x + zd; d) (cid:54)= D+h(x + zd;−d)
+For ReLU network, there can be at most ﬁnite number of points in z ∈ (0, r) such that g(cid:48)(z) does
+not exist. This can be shown because each discontinuous z is caused by some ReLU activation, and
+there are only ﬁnite combinations. Let 0 = z0 < z1 < ··· < zk−1 < zk = 1 be those points. Then,
+using the fundamental theorem of calculus on each interval separately, there exists ¯zi ∈ (zi, zi−1)
+for each i such that
+u(r) − u(0) ≤
+|u(zi) − u(zi−1)|
+|u(cid:48)(¯zi)(zi − zi−1)|
+i=1
+k(cid:88)
+k(cid:88)
+k(cid:88)
+i=1
+(Mean value theorem)
+(zi are in line (x, y))
+Lq|zi − zi−1|p
+i=1
+= Lq(cid:107)x − y(cid:107)p.
+15
+Theorem 3.2 and its corollaries remain valid after replacing Lemma 3.1 with Lemma 3.3.
+Published as a conference paper at ICLR 2018
+D THEOREM D.1 AND ITS PROOF
+Theorem D.1 (FY (y) of one-hidden-layer neural network). Consider a neural network f : Rd →
+(cid:1) pieces,
+RK with input x0 ∈ Rd, a hidden layer with U hidden neurons, and rectiﬁed linear unit (ReLU)
+activation function. If we sample uniformly in a ball Bp(x0, R), then the cumulative distribution
+function of (cid:107)∇g(x)(cid:107)q, denoted as FY (y), is piece-wise linear with at most M =(cid:80)d
+(cid:0)U
+i=0
+where g(x) = fc(x) − fj(x) for some given c and j, and 1
+(cid:33)
+Proof. The jth output of a one-hidden-layer neural network can be written as
+q = 1, 1 ≤ p, q ≤ ∞.
+U(cid:88)
+(cid:32) d(cid:88)
+U(cid:88)
+p + 1
+fj(x) =
+Vjr · σ
+r=1
+i=1
+Wri · xi + br
+Vjr · σ (wrx + br) ,
+r=1
+where σ(z) = max(z, 0) is ReLU activation function, W and V are the weight matrices of the
+ﬁrst and second layer respectively, and wr is the rth row of W . Thus, we can compute g(x) and
+(cid:107)∇g(x)(cid:107)q below:
+r=1
+U(cid:88)
+U(cid:88)
+(cid:13)(cid:13)(cid:13)(cid:13)(cid:13) U(cid:88)
+r=1
+r=1
+g(x) = fc(x) − fj(x) =
+(cid:107)∇g(x)(cid:107)q =
+and
+where I(z) is an univariate indicator function:
+Vcr · σ (wrx + br) −
+Vjr · σ (wrx + br)
+U(cid:88)
+r=1
+(cid:13)(cid:13)(cid:13)(cid:13)(cid:13)q
+(Vcr − Vjr) · σ (wrx + br)
+I(wrx + br)(Vcr − Vjr)w(cid:62)
+(cid:110) 1,
+0,
+if z > 0,
+if z ≤ 0.
+I(z) =
+Figure 8: Illustration of Theorem D.1 with d = 2, q = 2 and U = 3. The three hyperplanes
+wix + bi = 0 divide the space into seven regions (with different colors). The red dash line
+encloses the ball B2(x0, R1) and the blue dash line encloses a larger ball B2(x0, R2). If
+we draw samples uniformly within the balls, the probability of (cid:107)∇g(x)(cid:107)2 = y is propor-
+tional to the intersected volumes of the ball and the regions with (cid:107)∇g(x)(cid:107)2 = y.
+As illustrated in Figure 8, the hyperplanes wrx + br = 0, r ∈ {1, . . . , U} divide the d dimensional
+spaces Rd into different regions, with the interior of each region satisfying a different set of inequal-
+ity constraints, e.g. wr+x + br+ > 0 and wr− x + br− < 0. Given x, we can identify which region
+it belongs to by checking the sign of wrx + br for each r. Notice that the gradient norm is the same
+for all the points in the same region, i.e. for any x1, x2 satisfying I(wrx1 + br) = I(wrx2 + br) ∀r,
+16
+Published as a conference paper at ICLR 2018
+we have (cid:107)∇g(x1)(cid:107)q = (cid:107)∇g(x2)(cid:107)q. Since there can be at most M =(cid:80)d
+i=0
+(cid:0)U
+(cid:1) different regions
+for a d-dimensional space with U hyperplanes, (cid:107)∇g(x)(cid:107)q can take at most M different values.
+Therefore, if we perform uniform sampling in a ball Bp(x0, R) centered at x0 with radius R and
+denote (cid:107)∇g(x)(cid:107)q as a random variable Y , the probability distribution of Y is discrete and its CDF
+is piece-wise constant with at most M pieces. Without loss of generality, assume there are M0 ≤ M
+distinct values for Y and denote them as m(1), m(2), . . . , m(M0) in an increasing order, the CDF of
+Y , denoted as FY (y), is the following:
+FY (m(i)) = FY (m(i−1)) +
+Vd({x | (cid:107)∇g(x)(cid:107)q = m(i)}) ∩ Vd(Bp(x0, R)))
+Vd(Bp(x0, R))
+, i = 1, . . . , M0,
+where FY (m(0)) = 0 with m(0) < m(1), Vd(E) is the volume of E in a d dimensional space.
+E ADDITIONAL EXPERIMENTAL RESULTS
+E.1 PERCENTAGE OF EXAMPLES HAVING P VALUE > 0.05
+Table 5 shows the percentage of examples where the null hypothesis cannot be rejected by K-S test,
+indicating that the maximum gradient norm samples ﬁt reverse Weibull distribution well.
+Table 5: Percentage of estimations where the null hypothesis cannot be rejected by K-S test for a
+signiﬁcance level of 0.05. The bar plots of this table are illustrated in Figure 3.
+Least Likely
+L∞
+L2
+100.0
+100.0
+MNIST-MLP
+99.8
+99.6
+MNIST-CNN
+99.8
+100.0
+MNIST-DD
+95.4
+MNIST-BReLU 93.3
+100.0
+100.0
+CIFAR-MLP
+100.0
+100.0
+CIFAR-CNN
+99.5
+CIFAR-DD
+99.7
+CIFAR-BReLU 99.5
+99.2
+100.0
+100.0
+Inception-v3
+100.0
+99.0
+Resnet-50
+MobileNet
+100.0
+100.0
+Random
+L2
+100.0
+99.2
+99.6
+96.8
+100.0
+100.0
+100.0
+100.0
+100.0
+100.0
+100.0
+L∞
+100.0
+100.0
+99.8
+96.8
+100.0
+100.0
+100.0
+100.0
+100.0
+100.0
+100.0
+Top-2
+L2
+100.0
+99.4
+99.8
+97.6
+100.0
+100.0
+99.7
+99.7
+100.0
+100.0
+98.0
+L∞
+100.0
+100.0
+99.8
+98.2
+100.0
+100.0
+99.7
+99.7
+100.0
+100.0
+99.0
+E.2 CLEVER V.S. NUMBER OF SAMPLES
+Figure 9 shows the (cid:96)2 CLEVER score with different number of samples (Nb = 50, 100, 250, 500)
+for MNIST and CIFAR models. For most models except MNIST-BReLU, reducing the number of
+samples only change CLEVER scores very slightly. For MNIST-BReLU, increasing the number
+of samples improves the estimated lower bound, suggesting that a larger number of samples is
+preferred. In practice, we can start with a relatively small Nb = a, and also try 2a, 4a,··· samples
+to see if CLEVER scores change signiﬁcantly. If CLEVER scores stay roughly the same despite
+increasing Nb, we can conclude that using Nb = a is sufﬁcient.
+17
+Published as a conference paper at ICLR 2018
+(a) MNIST, Least likely target
+(b) MNIST, Random target
+(c) MNIST, Top-2 target
+(d) CIFAR, Least likely target
+(e) CIFAR, Random target
+(f) CIFAR, Top2 target
+Figure 9: Comparison of the CLEVER score calculated by Nb = {50, 100, 250, 500} and the (cid:96)2
+norm of adversarial distortion found by CW attack (CW) on MNIST and CIFAR models with 3
+target types.
+18

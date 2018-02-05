@@ -1,0 +1,18 @@
+—Methods exploiting sparsity have been popular in
+imaging and signal processing applications including compres-
+sion, denoising, and imaging inverse problems. Data-driven
+approaches such as dictionary learning enable one to discover
+complex image features from datasets and provide promising
+performance over analytical models. Alternating minimization
+algorithms have been particularly popular in dictionary and
+transform learning. In this work, we study the properties of
+alternating minimization for structured (unitary) sparsifying op-
+erator learning. While the algorithm converges to the stationary
+points of the non-convex problem in general, we prove local
+linear convergence to the underlying generative model under mild
+assumptions. Our experiments show that the unitary operator
+learning algorithm is robust to initialization.
+Index Terms—Dictionary learning, Sparse representations,
+Efﬁcient algorithms, Convergence analysis, Generative models,
+Machine learning.
+I. 

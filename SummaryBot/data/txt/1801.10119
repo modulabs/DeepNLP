@@ -1,0 +1,1588 @@
+An Incremental Path-Following Splitting Method for Linearly
+Constrained Nonconvex Nonsmooth Programs
+Tianyi Lin ∗
+Linbo Qiao †
+Wei Liu ‡
+Steven Hoi §
+February 5, 2018
+Abstract
+The linearly constrained nonconvex nonsmooth program has drawn much attention over the
+last few years due to its ubiquitous power of modeling in the area of machine learning. A variety
+of important problems, including deep learning, matrix factorization and phase retrieval, can be
+reformulated as the problem of optimizing a highly nonconvex and nonsmooth objective function
+with some linear constraints. However, it is challenging to solve a linearly constrained nonconvex
+nonsmooth program, which is much complicated than its unconstrained counterpart. In fact, the
+feasible region is a polyhedron, where a simple projection is intractable in general, and moreover, the
+per-iteration cost is extremely expensive in real scenario, where the dimension of decision variable is
+high. Therefore, it has been recognized promising to develop a provable and practical algorithm for
+solving linearly constrained nonconvex nonsmooth programs.
+In this paper, we develop an incremental path-following splitting algorithm, denoted as IPFS,
+with a theoretical guarantee and a low computational cost.
+In speciﬁc, we show that this algo-
+rithm converges to an ǫ-approximate stationary solution within O(1/ǫ) iterations with very low
+per-iteration cost. To the best of our knowledge, this is the ﬁrst incremental method to solve linearly
+constrained nonconvex nonsmooth programs with a theoretical guarantee. Experiments conducted
+on the constrained concave penalized linear regression (CCPLR) and nonconvex support vector ma-
+chine (NCSVM) demonstrate that the proposed algorithm is more eﬀective and stable than other
+competing methods.
+Keywords: Linearly constrained nonconvex nonsmooth program; increment; path-following; splitting
+method; iteration complexity.
+∗Department of Industrial Engineering and Operations Research, UC Berkeley, California, USA. Email: dar-
+ren lin@berkeley.edu
+†College of Computer, National University of Defense Technology, Changsha, China. Email: linboqiao@gmail.com
+‡Tencent AI Lab, Shenzhen, China. Email: wliu@ee.columbia.edu
+§School of Computer Engineering, Nanyang Technological University, Singapore. Email: chhoi@ntu.edu.sg
+1
+Introduction
+In this paper, we are aiming at developing an eﬀective optimization algorithm for solving the linearly
+constrained nonconvex nonsmooth program:
+min
+x∈X
+f (x) + r(x),
+s.t. Ax ≤ b,
+(1)
+where x = [x1, . . . , xn] ∈ Rd, xi ∈ Rdi and Pn
+smooth but possibly nonconvex and r(x) =Pn
+A ∈ Rp×d, b ∈ Rp and X ⊂ Rd is a closed and convex set.
+Problem (1) abstracts a plethora of mathematical models arising from deep learning [1], distributed
+optimization and coordination [2], network utility maximization [29], resource allocation [33], statistical
+learning [11] and so on. Two typical problems widely used in practice are: 1) the constrained concave
+penalized linear regression (CCPLR) [19] and 2) the nonconvex support vector machine (NCSVM) [8].
+i=1 di = d. The objective function f : Rd → R is a
+i=1 ri(xi), where ri is nonsmooth and possibly nonconvex.
+Despite its eﬀectiveness, it is very hard to ﬁnd even a stationary solution of problem (1). The diﬃculty
+comes from two aspects. From the perspective of problem structure, the nonsmoothness of the objective
+function prohibits the use of the gradient while the projection onto the set {x : Ax ≤ b} is intractable in
+general. In another perspective of computational cost, the per-iteration cost is proportional to the full
+dimension and hence extremely expensive for high-dimensional data-driven applications. Therefore, an
+eﬃcient algorithm with a theoretical guarantee is in demand. However, none of the existing algorithms
+meet these requirements.
+In this paper, we propose a novel incremental path-following splitting algorithm, denoted as IPFS,
+to resolve problem (1). The key idea behind our approach is to construct a sequence of δ-smoothed
+problems with log-barrier functions and approximately solve each problem via a splitting method. In
+speciﬁc, we introduce a slack variable s ≥ 0 to transform the inequality constraint into an equality
+constraint, and eliminate the non-negative constraint by using a log-barrier function. This leads to
+several following δ-smoothed problem, which are much easier than problem (1),
+f (x) + r(x) − δ
+min
+x∈X
+s.t. Ax + s = b.
+Pi=1
+log(si),
+(2)
+In fact, we are able to show that the stationary solution to a sequence of δ-smoothed problems constitute
+a path which converges to one stationary solution of problem (1).
+In this light, the proposed IPFS
+method approximately follow this path, and return an ǫ-approximate stationary solution of problem (1).
+Furthermore, either cyclic or randomized variable selection rule, which are both amenable to high-
+dimensional optimization, is assigned to alleviate the issue of computational cost. Finally, we present
+the detailed convergence and iteration complexity analysis in the appendix.
+The contributions of our work are summarized as follows:
+• We propose to construct a sequence of the δ-smoothed problems, where a path is constituted and
+converges to one stationary solution of problem (1) as δ → 0.
+• We develop a novel incremental path-following splitting algorithm, denoted as IPFS, together with
+either cyclic or randomized variable selection rule, which are both amenable to high-dimensional
+optimization.
+• We evaluate the eﬃcacy of the proposed algorithm on the constrained concave penalized linear
+regression and the nonconvex support vector machine. Experimental results demonstrate that our
+method consistently outperforms other competing methods.
+Related works: To the best of our knowledge, our approach is the ﬁrst incremental algorithm developed
+for solving problem (1) with a theoretical guarantee and very low per-iteration cost. This is achieved
+through optimizing a sequence of a smoothed problem with decreasing parameter via an incremental
+splitting method. The following brieﬂy discusses related work in literature.
+The log-barrier function has been widely used in the path-following method for linear programming [14],
+and then generalized to the self-concordant function [26, 31] for convex programming. Recent years have
+witnessed the renewed interests of the path-following method in solving Lagrangian decomposition in
+separable convex optimization [6] and constrained convex minimization [5], where the idea behind is also
+strongly relevant to the continuation method, a standard technique in training neural network [17]. Very
+recently, a new continuation method proposed by Hazan et al. [15] has been proven globally convergent
+for a special class of unconstrained non-convex smooth programs. However, it remains unclear if the
+path-following method can be extended to solve problem (1) with a theoretical guarantee.
+The splitting method [21, 7] is the standard tool for solving the linearly constrained convex programs.
+Much eﬀort has been devoted to establishing the theoretical guarantee of the nonconvex splitting meth-
+ods. However, the existing analysis is limited to a fraction of problems, or requires some strong as-
+sumptions. The iteration complexity analysis has been established for the nonconvex smooth consensus
+problem and sharing problem [18], the nonconvex problems with Kurdyka-Lojasiewicz (KL) condition
+[32] and the symmetric nonnegative matrix factorization [24, 23]. Very recently, Jiang et al.
+[20]
+presented a uniﬁed framework to deﬁne the ǫ-stationary solution of nonconvex nonsmooth problems,
+and presented the iteration complexity of the splitting method in terms of variational inequality. Melo
+and Monteiro [25] analyzed the nonconvex Jacobi-type non-Euclidean splitting method with an elegant
+iteration complexity analysis, while Gon¸calves et al. [12] obtained the similar complexity result for the
+nonconvex proximal splitting method with over-relaxation step-size. On the other hand, Combettes and
+Pesquet [4] proposed block-coordinate ﬁxed-point algorithms, which achieved very low per-iteration cost
+by incorporating random sweeping. However, problem (1) does not fall into the class of problems dis-
+cussed before. Therefore, it still remains unclear whether problem (1) can be solved by the randomized
+splitting method with a theoretical guarantee.
+2 Algorithm
+We make the following assumptions throughout the paper:
+Assumption 1. The set of the stationary solutions of problem (1) is nonempty.
+Assumption 2. The set X =Qn
+i=1 Xi is bounded, and each Ai has full column rank.
+Assumption 3. The objective f is diﬀerentiable and each partial derivative ∇if is Lipschitz continuous.
+In speciﬁc, there exists a constant Li > 0 such that, for i = 1, . . . , n,
+k∇if (x) − ∇if (y)k2 ≤ Li kx − yk2 , ∀x, y ∈ Rd.
+Assumption 3 is standard and satisﬁed by many loss functions in machine learning. For example, the
+least square or logistic loss, i.e., f (x) = 1
+i=1 l(x, ξi) where ξi = (ai, bi) is a single data sample, and
+l(x, ξi) is deﬁned as:
+N PN
+or log(cid:16)1 + exp(cid:16)−bi · a⊤
+i x(cid:17)(cid:17) .
+2(cid:13)(cid:13)(cid:13)
+a⊤
+i x − bi(cid:13)(cid:13)(cid:13)
+We proceed to the optimality of problem (1).
+Deﬁnition 1. Let h : Rd → R ∪ {+∞} be a proper lower semi-continuous function. Suppose h(¯x) is
+ﬁnite for a given ¯x. For v ∈ Rd, we say that
+• v is a regular sub-gradient of h at ¯x, written v ∈ ∂ˆh(¯x), if
+lim
+x6=¯x
+inf
+x→¯x
+h(x) − h(¯x) − hv, x − ¯xi
+kx − ¯xk2
+≥ 0.
+• v is a general sub-gradient of h at ¯x, written v ∈ ∂h(¯x), if there exist sequences {xk} and {vk}
+such that xk → ¯x with h(xk) → h(¯x), and vk ∈ ∂ˆh(xk) with vk → v when k → +∞.
+The following proposition lists some facts about the semi-continuous functions.
+Proposition 4. Let h : Rd → R ∪ {+∞} and g : Rd → R ∪ {+∞} be proper lower semi-continuous
+functions. Then it holds that:
+1. Fermats rule remains true: if ¯x is a local minimum of h, then 0 ∈ ∂h(¯x).
+2. If h is continuously diﬀerentiable at x, then ∂(h + g)(x) = ∂h(x) + ∂g(x).
+3. If h is locally Lipschitz continuous at x, then ∂(h + g)(x) ⊂ ∂h(x) + ∂g(x).
+4. Suppose h(x) is locally Lipschitz continuous, X is a closed and convex set, and ¯x is a local minimum
+of h on X . Then there exists v ∈ ∂h(¯x) such that (x − ¯x)⊤v ≥ 0,∀x ∈ X .
+Assumption 5. The set of generalized gradient of ri, denoted as ∂ri, is assumed to be bounded. In
+addition, the proximal mapping of each ri, deﬁned as:
+proxαri(x) = argmin
+(cid:20)ri(y) +
+2(cid:21)
+2α ky − xk2
+is easily obtained.
+Remark 6. Assumption 5 is standard and satisﬁed by ℓ1-norm and the smoothly clipped absolute devia-
+tion (SCAD) [9], and also reasonable since the solution to ri(x)+ 1
+2 is unique for α > 0 suﬃciently
+small.
+2α kxk2
+We are ready to introduce the notion of an ǫ-stationary solution of problem (1). After introducing the
+slack variable s ≥ 0, the Lagrangian function is deﬁned as:
+L (x, s, λ) = f (x) + r(x) + hλ, Ax + s − bi .
+Based on the ﬁrst-order optimality condition, we deﬁne an ǫ-stationary solution of problem (1) as
+follows:
+Deﬁnition 2. We call x∗ ∈ Rd to be an ǫ-stationary solution of problem (1) if there exists s∗ ≥ 0, and
+λ∗ ∈ Rp such that the following holds true,
+dist(cid:16)−∇if (x∗) − A⊤
+i λ∗, ∂ri(x∗
+i )(cid:17) ≤ ǫ, i = 1, . . . , n,
+j(cid:1) λ∗
+j ≥ −ǫ, j = 1, . . . , p,
+(cid:0)sj − s∗
+kAx∗ + s∗ − bk2 ≤ ǫ,
+where Ai is the i-th column of A, s ≥ 0 and dist(x,H) is the standard Euclidean distance between x and
+a closed convex set H. The solution x∗ is a stationary solution of problem (1) if ǫ = 0 holds true.
+Remark 7. Given a stationary solution of problem (1), it has been recognized as a signiﬁcant reference
+for several ﬁrst-order methods to obtain the iterates, which converge to this solution. Furthermore, the
+stationary solution attained by the proposed algorithm could be a local minimizer under some conditions,
+such as second-order suﬃcient condition [27].
+We propose an incremental path-following splitting method, denoted as IPFS, and analyze its iteration
+complexity with cyclic or randomized variable selection rule. The proposed algorithm is presented in
+Algorithm 1.
+The algorithm is double-looped. In each iteration of the outer loop, we consider a δ-smoothed problem,
+i.e., problem (2), where δ > 0 is a smoothing parameter. We optimize this problem via a splitting
+method with a variable selection rule, and obtain an ǫδ-stationary solution to problem (2). Then we
+move to the next iteration of the outer loop, and decrease δ to γδ, where 0 < γ < 1. Each inner loop
+is devoted to optimize problem (2) via the splitting method. In each iteration, we select a set of index
+I ⊆ {1, 2, . . . , n}, and update {xi}i∈I based on the last iterate, i.e., xk. In speciﬁc, we introduce β > 0
+and deﬁne a function as:
+Lk(cid:16){xi}i∈I , xk, s, λ(cid:17) = Xi∈I (cid:20)D∇if (xk), xi − xk
+(cid:13)(cid:13)(cid:13)
+iE +
+i + s − b+ +
+Aixi +Xi /∈I
++ ri(xi)(cid:21) − δ
+Aixi +Xi /∈I
++*λ,Xi∈I
+Li + 1
+Aixk
+(3)
+Given s = sk and λ = λk, this function is strongly convex for {xi}i∈I according to the boundedness of
+∂ri. To this end, we obtain {xk+1
+{xk+1
+}i∈I by following:
+}i∈I = argmin
+(4)
+Aixk
+xi − xk
+i(cid:13)(cid:13)(cid:13)
+2 (cid:13)(cid:13)(cid:13)(cid:13)(cid:13)
+Xi∈I
+{xi∈Xi}i∈I Lk(cid:16){xi}i∈I , xk, sk, λk(cid:17) .
+log(si)
+Xi=1
+i + s − b(cid:13)(cid:13)(cid:13)(cid:13)(cid:13)
+Algorithm 1 Incremental Path-Following Splitting Method (IPFS)
+Initialize: the primal variable ¯x ∈ Rd; the slack variable ¯s ≥ 0; the dual variable ¯λ ∈ Rp; the
+smoothing parameter δ > 0.
+Set: the ratio γ ∈ (0, 1); the ﬁnal tolerance ǫ > 0.
+while δ > ǫ do
+Set k ← 0.
+Set β > 0 according to δ.
+Set (cid:0)x0, s0, λ0(cid:1) ←(cid:0)¯x, ¯s, ¯λ(cid:1).
+while the stopping criterion is not satisﬁed do
+1.
+Pick up a set of index, i.e., I, according to a variable selection rule.
+Update {xk+1
+}i∈I via Eq. (4).
+Update {xk+1
+}i /∈I ← {xk
+i }i /∈I.
+Update sk+1 via Eq. (5).
+2.
+3.
+4.
+5.
+Update λk+1 via Eq. (6).
+Update k ← k + 1.
+6.
+end while
+δ ← γδ.
+(cid:0)¯x, ¯s, ¯λ(cid:1) ←(cid:0)xk+1, sk+1, λk+1(cid:1).
+end while
+}i /∈I = {xk
+s∈Rp "−δ
+Furthermore, we set {xk+1
+sk+1 = argmin
+and
+i }i /∈I . Finally, we obtain sk+1 and λk+1 by following:
+log(si) +
+Xi=1
+2 (cid:13)(cid:13)(cid:13)(cid:13)
+s + Axk+1 − b +
+λk+1 = λk + β(cid:16)Axk+1 + sk+1 − b(cid:17) .
+2# ,
+λk(cid:13)(cid:13)(cid:13)(cid:13)
+(5)
+(6)
+Remark 8. We assume that problem (4) can be solved exactly in theoretical analysis for convenience
+since it has been shown in [13] that this subproblem admits a closed-form solution for a few special
+nonconvex regularization function ri, e.g., SCAD [9] if Ai is an identity matrix and Xi = Rdi. However,
+the closed-form solution is generally intractable. As an alternative, some iterative methods can be used
+to approximately solve it. We refer the interested readers to [13] for more details.
+In what follows, we discuss the variable selection rules: cyclic and randomized.
+1. cyclic rule. Let I be the set of index selected at the k-th iteration of one inner loop, we have
+where k mod n is the remainder for k divided by n.
+I = {ik = k mod n},
+2. randomized rule. At each k-th iteration, the index i ∈ I is selected at random with probability
+pi > 0, i.e.,
+Prob (i ∈ I) = pi ≥ pmin > 0.
+Finally, we design a reasonable procedure to identify the tolerance ǫδ > 0. This procedure, also known as
+stopping criterion, is crucial for the performance of the proposed algorithm. In speciﬁc, it is unnecessary
+to obtain very accurate local solution when δ is large, which might take a lot of iterations. In what
+follows, we clarify the connection between ǫδ used in the stopping criterion and δ.
+Stopping Criterion: We repeat the inner loop of the splitting method until the following statements
+hold true,
+where C > 0 is set as a constant which is independent of δ.
+(cid:13)(cid:13)(cid:13)
+(cid:13)(cid:13)(cid:13)
+xk+1 − xk(cid:13)(cid:13)(cid:13)2 ≤ Cδ,
+Axk+1 + sk+1 − b(cid:13)(cid:13)(cid:13)2 ≤ Cδ,
+2.1 Discussion
+Firstly, we compare our method to some existing methods.
+1. Our method is greatly diﬀerent from stochastic alternating direction method (SADM) [28]. SADM
+randomly draw a subset of data samples at each iteration while our method randomly selects a
+subset of decision variables. In addition, the theoretical guarantee of SADM is established only
+when the objective is convex.
+2. Our method is related to the algorithm presented in [18]. However, the theoretical guarantee of
+that algorithm is only established only when applied to solve the nonconvex smooth consensus
+and sharing problems.
+3. Our method is related to the two variants of ADMM analyzed in [20], i.e., proximal ADMM-m and
+proximal ADMM-g. However, neither of these methods has a theoretical guarantee when applied
+to solve problem (1). In speciﬁc, problem (1) can be reformulated as
+min
+x∈X
+f (x) + r(x),
+s.t. Ax + s = b, s ≥ 0.
+The objective is nonsmooth with respect to x and s, which violates the conditions in [20].
+In
+addition, the computational cost of proximal ADMM-m and proximal ADMM-g is very expensive
+on high-dimensional problems.
+Secondly, we remark that the parameter setting varies from practical usage to theoretical analysis. For
+example, we prove in the next section that the iterates converge to an ǫ-stationary solution if β remains
+as a suﬃciently large constant. However, β should be adapted to accelerate the method and improve
+the practical performance.
+3 Main Result
+In this section, we present the convergence and iteration complexity analysis of the proposed algorithm
+with cyclic or randomized variable selection rule.
+3.1 Convergence
+We deﬁne a set of stationary solutions of problem (2), and prove that (¯x, ¯s) converges to one of the
+stationary solutions.
+Deﬁnition 3. We call (cid:0)xδ,∗, sδ,∗(cid:1) ∈ Rd× Rp to be an ǫδ-stationary solution of problem (2) if there exists
+λδ,∗ ∈ Rp such that the following statement holds true,
+sδ,∗
+j λδ,∗
+i λδ,∗, ∂ri(xδ,∗
+dist(cid:16)−∇if (xδ,∗) − A⊤
+(cid:13)(cid:13)(cid:13)
+(cid:13)(cid:13)(cid:13)
+Axδ,∗ + sδ,∗ − b(cid:13)(cid:13)(cid:13)2 ≤ ǫδ.
+i )(cid:17) ≤ ǫδ, i = 1, . . . , n,
+j − δ(cid:13)(cid:13)(cid:13)2 ≤ ǫδ, j = 1, . . . , p,
+The solution (cid:0)xδ,∗, sδ,∗(cid:1) is a stationary solution of problem (2) if ǫδ = 0 holds true.
+At a high-level, for any given δ > 0, (¯x, ¯s) can approximate(cid:0)xδ,∗, sδ,∗(cid:1) well as the inner loop goes. Since
+(cid:0)xδ,∗(cid:1) converges to x∗ as δ → 0, we can characterize the limiting behavior of our algorithm.
+Theorem 9. As δ → 0, we show that ¯x → x∗ deterministically or in terms of expectation for cyclic
+and randomized variable selection rules, where x∗ is a stationary solution of problem (1).
+3.2
+Iteration Complexity
+In this subsection, we analyze the iteration complexity of the proposed algorithm. Speciﬁcally, we use
+the measure of optimality in terms of variational inequality, instead of the closeness to the optimal
+solution, which is intractable in nonconvex optimization. The ǫ-stationary solution of problem (1) is
+regarded reached if the following statements both hold true,
+1. The smoothing parameter is smaller than the ﬁnal tolerance, i.e., δ < ǫ.
+2. The stopping criterion in each inner loop is satisﬁed deterministically or in terms of expectation
+for cyclic and randomized variable selection rules, respectively.
+Now we are ready to state our main result on the iteration complexity. Speciﬁcally, we show that the
+iteration number in inner loop, and O(log( 1
+proposed algorithm returns ǫ-stationary solution of problem (1) within O(cid:0) 1
+ǫ )) iterations in term of the iteration number in outer loop.
+Theorem 10. Suppose either cyclic or randomized variable selection rule is employed, the proposed IPFS
+algorithm returns an ǫ-stationary solution of problem (1) deterministically or in terms of expectation
+ǫ(cid:1) iterations in term of the
+for cyclic and randomized variable selection rules, respectively, within O(cid:0) 1
+iteration number in inner loop, and O(log( 1
+ǫ(cid:1) iterations in term of the
+ǫ )) iterations in term of the iteration number in outer loop.
+Table 1: Statistics of datasets.
+Dataset Number of Samples Dimension
+ohscal
+classic
+20news
+mnist
+a9a
+w8a
+SUSY
+11,162
+7,094
+16,242
+16,242
+32,561
+64,700
+5,000,000
+11,465
+41,681
+100
+100
+123
+300
+19
+Remark 11. We highlight the iteration complexity in order of O(cid:0) 1
+methods when applied to solve several non-convex problems. [3, 22]. In practice, a variety of large-scale
+artiﬁcial intelligence and machine learning applications requires the solution with low accuracy, i.e.,
+ǫ ≈ 10−3.
+ǫ(cid:1) is theoretical optimal for ﬁrst-order
+4 Experiments
+In this section, we evaluate the eﬃcacy of our algorithm on the linearly constrained nonconvex problem
+arising from machine learning. We compare our method with two well-known heuristic algorithms since
+the existing exact convergence method for problem (1) is unknown. More speciﬁcally, we consider the
+inexact augmented Lagrangian method (InexactALM) [16] and the proximal alternating direction method
+of multipliers (proximal ADMM-m) [20], which are referred to “heuristic” since the theoretical guarantees
+of these two methods are only valid on convex minimization and a class of nonconvex minimization.
+We conduct our experiments on the synthetic data in the ﬁrst task, named Constrained Concave Penal-
+ized Linear Regression [10], and on the real data in the second task, named Nonconvex Support Vector
+Machine [30]. The objective value is used as the metric in our experiments.
+4.1 Constrained Concave Penalized Linear Regression
+Problem: The problem of Constrained Concave Penalized Linear Regression (CCPLR) has been rec-
+ognized as one linearly constrained nonconvex nonsmooth program, which covers a few interesting
+applications in statistical learning and image processing. In speciﬁc, it is aiming at recovering a sparse
+signal x∗ ∈ Rd with s ≪ d non-zero components from the observation y ∈ Rn and b ∈ Rm, which are
+deﬁned as y = Ax∗ + ǫ1 and b = Cx∗ + ǫ2. Here A ∈ Rn×d and C ∈ Rm×d are measurement matrices,
+and ǫ1 ∈ Rm and ǫ2 ∈ Rn are white noises. Mathematically, it is deﬁned as:
+min
+x∈Rd
+2kAx − yk2
+2 + Pλ(x), s.t. Cx − b ≤ 0,
+(7)
+where Pλ(w) is deﬁned as:
+Pλ(w) = λkwk1 −
+Xi=1(cid:20) w2
+i − 2wi + λ2
+2(θ − 1)
+I(λ < wi ≤ θλ) + (λwi −
+(θ + 1)λ2
+)I(wi > θλ)(cid:21) .
+Settings: We generate A ∈ Rn×d with independent standard Gaussian entries and normalized it in
+column; We generate C ∈ Rm×d with independent standard Gaussian entries; ǫ1 ∼ N (0, σ2Id), and ǫ2
+contains independent random entries uniformly distributed in [0, σ], where σ = 0.1 or σ = 0.3. We select
+diﬀerent regularization parameters in {1.4, 1.6, 1.8, 2.0} to show that our algorithms are robust. We
+implement with the random initialization, and the terminate that the relative change of the consecutive
+objective function values is less than 10−7.
+Experimental results: Figure 1 shows the objective value as a function of time cost (in seconds)
+where σ = 0.1 and σ = 0.3. We observe that IPFS-Cyclic and IPFS-Randomized consistently outperform
+InexactALM and proximal ADMM-m on all datasets, especially when the dimension is high. This con-
+ﬁrms the advantage of our algorithms over InexactALM and proximal ADMM-m is the solid theoretical
+guarantee. Furthermore, IPFS-Randomized performs the best mainly because of its low per-iteration
+cost, strongly supporting the usage of randomized algorithms.
+4.2 Nonconvex Support Vector Machine
+Problem: The problem of NonConvex Support Vector Machine (NCSVM) is a very powerful binary
+classiﬁcation tool with high accuracy and great ﬂexibility. Mathematically, it is deﬁned as:
+min
+x∈Rd
+α1⊤ξ + Pλ(x), s.t. 1 − ξ − b · A⊤x ≤ 0, ξ ≤ 0,
+(8)
+where 1 ∈ Rn, and Pλ(w) is deﬁned as before.
+Settings: We set σ = 1.4, and vary the regularization parameter λ in {1.4, 1.6, 1.8, 2.0}. We use
+seven datasets123 to evaluate the proposed algorithm, where the statistics is presented in Table 1. The
+remaining setting is the same as that used in the CCPLR problem.
+Experimental results: Figure 2 shows the objective value as a funtion of time cost (in seconds). In-
+deed, our algorithms outperform InexactALM and proximal ADMM-m consistently, while IPFS-Randomized
+performs the best by a signiﬁcantly large margin on high-dimensional real data.
+5 Conclusions
+In this paper, we proposed a novel incremental path-following splitting algorithm, denoted as IPFS,
+to solve the linearly constrained nonconvex nonsmooth program, which abstracts quite a few machine
+learning applications. To the best of our knowledge, this is the ﬁrst incremental method developed for
+1http://www.csie.ntu.edu.tw/cjlin/libsvmtools/datasets/
+2https://www.shi-zhong.com/software/docdata.zip
+3www.cs.nyu.edu/roweis/data.html
+10
+Table 2: Performance comparison of the referred algorithms.
+Methods
+IPFS-R
+IPFS-C
+IALM
+proximal ADMM-m
+IPFS-R
+IPFS-C
+IALM
+proximal ADMM-m
+IPFS-R
+IPFS-C
+IALM
+proximal ADMM-m
+IPFS-R
+IPFS-C
+IALM
+proximal ADMM-m
+λ = 1.4
+(objective,time)
+(6265.58, 23.82)
+(6323.42, 40.09)
+(6345.11, 13.18)
+(6381.79, 4.68)
+λ = 1.6
+(objective,time)
+(7164.32, 23.26)
+(7226.43, 41.31)
+(7251.31, 13.30)
+(7282.70, 4.64)
+λ = 1.8
+(objective,time)
+(8066.46, 23.32)
+(8129.12, 41.15)
+(8157.26, 13.26)
+(8176.47, 4.31)
+λ = 2.0
+(objective,time)
+(8932.08, 23.16)
+(9031.59, 40.81)
+(9063.15, 12.65)
+(9053.72, 4.63)
+(6296.56, 20.28)
+(7167.99, 20.20)
+(8051.38, 20.49)
+(8961.63, 20.30)
+(6367.52, 43.83)
+(6388.92, 12.23)
+(6394.51, 4.73)
+(487.81, 24.29)
+(331.24, 44.99)
+(1791.67, 95.13)
+(965.95, 214.00)
+(527.80, 23.94)
+(550.85, 47.30)
+(907.07, 276.96)
+(1183.02, 152.83)
+(7276.89, 42.36)
+(7301.49, 12.38)
+(7288.24, 4.49)
+(10.54, 24.22)
+(8.13, 44.53)
+(1685.02, 320.12)
+(1100.06, 207.95)
+(32.32, 24.85)
+(9.20, 46.87)
+(11.24, 958.18)
+(8184.76, 43.74)
+(8213.84, 12.13)
+(8163.68, 4.80)
+(9.18, 23.97)
+(10.13, 44.85)
+(12.13, 233.88)
+(1230.22, 244.28)
+(10.131, 23.90)
+(10.17, 45.72)
+(15.21, 230.16)
+(1350.04, 184.68)
+(1513.66, 218.79)
+(9093.21, 43.51)
+(9125.88, 13.32)
+(9017.17, 4.67)
+(10.10, 23.99)
+(12.13, 44.76)
+(10.13, 106.33)
+(1359.44, 246.96)
+(11.37, 22.47)
+(12.19, 45.99)
+(18.21, 126.17)
+(1676.46, 264.80)
+(n, d)
+λ = 1.4
+λ = 1.6
+λ = 1.8
+λ = 2.0
+7000
+6900
+6800
+6700
+6600
+6500
+6400
+6300
+6200
+7000
+6900
+6800
+6700
+6600
+6500
+6400
+6300
+6200
+1600
+1400
+1200
+1000
+800
+600
+1600
+1400
+1200
+1000
+800
+600
+400
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+8000
+7800
+7600
+7400
+7200
+7000
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+9000
+8800
+8600
+8400
+8200
+8000
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+10000
+9800
+9600
+9400
+9200
+9000
+8800
+10
+12
+14
+16
+10
+12
+14
+16
+10
+12
+14
+10
+12
+14
+Time Cost
+Time Cost
+Time Cost
+Time Cost
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+8000
+7800
+7600
+7400
+7200
+7000
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+9000
+8800
+8600
+8400
+8200
+8000
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+10000
+9800
+9600
+9400
+9200
+9000
+8800
+10
+12
+14
+16
+10
+12
+14
+16
+10
+12
+14
+10
+12
+14
+16
+Time Cost
+Time Cost
+Time Cost
+Time Cost
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+10
+15
+Time Cost
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+10
+15
+Time Cost
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+2000
+1800
+1600
+1400
+1200
+1000
+800
+2000
+1800
+1600
+1400
+1200
+1000
+800
+600
+400
+200
+2200
+2000
+1800
+1600
+1400
+1200
+1000
+800
+2200
+2000
+1800
+1600
+1400
+1200
+1000
+800
+600
+400
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+2400
+2200
+2000
+1800
+1600
+1400
+1200
+1000
+800
+10
+15
+20
+10
+12
+14
+Time Cost
+Time Cost
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+IPFS-C
+IPFS-R
+InexactALM
+ADMM
+2400
+2200
+2000
+1800
+1600
+1400
+1200
+1000
+800
+600
+10
+15
+20
+Time Cost
+10
+15
+20
+Time Cost
+10
+15
+Time Cost
+10
+12
+14
+16
+Time Cost
+Figure 1: Comparison of IPFS-C (Cyclic variable selection rule) and IPFS-R (Randomized variable
+selection rule) with InexactALM and ADMM (proximal ADMM-m) on Constrained Concave Penalized
+Linear Regression.
+11
+Datasets
+λ = 1.4
+λ = 1.6
+λ = 1.8
+λ = 2.0
+×105
+×105
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+Time Cost
+×105
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+2.5
+1.5
+0.5
+3.5
+2.5
+1.5
+0.5
+2.5
+1.5
+0.5
+4.5
+3.5
+2.5
+1.5
+0.5
+×105
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+×105
+3.5
+2.5
+1.5
+0.5
+10
+15
+Time Cost
+10
+12
+14
+16
+Time Cost
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+×105
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+Time Cost
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+×105
+3.5
+2.5
+1.5
+0.5
+×105
+10
+20
+30
+40
+50
+10
+20
+30
+40
+50
+10
+20
+30
+40
+50
+60
+10
+20
+30
+40
+50
+60
+Time Cost
+Time Cost
+Time Cost
+105
+12
+10
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+105
+12
+10
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+200
+400
+600
+800
+Time Cost
+×104
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+100
+200
+300
+400
+500
+600
+700
+800
+Time Cost
+×104
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+105
+14
+12
+10
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+100
+200
+300
+400
+500
+600
+700
+Time Cost
+×104
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+Time Cost
+105
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+100
+200
+300
+400
+500
+600
+Time Cost
+18
+16
+14
+12
+10
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+×104
+10
+10
+15
+20
+25
+30
+35
+10
+15
+20
+25
+30
+10
+15
+20
+25
+30
+35
+40
+10
+15
+20
+25
+30
+Time Cost
+Time Cost
+Time Cost
+Time Cost
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+×104
+10
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+×104
+10
+10
+15
+20
+25
+10
+15
+20
+25
+10
+15
+20
+25
+Time Cost
+Time Cost
+Time Cost
+×104
+10
+×104
+10
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+20
+25
+Time Cost
+×106
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+100
+200
+300
+400
+500
+600
+Time Cost
+700
+800
+900
+×106
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+100
+200
+300
+400
+500
+600
+Time Cost
+700
+800
+900
+×104
+2.5
+1.5
+0.5
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+Time Cost
+×104
+2.5
+1.5
+0.5
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+Time Cost
+×106
+×104
+2.5
+1.5
+0.5
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+200
+400
+600
+Time Cost
+800
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+Time Cost
+×106
+8.5
+7.5
+6.5
+5.5
+×104
+2.5
+1.5
+0.5
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+200
+400
+600
+800
+Time Cost
+IPFS-C
+IPFS-R
+ADMM
+InexactALM
+10
+15
+Time Cost
+Figure 2: Comparison of IPFS-C (Cyclic variable selection rule) and IPFS-R (Randomized variable
+selection rule) with InexactALM and ADMM (proximal ADMM-m) on Nonconvex Support Vector Ma-
+chine.
+12
+solving problem (1) with a theoretical guarantee. Furthermore, the cyclic and randomized block variable
+selection rules signiﬁcantly improve the eﬃciency of the proposed algorithm on high-dimensional data,
+as conﬁrmed by our experiments on nonconvex penalized linear regression and support vector machine
+tasks.
+References
+[1] Y. Bengio. Learning deep architectures for ai. Foundations and trends R(cid:13) in Machine Learning,
+2(1):1–127, 2009.
+[2] D. P. Bertsekas and J. N. Tsitsiklis. Parallel and Distributed Computation: Numerical Methods,
+volume 23. Prentice hall Englewood Cliﬀs, NJ, 1989.
+[3] C. Cartis, N. I. M. Gould, and P. L. Toint. On the complexity of steepest descent, newton’s and
+regularized newton’s methods for nonconvex unconstrained optimization problems. SIAM journal
+on optimization, 20(6):2833–2852, 2010.
+[4] P. L. Combettes and J-C. Pesquet. Stochastic quasi-fej´er block-coordinate ﬁxed point iterations
+with random sweeping. SIAM Journal on Optimization, 25(2):1221–1248, 2015.
+[5] Q. T. Dinh, A. Kyrillidis, and V. Cevher. An inexact proximal path-following algorithm for con-
+strained convex minimization. SIAM Journal on Optimization, 24(4):1718–1745, 2014.
+[6] Q. T. Dinh, I. Necoara, C. Savorgnan, and M. Diehl. An inexact perturbed path-following method
+for lagrangian decomposition in large-scale separable convex optimization. SIAM Journal on Op-
+timization, 23(1):95–125, 2013.
+[7] J. Eckstein and D. P. Bertsekas. On the douglas-rachford splitting method and the proximal point
+algorithm for maximal monotone operators. Mathematical Programming, 55(1):293–318, 1992.
+[8] S. Ertekin, L. Bottou, and C. L. Giles. Nonconvex online support vector machines. IEEE Trans-
+actions on Pattern Analysis and Machine Intelligence, 33(2):368–381, 2011.
+[9] J. Fan and R. Li. Variable selection via nonconcave penalized likelihood and its oracle properties.
+Journal of the American statistical Association, 96(456):1348–1360, 2001.
+[10] E. X. Fang, B. He, H. Liu, and X. Yuan. Generalized alternating direction method of multipliers:
+New theoretical insights and applications. Mathematical Programming Computation, 7(2):149–187,
+2015.
+[11] J. Friedman, T. Hastie, and R. Tibshirani. The Elements of Statistical Learning, volume 1. Springer
+series in statistics Springer, Berlin, 2001.
+[12] M. L. N. Gon¸calves, J. G. Melo, and R. D. C. Monteiro. Convergence rate bounds for a proximal
+admm with over-relaxation stepsize parameter for solving nonconvex linearly constrained problems.
+ArXiv Preprint: 1702.01850, 2017.
+[13] P. Gong, C. Zhang, Z. Lu, J. Huang, and J. Ye. A general iterative shrinkage and thresholding
+algorithm for non-convex regularized optimization problems. In ICML, pages 37–45, 2013.
+13
+[14] C. C. Gonzaga. Path-following methods for linear programming. SIAM review, 34(2):167–224,
+1992.
+[15] E. Hazan, K. Y. Levy, and S. Shalev-Shwartz. On graduated optimization for stochastic non-convex
+problems. In ICML, pages 1833–1841, 2016.
+[16] B. He, H.-K. Xu, and X. Yuan. On the proximal jacobian decomposition of alm for multiple-
+block separable convex minimization problems and its relationship to admm. Journal of Scientiﬁc
+Computing, 66(3):1204–1217, 2016.
+[17] G. E. Hinton, S. Osindero, and Y-W. Teh. A fast learning algorithm for deep belief nets. Neural
+Computation, 18(7):1527–1554, 2006.
+[18] M. Hong, Z-Q. Luo, and M. Razaviyayn. Convergence analysis of alternating direction method of
+multipliers for a family of nonconvex problems. SIAM Journal on Optimization, 26(1):337–364,
+2016.
+[19] G. M. James, C. Paulson, and P. Rusmevichientong. The constrained lasso. Technical report,
+University of Southern California, 2012.
+[20] B. Jiang, T. Lin, S. Ma, and S. Zhang. Structured nonconvex and nonsmooth optimization: Algo-
+rithms and iteration complexity analysis. ArXiv Preprint 1605.02408, 2016.
+[21] P-L. Lions and B. Mercier. Splitting algorithms for the sum of two nonlinear operators. SIAM
+Journal on Numerical Analysis, 16(6):964–979, 1979.
+[22] D. C. Liu and J. Nocedal. On the limited memory bfgs method for large scale optimization.
+Mathematical programming, 45(1-3):503–528, 1989.
+[23] S. Lu, M. Hong, and Z. Wang. A nonconvex splitting method for symmetric nonnegative matrix
+factorization: Convergence analysis and optimality. IEEE Transactions on Signal Processing, 2017.
+[24] S. Lu, M. Hong, and Z. Wang. A stochastic nonconvex splitting method for symmetric nonnegative
+matrix factorization. In AISTATS, pages 812–821, 2017.
+[25] J. G. Melo and R. D. C. Monteiro. Iteration-complexity of a jacobi-type non-euclidean admm for
+multi-block linearly constrained nonconvex programs. ArXiv Preprint: 1705.07229, 2017.
+[26] Y. Nesterov and A. Nemirovskii.
+Interior-point polynomial algorithms in convex programming.
+SIAM, 1994.
+[27] J. Nocedal and S. Wright. Numerical Optimization. Springer Science & Business Media, 2006.
+[28] H. Ouyang, N. He, L. Tran, and A. Gray. Stochastic alternating direction method of multipliers.
+In ICML, pages 80–88, 2013.
+[29] D. P. Palomar and M. Chiang. A tutorial on decomposition methods for network utility maximiza-
+tion. Selected Areas in Communications, IEEE Journal on, 24(8):1439–1451, 2006.
+[30] B. Peng. Methodologies and Algorithms on Some Non-convex Penalized Models for Ultra High
+Dimensional Data. Thesis, University of Minnesota, 2016.
+14
+[31] J. Renegar. A mathematical view of interior-point methods in convex optimization. SIAM, 2001.
+[32] Y. Wang, W. Yin, and J. Zeng. Global convergence of admm in nonconvex nonsmooth optimization.
+ArXiv Preprint 1511.06324, 2015.
+[33] L. Xiao, M. Johansson, and S. P. Boyd. Simultaneous routing and resource allocation via dual
+decomposition. Communications, IEEE Transactions on, 52(7):1136–1144, 2004.
+A Proof of Theorem 9
+We ﬁrstly construct a potential function Φ(x, s, λ) and present a key technical lemma which guarantees
+k=0 is non-
+increasing and lower bounded under some conditions of the penalty parameter β > 0. The potential
+function Φ(x, s, λ) is deﬁned as
+that, when optimizing δ-smoothed version, i.e., problem (2), the sequence of (cid:8)Φ(xk, sk, λk)(cid:9)+∞
+Φ(x, s, λ) = f (x) + r(x) − δ
+Xj=1
+log(sj) + hλ, Ax + s − bi +
+2 kAx + s − bk2
+2 ,
+where δ > 0 is a given smoothing parameter, and β > 0 is a penalty parameter chosen according to δ.
+A.1 Proof of Technical Lemmas
+Lemma 12. When optimizing the δ-smoothed version, there exists s > 0. If the following statement
+holds true,
+√2δ
+s2 ,
+β >
+k=0 is non-increasing and lower bounded. Therefore, we conclude that
+then a sequence of (cid:8)Φ(xk, sk, λk)(cid:9)+∞
+Φ(xk, sk, λk) → Φ∗, and (cid:13)(cid:13)Axk+1 + sk+1 − b(cid:13)(cid:13)2 → 0, (cid:13)(cid:13)xk+1 − xk(cid:13)(cid:13)2 → 0 and (cid:13)(cid:13)sk+1 − sk(cid:13)(cid:13)2 → 0 as k →
+∞, deterministically and almost surely for cyclic and randomized variable selection rules, respectively.
+Furthermore, a sequence of (cid:8)(cid:0)xk, sk, λk(cid:1)(cid:9)+∞
+Proof. It follows from the update of {xk+1
+k=0 remains bounded.
+}i∈I , {xk+1
+}i /∈I that
+(9)
+(10)
+Φ(xk, sk, λk) − Φ(xk+1, sk, λk) ≥
+Furthermore, Φ(xk+1, s, λk) is strongly convex with respect to s, and hence by using the update of sk+1,
+we have
+Φ(xk+1, sk, λk) − Φ(xk+1, sk+1, λk) ≥
+Finally, by using the update of λk+1, we have
+Φ(xk+1, sk+1, λk) − Φ(xk+1, sk+1, λk+1) = −
+(11)
+xk
+i − xk+1
+2Xi∈I (cid:13)(cid:13)(cid:13)
+(cid:13)(cid:13)(cid:13)
+2 (cid:13)(cid:13)(cid:13)
+sk − sk+1(cid:13)(cid:13)(cid:13)
+β (cid:13)(cid:13)(cid:13)
+λk − λk+1(cid:13)(cid:13)(cid:13)
+15
+In what follows, we try to show that there exists s > 0 such that sk
+that {sk}+∞
+sk+1
+j λk+1
+exists ¯λ > 0 such that λk
+j ≥ s for i = 1, 2, . . . , p. It is clear
+j=1 log(sj) is strictly convex. Firstly, we obtain that
+= δ through combining the update of sk+1 and λk+1. Then we suﬃce to show that there
+k=1 is a bounded sequence since −Pp
+j ≤ ¯λ. In speciﬁc, we have
+∂ri(xk+1
+1, . . . , xk
+N ) − A⊤
+= −∇if (xk
+) ∋ −∇if (xk
+i 
+i(cid:17) − βA⊤
+Xj≤i
+i (cid:16)sk+1 − sk(cid:17)
+i(cid:17) − βA⊤
+N ) − A⊤
+For i = 1, 2, . . . , n, we obtain that A⊤
+k=1 is a bounded sequence, Xi and the
+set of generalized gradient of ri are both bounded sets. Without loss of generality, A = [A1 A2 . . . AN ]
+j ≤ ¯λ for some ¯λ > 0. Therefore, we have
+is assumed to be full row rank, which leads to the fact that λk
+(12)
+i λk − (Li + 1)(cid:16)xk+1
+i − xk
+i λk+1 − (Li + 1)(cid:16)xk+1
+i − xk
+i λk is bounded since {sk}+∞
+j +Xj>i
+1, . . . , xk
+Ajxk+1
+Ajxk
+j + sk − b
+Finally, we combine (10), (11) and (12) to obtain that
+(cid:13)(cid:13)(cid:13)
+λk − λk+1(cid:13)(cid:13)(cid:13)2
+=(cid:13)(cid:13)(cid:13)(cid:13)
+sk −
+sk+1(cid:13)(cid:13)(cid:13)(cid:13)2 ≤
+2Xi∈I (cid:13)(cid:13)(cid:13)
+s2 (cid:13)(cid:13)(cid:13)
+sk − sk+1(cid:13)(cid:13)(cid:13)2
++(cid:18) β
+(cid:13)(cid:13)(cid:13)
+2 −
+Φ(xk, sk, λk) − Φ(xk+1, sk+1, λk+1) ≥
+i − xk+1
+xk
+µ2
+βs4(cid:19)(cid:13)(cid:13)(cid:13)
+sk − sk+1(cid:13)(cid:13)(cid:13)
+(13)
+Furthermore, the function Φ(cid:0)xk, sk, λk(cid:1) has been shown lower bounded in [20], i.e., there exists Φ∗ ∈ R
+such that Φ(xk, sk, λk) ≥ Φ∗. For cyclic variable selection rule, it holds deterministically that,
+(cid:13)(cid:13)(cid:13)
+xk − xk+1(cid:13)(cid:13)(cid:13)2
+=sXi∈I (cid:13)(cid:13)(cid:13)
+(cid:13)(cid:13)(cid:13)
+i − xk+1
+xk
+2 → 0, as k → +∞.
+For randomized variable selection rule, we take the conditional expectation over both sides of (13) and
+obtain that
+E"Xi∈I (cid:13)(cid:13)(cid:13)
+Xi=1(cid:20)(cid:13)(cid:13)(cid:13)
+i − xk+1
+xk
+2# .
+(cid:13)(cid:13)(cid:13)
+2(cid:21) ≥ 0,
+(cid:13)(cid:13)(cid:13)
+Φ(xk, sk, λk) − EhΦ(xk+1, sk+1, λk+1) | (xk, sk, λk)i ≥
+Since pi ≥ pmin for i = 1, 2, . . . , N , we have
+Φ(xk, sk, λk) − EhΦ(xk+1, sk+1, λk+1) | (xk, sk, λk)i ≥
+pmin
+i − ˜xk+1
+xk
+that,
+k=0
+is a super-martingale with respect to the natural history; and by the super-martingale convergence
+k=0 converges almost surely. Therefore, it also surely holds true
+where ˜xk+1 is a “virtual” iterate assuming that all variables are updated once. Thus(cid:8)Φ(xk, sk, λk)(cid:9)+∞
+theorem, the sequence (cid:8)Φ(xk, sk, λk)(cid:9)+∞
+Similarly, we obtain that (cid:13)(cid:13)sk+1 − sk(cid:13)(cid:13)2 → 0 and (cid:13)(cid:13)Axk+1 + sk+1 − b(cid:13)(cid:13)2 = 1
++∞ deterministically and almost surely for cyclic and randomized variable selection rules, respectively.
+This completes the proof.
+(cid:13)(cid:13)(cid:13)
+xk − xk+1(cid:13)(cid:13)(cid:13)2 → 0, as k → +∞.
+β (cid:13)(cid:13)λk − λk+1(cid:13)(cid:13)2 → 0 as k →
+16
+From Lemma 12, it is easy to see that the stopping criterion must be satisﬁed. Then we present a lemma
+which guarantees that, ¯x ∈ Rd approaches one local solution to problem (2), where the Lagrangian
+function is deﬁned as
+Lδ (x, s, λ) = f (x) + r(x) − δ
+Xi=1
+log(si) + hλ, Ax + s − bi .
+Lemma 13. Let (¯x, ¯s) satisﬁes the stopping criterion deterministically and almost surely for cyclic and
+randomized variable selection rules, respectively. Then (¯x, ¯s) is an δ-stationary solution of problem (2).
+That is to say, there exists ¯λ ∈ Rp such that the following statement holds true,
+dist(cid:16)−∇if (¯x) − A⊤
+¯λ, ∂ri(¯xi)(cid:17) ≤ δ, i = 1, . . . , n,
+(cid:13)(cid:13)¯sj ¯λj − δ(cid:13)(cid:13)2 ≤ δ, j = 1, . . . , p,
+kA¯x + ¯s − bk2 ≤ δ,
+deterministically for cyclic variable selection rule and
+Ehdist(cid:16)−∇if (¯x) − A⊤
+¯λ, ∂ri(¯xi)(cid:17)i ≤ δ, i = 1, . . . , n,
+E(cid:2)(cid:13)(cid:13)¯sj ¯λj − δ(cid:13)(cid:13)2(cid:3) ≤ δ, j = 1, . . . , p,
+E [kA¯x + ¯s − bk2] ≤ δ,
+for randomized variable selection rule.
+Proof. When optimizing a δ-smoothed version, the ﬁrst-order optimality condition for (xk+1, sk+1, λk+1)
+is
+i − xk+1
+xk
+(cid:13)(cid:13)(cid:13)2
+ ,
+j λk+1
+= δ for 1 ≤ j ≤ p.
+It
+j − xk+1
+xk
+i λk+1, ∂ri(xk+1
+Xj=1
+1≤i≤n{diam(Xi)}.
+)(cid:17) ≤ D
+dist(cid:16)−∇if (xk+1) − A⊤
+where i ∈ I and D = max
+(cid:13)(cid:13)(cid:13)2
+kAjk2(cid:13)(cid:13)(cid:13)
+ + (2Li + 1)(cid:13)(cid:13)(cid:13)
+β (cid:13)(cid:13)λk − λk+1(cid:13)(cid:13)2 and sk+1
+Furthermore, we have (cid:13)(cid:13)Axk+1 + sk+1 − b(cid:13)(cid:13)2 = 1
+follows from Lemma 12 that there exists suﬃciently large ¯K > 0 such that, for k ≥ ¯K, we have
+(cid:13)(cid:13)(cid:13)2
+(cid:13)(cid:13)(cid:13)2
+ + (Li + 1)(cid:13)(cid:13)(cid:13)
+xk
+j − xk+1
+xk
+i − xk+1
+ ≤ δ,
+β (cid:13)(cid:13)(cid:13)
+λk − λk+1(cid:13)(cid:13)(cid:13)2 ≤ δ,
+(cid:13)(cid:13)(cid:13)2
+ + (Li + 1)(cid:13)(cid:13)(cid:13)
+ ≤ δ,
+E(cid:13)(cid:13)(cid:13)
+λk − λk+1(cid:13)(cid:13)(cid:13)2 ≤ δ,
+for cyclic variable selection rule, and
+E
+D
+kAjk2(cid:13)(cid:13)(cid:13)
+kAjk2(cid:13)(cid:13)(cid:13)
+Xj=1
+Xj=1
+(cid:13)(cid:13)(cid:13)2
+j − xk+1
+xk
+i − xk+1
+xk
+D
+17
+for randomized variable selection rule. In this case, the stopping criterion is satisﬁed, and hence the
+In conclusion, we obtain that
+above inequality holds for (cid:0)¯x, ¯s, ¯λ(cid:1) when optimizing δ-smoothed version.
+¯λ, ∂ri(¯xi)(cid:17) ≤ δ, i = 1, . . . , n,
+¯sj ¯λj − δ = 0, j = 1, . . . , p,
+kA¯x + ¯s − bk2 ≤ δ,
+dist(cid:16)−∇if (¯x) − A⊤
+for cyclic variable selection rule, and
+Ehdist(cid:16)−∇if (¯x) − A⊤
+¯λ, ∂ri(¯xi)(cid:17)i ≤ δ, i = 1, . . . , n,
+E(cid:2)¯sj ¯λj − δ(cid:3) = 0, j = 1, . . . , p,
+E [kA¯x + ¯s − bk2] ≤ δ,
+for randomized variable selection rule.
+A.2 Proof of Theorem
+Since a sequence of (¯x, ¯s) remains bounded as δ decreases, the set of the limiting points is non-empty.
+We consider a sub-sequence of (¯x, ¯s) indexed by {kl}+∞
+l=1 which converges to (x∗, s∗). By using Lemma
+13, we conclude that, there exists ¯λ ∈ Rp such that (¯x, ¯s) indexed by kl satisﬁes that
+dist(cid:16)−∇if (¯x) − A⊤
+¯λ, ∂ri(¯xi)(cid:17) ≤ (γ)klδ0, i = 1, . . . , n,
+¯sj ¯λj − (γ)klδ0(cid:13)(cid:13)(cid:13)2 ≤ (γ)klδ0, j = 1, . . . , p,
+kA¯x + ¯s − bk2 ≤ (γ)klδ0,
+(cid:13)(cid:13)(cid:13)
+deterministically for cyclic variable selection rule and
+Ehdist(cid:16)−∇if (¯x) − A⊤
+¯λ, ∂ri(¯xi)(cid:17)i ≤ (γ)klδ0, i = 1, . . . , n,
+¯sj ¯λj − (γ)klδ0(cid:13)(cid:13)(cid:13)2i ≤ (γ)klδ0, j = 1, . . . , p,
+E [kA¯x + ¯s − bk2] ≤ (γ)klδ0,
+Eh(cid:13)(cid:13)(cid:13)
+for randomized variable selection rule. Here δ0 is the initial smoothing parameter. We know that
+(γ)kl → 0 as l → +∞ since γ ∈ (0, 1). Therefore, we conclude that x∗ is a stationary solution of
+problem (1) deterministically for cyclic variable selection rule and in terms of expectation for randomized
+variable selection rule. This completes the proof.
+18
+B Proof of Theorem 10
+B.1 Proof of Technical Lemma
+We present a technical lemma to show the number of iterations required to reach the stopping criterion
+when optimizing δ-smoothed version of problem (1), i.e., problem (2). Speciﬁcally, this number is
+disproportionate to the value of δ, which makes a lot of sense since problem (2) becomes harder as
+δ → 0.
+Lemma 14. Suppose cyclic or randomized variable selection rule is employed for optimizing δ-smoothed
+version, i.e., problem (2), the stopping criterion is satisﬁed deterministically or in terms of expectation,
+respectively, within O( 1
+δ ) iterations.
+Proof. From Lemma 13, it suﬃces to show that, there exists C > 0 such that, if k ≥ C
+statement holds true,
+δ , the following
+D
+Xj=1
+kAjk2(cid:13)(cid:13)(cid:13)
+j − xk+1
+xk
+for cyclic variable selection rule, and
+E
+D
+Xj=1
+kAjk2(cid:13)(cid:13)(cid:13)
+j − xk+1
+xk
+i − xk+1
+xk
+(cid:13)(cid:13)(cid:13)2
+(cid:13)(cid:13)(cid:13)2
+ + (Li + 1)(cid:13)(cid:13)(cid:13)
+ ≤ δ,
+β (cid:13)(cid:13)(cid:13)
+λk − λk+1(cid:13)(cid:13)(cid:13)2 ≤ δ,
+(cid:13)(cid:13)(cid:13)2
+ + (Li + 1)(cid:13)(cid:13)(cid:13)
+E(cid:13)(cid:13)(cid:13)
+ ≤ δ,
+λk − λk+1(cid:13)(cid:13)(cid:13)2 ≤ δ,
+(cid:13)(cid:13)(cid:13)2
+i − xk+1
+xk
+for randomized variable selection rule.
+It follows from Lemma 12 that, for ∀K ≥ 1, we have
+Φ(cid:0)x0, s0, λ0(cid:1) − Φ∗ ≥
+Xk=0
+2 Xi∈Ik+1(cid:13)(cid:13)(cid:13)
+xk
+i − xk+1
++(cid:18) βs2
+2µ −
+(cid:13)(cid:13)(cid:13)
+βs2(cid:19)(cid:13)(cid:13)(cid:13)
+λk − λk+1(cid:13)(cid:13)(cid:13)
+2
+ ,
+(14)
+where Ik is denoted as the active set chosen at the k-th iteration of the inner loop when optimizing
+δ-smoothed version.
+Combining the fact that
+yields that the iteration complexity is O( 1
+δ ). By using similar technique, we can obtain the same
+(cid:13)(cid:13)(cid:13)
+xk − xk+1(cid:13)(cid:13)(cid:13)
+= Xi∈Ik+1(cid:13)(cid:13)(cid:13)
+i − xk+1
+xk
+(cid:13)(cid:13)(cid:13)
+19
+complexity for randomized variable selection rule, where it holds true that
+j − xk+1
+xk
+kAjk2(cid:13)(cid:13)(cid:13)
+D
+E
+Xj=1
+This completes the proof.
+B.2 Proof of Theorem
+i − xk+1
+xk
+(cid:13)(cid:13)(cid:13)2
+ + (Li + 1)(cid:13)(cid:13)(cid:13)
+E(cid:13)(cid:13)(cid:13)
+(cid:13)(cid:13)(cid:13)2
+ ≤ δ,
+λk − λk+1(cid:13)(cid:13)(cid:13)2 ≤ δ.
+On one hand, it is clear to derive from δ ← γδ that δ ≤ ǫ is satisﬁed within O(log( 1
+ǫ )) iterations in term
+of the iteration number in outer loop. On the other hand, by using Lemma 14, we obtain the iterations
+required in term of the iteration number in inner loop is
+T =
+log( 1
+ǫ )
+Xk=0
+γkδ0
+δ0
+ǫ − 1
+γ − 1 ≤
+Cγ
+δ0 − γδ0
+which implies that the iterations required in term of the iteration number in inner loop is O( 1
+completes the proof.
+ǫ ). This
+20

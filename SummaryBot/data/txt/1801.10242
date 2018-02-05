@@ -1,0 +1,1044 @@
+Low-rank Bandit Methods for
+High-dimensional Dynamic Pricing
+Jonas Mueller
+MIT CSAIL∗
+Vasilis Syrgkanis
+Microsoft Research
+Matt Taddy
+Chicago Booth∗
+jonasmueller@csail.mit.edu
+vasy@microsoft.com
+taddy@chicagobooth.edu
+Abstract
+We consider high dimensional dynamic multi-product pricing with an evolving
+but low-dimensional linear demand model. Assuming the temporal variation in
+cross-elasticities exhibits low-rank structure based on ﬁxed (latent) features of the
+products, we show that the revenue maximization problem reduces to an online
+bandit convex optimization with side information given by the observed demands.
+We design dynamic pricing algorithms whose revenue approaches that of the best
+ﬁxed price vector in hindsight, at a rate that only depends on the intrinsic rank of
+the demand model and not the number of products. Our approach applies a bandit
+convex optimization algorithm in a projected low-dimensional space spanned by the
+latent product features, while simultaneously learning this span via online singular
+value decomposition of a carefully-crafted matrix containing the observed demands.
+1.
+Introduction
+In this work, we consider a seller oﬀering N products, where N is very large, and the
+pricing of certain products may inﬂuence the demand for others in unknown ways. We
+let pt P RN denote the vector of selected prices at which each product is sold during time
+period t P t1, . . . , Tu, which results in total demands for the products over this period
+represented in the vector qt P RN . Note that qt represents a (noisy) evaluation of the
+aggregate demand curve at the chosen prices pt, but we never observe the counterfactual
+demand that would have resulted had we selected a diﬀerent price-point. This is referred
+to as bandit feedback in the online optimization literature [1]. Our goal is ﬁnd a setting
+of the prices for each time period to maximize the total revenue of the seller (over all
+rounds). This is equivalent to minimizing the negative revenue over time:
+Rtpptq where Rtpptq “ ´xqt, pty
+(1)
+Rpp1, . . . , pTq “ Tÿ
+t“1
+∗Work done in part while the author was at Microsoft Research
+We can alternatively maximize total proﬁts instead of revenue by simply redeﬁning pt as
+the diﬀerence between the product-prices and the cost of each product-unit. In practice,
+the seller can only consider prices within some constraint set S Ă RN , which we assume is
+convex throughout. To ﬁnd the optimal prices, we introduce the following linear model of
+the aggregate demands, which is allowed to change over time in a nonstationary fashion:
+qt “ ct ´ Btpt ` t
+(2)
+Here, ct P RN denotes the baseline demand for each product in round t. Bt P RNˆN is
+an asymmetric matrix of demand elasticities which represents how changing the price of
+one product may aﬀect the demand of not only this product, but also demand for other
+products as well. By conventional economic wisdom, Bt will have the largest entries along
+its diagonal because demand for a product is primarily driven by its price rather than
+the price of other possibly unrelated products. Since a price increase usually leads to
+falling demand, it is reasonable to assume all Bt ľ 0 are positive semi-deﬁnite (but not
+necessarily Hermitian), which implies that at each round: Rt is a convex function of pt.
+The observed aggregate demands over each time period are additionally subject to random
+ﬂuctuations driven by the noise term t P RN , and we use  to represent the full set of
+random eﬀects t1, . . . , Tu. Throughout, we suppose the noise in each round t is sampled
+i.i.d. from some mean-zero distribution with ﬁnite variance. A wealth of past work on
+dynamic pricing has posited similar demand models, although most existing research has
+not considered settings where the underlying model is changing over time [2, 3, 4, 5, 6].
+Unlike standard statistical (or predictive) approaches to this pricing problem which
+rely on stationary formulations, we allow ct, Bt to change in each round and they may even
+be adversarially chosen. This consideration is particularly important in dynamic markets
+where the seller faces new competitors and consumers with ever-changing preferences who
+are actively seeking out the cheapest prices for products [7]. Our goal is to select prices
+p1, . . . , pT which minimize the expected regret ErRpp1, . . . , pTq ´ Rpp˚, . . . , p˚qs com-
+pared to always selecting the single best conﬁguration of the prices p˚ “ argmin
+Rtppq
+pPS
+chosen in hindsight after the functions Rt have all been revealed.
+Tÿ
+t“1
+Low regret algorithms ensure that in the case of a stationary underlying model, our
+chosen prices quickly converge to the optimal choice, and in nonstationary settings, our
+pricing procedure will naturally adapt to the intrinsic diﬃculty of the dynamic revenue-
+optimization problem without being overly conservative [8]. While low (ie. opTq) regret
+regret of existing methods is bounded below by Ωp?
+is achievable using algorithms for online convex optimization with bandit feedback, the
+Nq, which is undesirable large when
+one is dealing with a vast number of products [1, 8, 9]. To attain better bounds, we
+adopt a low-rank structural assumption that the variation in demands changes over time
+only due to d ! N underlying factors. Under this setting, we develop algorithms whose
+regret depends only on d rather than N by combining existing bandit methods with low-
+dimensional projections selected via online singular value decomposition. The primary
+contributions of this work include:
+• A nonstationary formulation of dynamic pricing as an online convex optimization
+with bandit feedback and side-information in the observed demands
+• A low-rank model of high-dimensional demands based on (latent) product features
+• Eﬃcient algorithms that enable low-regret dynamic pricing in high-dimensional,
+nonstationary (adversarial) settings, while simultaneously revealing product features
+As far as we are aware, our main result (Theorem 4) is the ﬁrst online bandit optimization
+algorithm whose regret does not scale with the ambient dimensionality of the action space.
+2. Related Work
+While numerous bandit optimization techniques have been successfully applied to dynamic
+pricing problems, research in this area has been primarily restricted to the stationary
+setting [2, 4, 10, 11, 12, 13]. Most similar to our work, Javanmard [6] recently developed
+a bandit pricing-method where they also assume demand depends linearly on prices and
+product-speciﬁc features. Like most of the literature in this area, their work does not
+consider the more realistic setting where the demands for a product may depend (in a
+time-varying fashion) on the price and features of the other products. As previously
+mentioned, the use of standard bandit algorithms in such settings will scale poorly for
+sellers who wish to price a vast number of related products [1]. High-dimensional dynamic
+pricing was recently considered in [5], who employ a sparse maximum likelihood framework
+that presumes stationarity of the underlying model and is thus far less robust in adversarial
+environments in comparison to online optimization algorithms, which come equipped with
+strong performance guarantees.
+More generally, existing algorithms that combine bandits with low-dimensional sub-
+space estimation [14, 15] are only designed for stationary settings rather than the full
+online optimization problem (where the underlying reward function is allowed to vary
+over time). While the ﬁeld of online bandit optimization has seen many advances since
+the pioneering work of Flaxman et al. [9], none of the recent improvements achieves regret
+that is independent of the dimensionality of the action-space [16, 17]. To our knowledge,
+Hazan et al. [18] is the only existing work to present online convex optimization algo-
+rithms whose regret depends on an intrinsic low rank structure rather than the ambient
+dimension. However, their approach is not suited for dynamic pricing since it is restricted
+to settings with:
+full-information (rather than bandit feedback), linear and noise-free
+(or stationary) reward functions, and actions that are specially constrained within the
+probability-simplex.
+3. Low-rank Model
+We now introduce a model in which both ct and Bt in (2) display only low-rank changes
+over time. In practice, each product i may be described by some vector of features ui P Rd
+(where presumably d ! N ), which can be used to determine the similarity between
+products as well as their baseline demands. Traditionally, a natural method to gauge
+the underlying similarity between products i and j is via their inner product xui, ujyV “
+i Vuj under some linear transformation of the feature-space given by V ľ 0. For
+uT
+example, ui might be a binary vector indicating that product i falls into certain product-
+categories (where the number of categories d is far less than the number of products N ),
+and V might be a diagonal matrix specifying the cross-elasticity of demand within each
+i Vuj ¨ pj would thus be the marginal eﬀect on the
+product category. In this example, uT
+demand for product i that results from selecting pj as the price for product j.
+By introducing time-varying metric transformations Vt, our model allows these
+product-similarities to evolve over time. Given the features ui that represent each prod-
+uct, we assume the following demand model, in which the variation over time naturally
+exhibits low-rank structure:
+qt “ Uzt ´ UVtUT pt ` t
+(3)
+Here, the rows of U P RNˆd contain the featurization of each of our N products, the t
+represent random noise in the observed demands, zt P Rd explain the variation in baseline-
+demand over time, and the (asymmetric) matrices Vt P Rdˆd specify latent changes in
+the demand-price relationship over time. Under this model, the aggregate demand for
+product i at time t is governed by the prices of all products, weighted by their current
+feature-similarity to product i. To ensure our revenue-optimization remains convex, we
+restrict the adversary to choices that satisfy Vt ľ 0 for all t. Note that while the
+structural variation in our model is assumed to be low-rank, the noise in the observed
+demands may be fundamentally N -dimensional. In each round, pt and qt are the only
+quantities observed, while t, zt, Vt all remain unknown (and we consider both cases where
+the product features U are known or unknown).
+4. Methods
+Our basic dynamic pricing strategy is to employ the gradient-descent without a gradient
+(GDG) online bandit optimization technique of [9]. While a naive application of this
+algorithm produces regret dependent on the number of products N , we ensure the updates
+of this method are only applied in the d-dimensional subspace spanned by U, which leads
+to regret bounds that depend only on d rather than N . When U is unknown, this subspace
+is simultaneously estimated online, in a somewhat similar fashion to the approach of [18]
+for online learning with low-rank experts. If we deﬁne x “ UT p P Rd, then under the
+low-rank model in (3) with Erts “ 0, the expected value of our revenue-objective in round
+t can be expressed as:
+ErRtppqs “ pT UVtUT p ´ pT Uzt
+“ xT Vtx ´ xT zt :“ ftpxq
+(4)
+Thus, the intrinsic dimensionality of the problem is only d, and we can maximize expected
+revenues by merely considering a restricted set of d-dimensional actions x and functions
+ft over the projected constraint set:
+(5)
+(cid:32)
+UTpSq “
+x P Rd : x “ UT p for some p P S
+5. Dynamic Pricing with Known Product Features
+In certain markets, it is clear how to featurize products [4]. Under the low-rank model
+in (3) when U is given, we can apply the OPO-K method (Algorithm 1) below to select
+prices. This algorithm employs subroutines FindPrice, ProjectToFeasible which
+both solve convex optimization problems in order to compute certain projections. Here,
+we use Unifptx P Rd : ||x||2 “ 1uq to denote the uniform distribution over the unit
+Euclidean sphere in Rd.
+Intuitively, our algorithm adapts the GDG approach of [9] to select low-dimensional
+actions xt P Rd at each time point, and then seeks out a feasible price vector pt correspond-
+ing to the chosen xt. Note that when d ! N , there are potentially many price-vectors
+p P RN that map to the same low-dimensional vector x P Rd via UT , and out of these, we
+select the one that is closest to our previously-chosen prices (via FindPrice), ensuring
+additional stability in our dynamic pricing procedure. In practice, the initial prices p0
+should be selected based on external knowledge or historical demand data.
+Algorithm 1 Online Pricing Optimization with Known Product Features (OPO-K)
+Inputs: η, δ, α ą 0, product feature matrix U P RNˆd, and initial prices p0 P S
+Output: Sequence of prices p1, . . . , pT which seek to maximize total revenue
+1: Set prices to p0 P S and observe (negative) revenue R0pp0q and demands q0pp0q
+2: Deﬁne x1 “ UT p0
+3: for t “ 1, . . . , T :
+Draw ξt „ Unifptx P Rd : ||x||2 “ 1uq and setrxt :“ xt ` δξt
+Set round t prices: pt “ FindPrice(rxt, U,S, pt´1), and observe Rtpptq, qtpptq
+xt`1 “ ProjectToFeasible(xt ´ ηRtpptqξt, α, U, S)
+4:
+5:
+6:
+Algorithm 2 FindPrice(x; U,S, pt´1)
+Inputs: x P Rd (vector), U P RNˆd (matrix), S Ă RN (convex set)
+Output: Closest price to pt´1 which is within S and maps to x via UT
+1: Return argmin
+pPRN
+||p ´ pt´1||2
+subject to UT p “ x, p P S
+Algorithm 3 ProjectToFeasible(x, α, U, S)
+Inputs: x P Rd (vector), α ą 0 (scalar), U P RNˆd (matrix), S Ă RN (convex set)
+Output: Projection of x onto set tp1 ´ αqUT p : p P Su Ă Rd
+ˇˇˇˇp1 ´ αqUT p ´ x
+1: pp “ argmin
+2: Return p1 ´ αqUTpp
+pPS
+ˇˇˇˇ2
+Under mild conditions, Theorem 1 below states that the OPO-K algorithm incurs
+OpT 3{4
+dq regret when product features are a priori known. This result is derived from
+Lemma 1 which shows that Step 6 of our algorithm corresponds to online projected
+gradient descent (in expectation) on a smoothed version of our objective deﬁned as:
+pftpxq “ Eζ
+ftpx ` ζq
+Rtppqξ
+BpftBx
+“ d
+¨ E,ξ
+where ft is the alternative objective function (which is equivalent to Rt) given in (4), and
+ζ is sampled uniformly from within the unit sphere in Rd.
+Lemma 1. For ξ „ Unifptx P Rk : ||x||2 “ 1uq and p P RN with UT p “ x ` δξ P Rd:
+(6)
+(7)
+Proof. Since ErRtppqs “ ftpx` δξq, this result directly follows from Lemma 1 in [9].
+To bound the regret of our pricing algorithm, we adopt the following assumptions:
+(A1) UTpSq contains a ball of radius rmin and is contained within a ball of radius
+(the constraint set is bounded and well-scaled)
+rmax ě rmin
+3drmax
+2rmin
+(the number of pricing rounds is suﬃciently large)
+(A2) T ą
+(A3) ´B ď ErRtppqs ď 0 for all p P S for t “ 1, . . . , T
+(revenues are bounded)
+(A4) ftpxq is L-Lipschitz over x P UTpSq for t “ 1, . . . , T (smooth revenue-functions)
+Theorem 1. If conditions (A1)-(A4) are met and we choose η “ rmax
+α “ δ
+, then for any p P S, there exists a universal constant C such that:
+, δ “ T ´1{4
+rmin
+Bdrmaxrmin
+3pLrmin`Bq,
+Tÿ
+t“1
+Rtpptq ´ Tÿ
+t“1
+Rtppq
+E,ξ
+ď C ¨ T 3{4
+Brmax
+L ` B
+rmin
+(8)
+for the prices p1, . . . , pT selected by the OPO-K algorithm.
+Proof. ´B ď Rtppq ď 0 for all p P S implies the range of ft is constrained to r´B, 0s over
+x P UTpSq. Recall that each ft is a convex function of x (as we required each Vt ľ 0)
+and for any p P S, we can deﬁne x “ UT p P UTpSq such that: ErRtppqs “ ftpxq. Since
+convexity of S implies UTpSq is also convex, the proof of our result immediately follows
+from Theorem 2 below. Finally, we note that since both S and UTpSq are convex, our
+choice of η, δ, α ensuresrxt P UTpSq and hence pt P S for all t.
+Theorem 2 (Flaxman et al. [9]). Suppose each ft P r´B, Bs is a convex, L-Lipschitz
+function of x P Rd, and the set of feasible actions U is convex, with Euclidean balls of
+radius rmax and rmin containing and contained-within U, respectively. Then, the low-
+dimensional actions x1, . . . , xT P Rd which correspond (in expectation) to the iterates
+of the online projected gradient descent algorithm applied to pft (as deﬁned in (6)) must
+satisfy:
+ftpxtq
+Tÿ
+t“1
+´ min
+xPU ftpxq ď 2T 3{4
+3Brmax
+L ` B
+rmin
+(9)
+if we choose η, δ, α as in Theorem 1.
+Rather than relying on implicit characteristics of the Rt, ft, we show that same OpT 3{4
+dq
+regret bound holds for the OPO-K algorithm if we instead impose the following structural
+assumptions on our original linear low-rank model in (3):
+4d2
+for all t
+(A5) ||zt||2 ď b
+(A6) ||Vt||op ď b for all t (spectral norm ||¨||op is magnitude of largest singular value)
+(A7) T ą 9
+(A8) U is an orthogonal matrix such that UT U “ Idˆd
+(A9) S “ tp P RN : ||p||2 ď ru (with r ě 1)
+Requiring that the columns of U form an orthonormal basis for Rd, condition (A8) can
+be easily enforced by ﬁrst orthonormalizing the given product features. Note that this
+orthogonality condition does not really restrict the overall class of models speciﬁed in (3),
+and describes the case where the features used to encode each product are uncorrelated
+between products (ie. a minimally-redundant encoding) and have been normalized across
+all products. To further simplify our analysis, we also from now adopt (A9) presuming
+the constraint set of feasible product-prices is a centered Euclidean ball (implying our p
+vectors now represent appropriately shifted/scaled prices).
+Corollary 1. Under assumptions (A5)-(A9), if we choose η “
+α “ δ
+r , then for any p P S, there exists a universal constant C such that:
+, δ “ T ´1{4
+bp1`dq?
+dr2p1`rq
+9r`6
+ď Cbrpr ` 1qT 3{4d1{2
+(10)
+Tÿ
+t“1
+E,ξ
+Rtppq
+Rtpptq ´ Tÿ
+t“1
+for the prices p1, . . . , pT selected by the OPO-K algorithm.
+Proof. We show that (A5)-(A9) imply the necessary conditions of Theorem 1 hold with
+rmax “ rmin “ r, B “ rbp1`rq, and L “ p2r`1qb. Bounding and simplifying the Theorem
+1 inequality that arises under these deﬁnitions then produces the desired result. Lemma
+2 implies (A1) holds with rmax “ rmin “ r. Note that (A3) holds since:
+ftpxq “ xT Vtx ´ xT zt ď ||x||2
+2||Vt||op ` ||zt||2||x||2 ď r2b ` rb
+Finally, we show that our structural assumptions imply the Lipshitz continuity of each
+ft, as required in (A4):
+||∇xftpxq||2 “ ||pVT
+Lemma 2. Under assumption (A9), for any orthogonal N ˆ d matrix U:
+UTpSq “ tx P Rd : ||x||2 ď ru and UUTppq P S for any p P S.
+t ` Vtqx ´ zt||2 ď 2||Vt||op||x||2 ` ||zt||2 ď 2br ` b @x P UTpSq
+Proof. Consider the orthogonal extension of U, a matrix W “ rU,rUs P RNˆN formed by
+appending N ´ d additional orthonormal columns to U that are also orthogonal to the
+columns of U. For any p P RN , we have:
+since orthogonality implies U is an isometry
+because ||WT p||2
+2 “ ||UT p||2
+2 ` ||rUT p||2
+||UUT p||2 “ ||UT p||2
+ď ||WT p||2
+“ ||WWT p||2
+“ ||p||2
+since W is also an isometry
+due to the fact that WT “ W´1 as W is square and orthogonal
+Combined with (A9), this implies UUTppq P S and ||x||2 ď r for any x P UTpSq. Now
+ﬁx arbitrary x P Rd which satisﬁes ||x||2 ď r. By orthogonality of U:
+||Ux||2 “ ||x||2 ď r ùñ Ux P S, and UT Ux “ x ùñ x P UTpSq.
+6. Dynamic Pricing with Latent Product Features
+In many settings, it is not clear how to best represent products as feature-vectors. Again
+adopting the low-rank demand model in (3), we now consider the case where U is unknown
+and must be estimated. To improve the identiﬁability of the resulting model, we adopt
+(A8) throughout this section. Orthogonality implies U is both an isometry as well as
+the right-inverse of UT . Thus, given any low-dimensional action x P UTpSq, we can set
+the corresponding prices as p “ Ux such that UT p “ x. Lemma 3 shows that this price
+selection-method is feasible and corresponds to changing Step 5 in the OPO-K algorithm
+rather than the previous price pt´1. Because prices pt are multiplied by the noise term t
+within each revenue-function Rt, choosing minimum-norm prices can help reduce variance
+in the total revenue generated by our approach. As U is unknown, we instead employ an
+to pt “ FindPrice(rxt, U,S, 0q, where the next price is regularized toward the origin
+estimate pU P RNˆd, which is always restricted to be an orthogonal matrix.
+Lemma 3. For any orthogonal matrix pU and any x P pUTpSq, deﬁne pp “ pUx P RN .
+Under (A9), pp P S and pp “ FindPrice(x,pU,S, 0q.
+Proof. Given x P pUTpSq, there exists p P S with pUT p “ x. Lemma 2 implies
+||pp||2 ď ||p||2 and pp “ pUx “ pUpUT p P S when this set is a centered Euclidean ball.
+Finally, we note that pUTpp “ x since pUTpU “ Idˆd, so rp is the minimum-norm vector in
+S which is mapped to x by pUT .
+E,ξ
+(11)
+6.1. Product Features with Known Span
+In Theorem 3, we consider a minor modiﬁcation to the OPO-K algorithm where price-
+previous price pt´1. Even without knowing the true latent features, this result implies
+that the regret of our modiﬁed OPO-K algorithm may still be bounded independently of
+selection in Step 5 is done using pt “ pUrxt rather than being regularized toward the
+the number of products N , as long as pU accurately estimates the column span of U.
+Theorem 3. Suppose spanppUq “ spanpUq, ie. our orthogonal estimate has the same
+with pU used in place of the underlying U and parameters η, δ, α chosen as in Corollary
+column-span as the underlying (rank d) latent product-feature matrix. Let p˚ P S denote
+the optimal pricing and p1, . . . , pT be the prices selected by our modiﬁed OPO-K algorithm
+1. Under conditions (A5)-(A9), there exists universal constant C such that:
+Tÿ
+t“1
+Rtpp˚q
+Rtpptq ´ Tÿ
+Tÿ
+Rtppq, we letrp “ UUT p˚. Note that E
+ď Cbrpr ` 1qT 3{4d1{2
+t“1
+t“1
+Proof. Deﬁning p˚ “ argmin
+pPS
+”ř
+t“1 Rtprpq
+”ř
+and rp P S by Lemma 2, so rp is an equivalently optimal setting of
+the product-prices (in expectation). Since U and pU share the same column-span, there
+t“1 Rtpp˚q
+exist low-dimensional action rx P Rk such that rp “ pUrx. By orthogonality of pU: pUTrp “
+pUTpUrx “rx, sorx P pUTpSq is a feasible solution to our modiﬁed OPO-K algorithm.
+For x P Rd and p “ pUx P RN , we can re-express the expected revenue at this price
+vector by introducing ft,pU as a function of x parameterized by pU, as similarly done in (4):
+Convexity of Rt in p implies ft,pU is convex in x for any pU. Note that our modiﬁed OPO-K
+version of each ft,pU, deﬁned similarly as in (6). Thus, by employing the same argument
+show that for any x P pUTpSq:
+Tÿ
+ft,pUpxq “ xTpUT UVtUTpUx ´ xTpUT Uzt “ ErRtppqs
+based on Theorem 2 and deﬁning B, L, rmax, rmin as in the proof of Corollary 1, we can
+algorithm is (in expectation) running online projected gradient descent on a smoothed
+(12)
+´ ft,pUpxq ď Cbrpr ` 1qT 3{4d1{2
+ft,pUpxtq
+Eξ
+t“1
+where xt are the low-dimensional actions chosen in Step 4 of the modiﬁed OPO-K algo-
+10
+(13)
+rithm, such that pt “ pUxt for the prices output by this method. To conclude the proof,
+Tÿ
+t“1
+“ Tÿ
+t“1
+ft,pUprxq
+and E
+Rtpp˚q
+we recall that for the chosen pt:
+Rtpptq
+Tÿ
+t“1
+E,ξ
+ft,pUpxtq
+Tÿ
+t“1
+“ Eξ
+6.2. Product Features with Unknown Span and Noise-free Demands
+In practice, span(U) may be entirely unknown. If we assume the adversary is restricted
+to strictly positive deﬁnite Vt ą 0 for all t and there is no statistical noise in the observed
+demands (ie. qt “ Uzt ´ UVtUT pt in each round), then Lemma 4 below shows we can
+ensure span(U) is revealed within the ﬁrst d observed demand vectors by simply adding
+a minuscule random perturbation to all of our initial prices selected in the ﬁrst d rounds.
+Thus, even without knowing the latent produce feature subspace, an absence of noise in
+the observed demands enables us to realize a low regret pricing strategy via the same
+OPO-K algorithm (applied after the ﬁrst d rounds).
+Lemma 4. Suppose that t “ 0 for each round and assume that each Vt ą 0. If for
+t “ 1, . . . , d: each pt is independently uniformly distributed within some (uncentered)
+Euclidean ball of strictly positive radius, then spanpq1, . . . , qdq “ spanpUq almost surely.
+Proof. In Lemma 4, we suppose that each pt “rpt ` ζt, where each ζt is uniformly drawn
+from a centered Euclidean ball of nonzero radius in RN and zt, Vt,rpt are ﬁxed indepen-
+To show linear independence holds almost surely, we proceed inductively by proving
+dently of the randomness in ζt. Note that each qj “ Usj where sj “ zj ´ VjUT pj P Rd.
+Thus, spanpq1, . . . , qdq Ď spanpUq and the two spans must be equal if s1, . . . , sd are lin-
+early independent.
+Prpsj P spanps1, . . . , sj´1qq “ 0 for any 1 ă j ď d. We ﬁrst note that sj “ zj ´ VjUTrpj ´
+s1 ` VjUTrpj ´ zj, . . . , sj´1 ` VjUTrpj ´ zj, this subspace has measure zero under the
+VjUT ζj. Since Vj ą 0 is invertible and U is orthogonal, VjUT ζj is uniformly distributed
+over a nondegenerate ellipsoid E Ă Rd with nonzero variance under any projection in Rd.
+Since this includes directions orthogonal to the j ´ 1 dimensional subspace spanned by
+uniform distribution over E (for j ď d).
+6.3. Product Features with Unknown Span and Noisy Demands
+When the observed demands are noisy and spanpUq is unknown, we select prices using
+the OPO-L algorithm presented below. The approach is similar to our previous OPO-K
+algorithm, except we now additionally maintain an estimate of the latent product features’
+11
+span. The estimator is updated in an online fashion via an averaged singular value
+decomposition (SVD) of the previously observed demands.
+Algorithm 4 Online Pricing Optimization with Latent Product Features (OPO-L)
+Inputs: η, δ, α ą 0, initial prices p0 P S, and rank of demand-variation d P r1, Ns
+Output: Sequence of prices p1, . . . , pT which seek to maximize total revenue
+3: Set prices to p0 P S and observe (negative) revenue R0pp0q and demands q0pp0q
+5: for t “ 1, . . . , T :
+1: Initialize pQ as N ˆ d matrix of zeros
+2: Initialize pU as random N ˆ d matrix and orthonormalize all columns
+4: Deﬁne x1 “ pUT p0
+Draw ξt „ Unifptx P Rd : ||x||2 “ 1uq and setrxt :“ xt ` δξt
+Set round t prices: pt “ pUrxt and observe Rtpptq, qtpptq
+xt`1 “ ProjectToFeasible(xt ´ ηRtpptqξt, α, pU, S)
+9: With j “ 1 ` rpt ´ 1q mod ds, k “ ﬂoorpt{dq, update: pQ˚,j Ð 1
+Update columns of pU as the top d left singular vectors of pQ
+k qt ` k´1
+pQ˚,j
+6:
+7:
+8:
+10:
+Step 9 in our OPO-L algorithm corresponds to online averaging of the currently ob-
+served demand vector qt with the historical observations stored in the jth column of
+matrix pQ. After computing the singular value decomposition of pQ “ rUrSrVT , Step 10 is
+performed by setting pU equal to the ﬁrst d columns of rU (the indices corresponding to
+the largest singular values inrS). Since pQ is only minorly changed within each round, the
+as singular vectors, the columns of pU remain orthonormal throughout the execution of
+update operation in Step 10 can be carried out with much greater computational eﬃciency
+by leveraging existing fast SVD-update procedures [19, 20]. Note that by their deﬁnition
+our algorithm.
+To quantify the regret incurred by our algorithm, we assume the entries of the noise
+vector t are i.i.d. samples from a sub-Gaussian distribution for each t “ 1, . . . , T . Re-
+call that random variable X follows the sub-Gaussian(σ2) distribution if ErXs “ 0 and
+Prp|X| ą xq ď 2 expp´ x2
+2σ2q for all x ą 0. Our assumption of sub-Gaussian noise is quite
+general, covering common settings where the noise is either Gaussian, bounded, of strictly
+log-concave density, or any ﬁnite mixture of sub-Gaussian variables [21]. Furthermore,
+our regret bound remains valid even if the demands for diﬀerent products are indepen-
+dent but heteroscedastic, in which case we simply assume the sub-Gaussian parameter σ2
+speciﬁes the maximal variation in the observed demand for any of the products.
+Intuitively, the averaging in step 9 of our OPO-L algorithm ensures statistical con-
+centration of the noise in our observed demands, such that the true column span of the
+underlying U may be better revealed. More concretely, if we let st “ zt ´ VtUT pt and
+12
+t ` t, where q˚
+t “ Ust, then the observed demands can be written as: qt “ q˚
+q˚
+t are the
+(unobserved) expected demands at our chosen prices. At round T (assuming T is divisible
+T{dÿ
+by d), the jth column of pQ is given by:
+T{dÿ
+j`dpi´1q where sQ˚
+˚,j “ d
+sj`dpi´1q
+i“1
+(14)
+pQ˚,j “ sQ˚
+˚,j ` d
+i“1
+T{d
+i“1 j`dpi´1q exhibits rapid concentration of measure, results from
+Because the average d
+random matrix theory imply that the span-estimator obtained from the ﬁrst d singular
+vectors of pQ in Step 10 of our OPO-L algorithm will rapidly converge to the column span
+of sQ˚ P RNˆd (the average-matrix of underlying expected demands whose jth column is
+deﬁned above). This is useful since sQ˚ shares the same span as the underlying U.
+Theorem 4 below shows that our OPO-L algorithm achieves low-regret in the setting
+of unknown product features, and the regret again depends only on the intrinsic rank d
+(rather than the number of products N ). The required sub-Gaussianpσ2{Nq noise-level
+may be ensured via either rescaling the observed demands, or by extending the time-
+duration of each round t to allow for a suﬃcient number of (potential) customers, which
+will ensure that the random eﬀects in each individual’s behavior rapidly concentrate in the
+aggregate observed demand. Note that the regret in Theorem 4 depends on the constant
+Q whose value is determined by the noise-level σ and the extreme singular values of
+sQ˚ deﬁned in (14). In general, these quantities thus measure just how adversarial of an
+environment the seller is faced with. For example, when the underlying low-rank variation
+is of much smaller magnitude than the noise in our observations, it will be diﬃcult to
+accurately estimate the span of the latent product features. In control theory, a signal-
+to-noise expression similar to Q has also been recently proposed to quantify the intrinsic
+diﬃculty of system identiﬁcation for the linear quadratic regulator [22].
+Theorem 4. Suppose the unknown U is orthogonal and rank d. Let p˚ “ argmin
+pPS
+denote the optimal product pricing and p1, . . . , pT be the prices selected by the OPO-L al-
+iid„ sub-Gaussianpσ2{Nq
+gorithm with parameters η, δ, α set as in Corollary 1. If all t
+and(A5)-(A9) hold, then there exists universal constant C such that:
+Tÿ
+t“1
+Rtppq
+Tÿ
+t“1
+Rtpptq ´ Tÿ
+¯)
+t“1
+E,ξ
+13
+Rtpp˚q
+ď CQrbp4r ` 1qdT 3{4
+where Q “ max
+nonzero singular values of the underlying rank d matrix sQ˚ deﬁned in (14).
+2σ1`1
+σ2
+with σ1 (and σd) deﬁned as the largest (and smallest)
+1, σ2
+E
+Tÿ
+t“1
+Rtppq
+product features obtained in Step 10 of our OPO-L algorithm at round t. Note that the
+Proof. For notational convenience, suppose that T is divisible by d, T 3{4 ě d ě 3, and the
+noise-variation parameter σ ě 1 throughout our proof. Recall from the proof of Theorem
+3 that under our low-rank demand model, we can redeﬁne p˚ Ð UUT p˚ P S and still
+ensure p˚ “ argmin
+. Thus, we suppose without loss of generality that the
+pPS
+optimal prices can be expressed as p˚ “ Ux˚ for some corresponding low-dimensional
+action x˚ P UTpSq.
+For additional clarity, we use pUt to denote the current Nˆd estimate of the underlying
+pUt are random variables which are determined by both the noise in the observed demands
+and the randomness employed within our pricing algorithm. Letting pt “ pUtxt denote the
+prices chosen by the OPO-L algorithm in each round (and xt P pUT
+Tÿ
+Rtpptq ´ Rtpp˚q
+T 3{4ÿ
+ft,pUtpxtq ´ ft,pUtprxq
+ft,pUtpxtq ´ ft,Upx˚q
+where ft,U is deﬁned as in (12) and we letrx “ argmin
+The proof of Corollary 1 ensures both |ft,U| and |ft,pUt| (for any orthogonal pUt) are bounded
+ft,pUtprxq ´ ft,Upx˚q
+ft,pUtpxq
+by rbp1 ` rq over all x P UTpSq, so we can trivially bound the ﬁrst summand in (15):
+t pSq the corresponding
+low-dimensional actions), we have:
+` E
+Tÿ
+Tÿ
+Tÿ
+t“1
+t“1
+xPUTpSq
+` E
+t“T 3{4
+t“T 3{4
+(15)
+t“T 3{4
+T 3{4ÿ
+ft,pUtpxtq ´ ft,Upx˚q
+ď rbp1 ` rq ¨ T 3{4
+t“1
+To bound the second summand in (15), we ﬁrst point out that UTpSq “ pUT
+2 (since all pUt are restricted to be orthogonal). Thus, Algorithm 4 is essentially running
+the classic gradient-free bandit method of [9] to optimize the functions ft,pUt
+over the low-
+dimensional action-space UTpSq, and the second term is exactly the regret of this method
+stated in Corollary 1:
+t pSq by Lemma
+Tÿ
+ft,pUtpxtq ´ ft,pUtprxq
+t“T 3{4
+‰3{4
+ď Cbrpr ` 1q
+T ´ T 3{4
+d1{2
+Finally, we complete the proof by bounding the third summand in (15). Deﬁning
+14
+ı
+inf
+OPO
+t“T 3{4
+t“T 3{4
+ď inf
+OPO
+ďpT ´ T 3{4q ¨ E
+ft,pUtprxq ´ ft,Upx˚q
+O Ă Rdˆd as the set of orthogonal d ˆ d matrices, we have:
+ft,pUtpOx˚q ´ ft,Upx˚q
+where now choose pO P O as the orthogonal matrix such that E||pUt
+bound of Lemma 5 for the t ě T 3{4 ﬁxed above. Deﬁning ∆ “ Ux˚ ´ pUt
+plug in the deﬁnition of ft,pU from (12) and simplify to obtain the following bound:
+Tÿ
+ft,pUtpOx˚q ´ ft,Upx˚q
+where we’ve ﬁxed t “ argmax
+ft,pUtppOx˚q ´ ft,Upx˚q
+t1PrT 3{4,Ts
+Tÿ
+since x˚ P UTpSq ùñ Ox˚ P UTpSq by Lemma 2, andrx is an argmin over UTpSq
+OPO pT ´ T 3{4q ¨ E
+ď inf
+ft1,pUt1pOx˚q ´ ft1,Upx˚q
+pO ´ U||F satisﬁes the
+pOx˚ P Rd, we
+pO||opq||x˚||2 ď 2||x˚||2 by orthogonality of pO,pUt, U
+pO ´ U||F
+ft,pUtppOx˚q ´ ft,Upx˚q
+ďE
+ďE
+ďp4||x˚||2Vt||op ` ||zt||2q ¨ Er||∆||2s
+2||U||op||Vt||op||UT||op ` 2||∆||2||x˚||2||Vt||op||UT||op ` ||∆||2||zt||2||U||op
+2||Vt||op ` 2||∆||2||x˚||2||Vt||op ` ||∆||2||zt||2
+since ||∆||2 ď p||U||op ` ||pUt
+||pUt
+ďCrbp4r ` 1q
+dσ2
+since Er||∆||2s ď ||x˚||2 ¨ E
+by Lemma 5 (recall that we ﬁxed t ě T 3{4).
+||∆||2
+||∆||2
+‰´1{2
+‰´1{2
+under (A5)-(A6)
+ď C
+T 3{4
+2σ1 ` 1
+2σ1 ` 1
+σ2
+T 3{4
+dσ2
+||x˚||2
+σ2
+Crb
+p1 ` rqT 3{4 ` p1 ` rqd1{2
+Combining our bounds for each of the three summands in (15) yields the following upper
+bound, from which the inequality presented in Theorem 4 can be derived:
+˘
+Lemma 5. For the pU produced in Step 10 of the OPO-L algorithm after T rounds and
+any feasible low-dimensional action x P pUTpSq, there exists orthogonal d ˆ d matrix pO
+˘3{4 ` p4r ` 1qdσ2
+T 5{8 ´ T 3{8
+T ´ T 3{4
+2σ1 ` 1
+˙`
+σ2
+and universal constant C such that:
+15
+”
+||pUpO ´ U||F
+ď CT ´1{2dσ2
+2σ1 ` 1
+σ2
+sQ˚ deﬁned in (14).
+where σ1 and σd denote the largest and smallest singular values of the underlying matrix
+Proof. Our proof relies on standard random matrix concentration results and a general-
+ization of the Davis-Kahan-Wedin theory [23] presented below.
+Theorem 5 (Yu et al., 2015 [23]). Let σ1 ą ¨¨¨ ą σd ą 0 denote the nonzero singular
+values of rank d matrix Q P RNˆd. The left singular vectors of Q are represented as
+columns in matrix U P RNˆd (such that Q has SVD: UΣVT ) and pU P RNˆd similarly
+denotes the left singular vectors of some other N ˆ d matrix pQ. For any Q,pQ P RNˆd,
+there exists orthogonal matrix pO P Rdˆd such that
+||pUpO ´ U||F ď 2
+2σ1 ` ||pQ ´ Q||op
+Lemma 6 (variant of Lemma 4.2 in [24]). Let E be a N ˆ d matrix (with N ě d) of i.i.d.
+entries drawn from a sub-Gaussianpσ2{Nq distribution. Then, with probability 1 ´ δ:
+||pQ ´ Q||op
+2d
+σ2
+||E||op ď 2σ
+logp12q `
+2 logp1{δq
+sE “ pQ´sQ˚ is the mean of T{d sub-Gaussianpσ2{Nq samples, which must be distributed
+Due to the averaging performed in Step 9 of our OPO-L algorithm, each value in
+as sub-Gaussian
+E||sE||op “
+σ2d
+N T
+E||sE||2
+exp
+x“0
+. Lemma 6 implies:
+ż 8
+Prp||sE||op ą xq dx
+¨˝´1
+˜c
+ż 8
+´a
+ż 8
+x ¨ Prp||sE||op ą xq dx
+¨˝´1
+˜c
+ż 8
+1 ` erf
+x ¨ exp
+πd
+2T
+2σ
+x“0
+2 log 12
+´ 2
+x“0
+“ 2σ
+op “ 2
+ď 2
+2σ
+x“0
+¯ı
+˛‚ dx
+log 12
+ď 4σ
+´ 2
+πd
+2T
+˛‚ dx
+log 12
+16
+a
+2π log 12 ¨ erfp
+2 log 12q ` 1
+144
+2π log 12 `
+„a
+“ 8σ2d
+ď 24σ2d
+6πd{T .
+Combing Theorem 5 with these concentration bounds implies that there exists d ˆ d
+op are upper-bounded by 24σ2
+2π log 12
+When T ě d, σ ě 1, both E||sE||op and E||sE||2
+orthogonal matrix pO such that:
+||pQ ´sQ˚||op
+2σ1 ` 1
+||pUpO ´ U||F
+ď 2
+2d
+2σ1E
+σ2
+ď 96
+3π
+dσ2
+σ2
+||pQ ´sQ˚||2
+op
+ı¯
+` E
+6.4. Pricing against an Imprecise Adversary
+In Theorem 6 below, we illustrate a basic scenario under which an explicit bound for the
+constant Q in Theorem 4 can be obtained. We now assume that the adversary can only
+coarsely control the underlying baseline demand parameters zt in (3). More speciﬁcally,
+we suppose that in each round: zt “ z1
+t (and Vt) may be adversarially
+selected and the γt are purely stochastic terms outside of the adversary’s control. In this
+scenario, we presume a random dˆ d matrix Γ is drawn before the initial round such that:
+t ` γt, where only z1
+(A10) Each entry Γi,j is independently sampled with mean zero and magnitude bounded
+almost surely by b{2 (ErΓi,js “ 0, |Γi,j| ď b{2 for all i, j).
+Recall that the constant b ą 0 upper bounds the magnitude of each zt as speciﬁed in
+(A5). Once the values of Γ have been sampled, we suppose that in round t: γt “ Γ˚,j is
+simply taken to be the jth column of this matrix with j “ 1 ` pt ´ 1q mod d (traversing
+the columns of Γ in order). Throughout our discussion, the largest and smallest nonzero
+singular values of a rank-d matrix A will be denoted as σ1pAq and σdpAq, respectively.
+Since boundedness of the values in Γ implies these entries follow a sub-Gaussianpb2{4q
+distribution, the following result applies:
+Lemma 7 (variant of Theorem 1.2 in [25]). With probability at least 1 ´ Cb ´ cb
+d:
+σdpΓq ě {?
+where Cb ą 0 and cb P p0, 1q are constants that depend (polynomially) only on b.
+In selecting z1
+t, Vt, we assume this imprecise adversary is additionally restricted to ensure:
+17
+d
+Cbdb
+ă 1 such that for all t:
+(A11) There exists s ă 1 ´ cb
+||Γ˚,j||2
+where constants cb, Cb are given by Lemma 7 (see [25] for details), and r ě 1 is still used
+to denote the radius of the set of feasible prices S. Note that these additional assumptions
+do not conﬂict with condition (A5) required in Theorem 4, since (A10), (A11) together
+t ` γt. With these assumptions in place, we now provide
+ensure that ||zt||2 ď b for zt “ z1
+an explicit bound for the constant Q in Theorem 4.
+t||2`r¨||Vt||op ď s¨ min
+1ďjďd
+||z1
+Theorem 6. Under this setting of an imprecise adversary where conditions (A10) and
+(A11) are met, for any τ P p 1
+d, 1q, Theorem 4 holds with:
+2Cbsbd ` cb
+Q ď 2σdCbp2b ` 1q
+dq ´ Cbsbd
+with probability ě 1 ´ τ (over the random sampling of Γ).
+2pτ ´ cb
+c2
+Proof. Recall that σ1 (and σd) denote the largest (and smallest) nonzero singular values
+that σ1 ď c1 and σd ě c2 with high probability, which then implies the upper bound:
+Q ď maxt1, σ
+of the underlying rank d matrix sQ˚ deﬁned in (14). For suitable constants c1, c2: we show
+p2c1 ` 1qu. We ﬁrst note that the orthogonality of U implies sQ˚ “ UsS has
+the same nonzero singular values as the square matrixsS, whose jth column is given by:
+sS˚,j “ d
+σ1psQ˚q “ σ1psSq ď ?
+T{dÿ
+AssS has d columns, we have:
+j`dpi´1q ` γj`pi´1qd ´ Vj`pi´1qdUT pj`pi´1qd
+z1
+||sQ˚,j||2 ď bp1 ` sq?
+d ¨ max
+(16)
+i“1
+where the latter inequality derives from the fact that (A9) and orthogonality of U imply:
+||sS˚,j||2 ď d
+T{dÿ
+||γj`pi´1qd||2 ` ||z1
+i“1
+j`pi´1qd||2 ` r||Vj`pi´1qd||op
+ď p1 ` sq ¨ ||Γ˚,j||2 ď b
+p1 ` sq
+by conditions (A10), (A11)
+Via similar reasoning, we also obtain the bound:
+σ1psS ´ Γq ď sb
+18
+(17)
+Subsequently, we invoke Lemma 7, which implies that with probability 1 ´ τ :
+σdpΓq ě τ ´ cb
+Cb
+(18)
+Combining (17) and (18), we obtain a high probability lower bound for σd via the additive
+Weyl inequality (cf. Theorem 3.3.16 in [26]):
+σdpsQ˚q “ σdpsSq ě σdpΓq ´ σ1psS ´ Γq ě τ ´ cb
+´ sb
+The proof is completed by deﬁning c1 “ bp1 ` sq?
+, c2 “ τ ´ cb
+Cb
+simplifying the resulting bound via the fact that d ě 1 and s ă 1.
+Cb
+with probability ě 1 ´ τ
+´ sb
+, and then
+7. Results
+We evaluate the performance of our method in settings where noisy demands are generated
+according to equation (3), and the underlying structural parameters of the demand curves
+are randomly sampled from Gaussian distributions. Throughout this section, we assume
+pt and qt represent rescaled prices and aggregate demands, such that the feasible set S
+can be simply ﬁxed as a centered sphere of radius r “ 20. Furthermore, the noise in the
+(rescaled) demands for each product is always drawn from a ﬁxed Gaussian distribution:
+t „ Np0, 10q.
+Our proposed algorithms are compared against the GDG method for online bandit
+optimization of [9], as well as a simple explore-then-exploit (Explore
+it ) technique. In this
+latter method, we randomly sample pt during the ﬁrst T 3{4 rounds (uniformly over S)
+and then for all remaining rounds, pt is ﬁxed at the best prices found during this explo-
+ration period. Explore
+it thus reﬂects the typical approach used to price products: initially
+experiment with diﬀerent price-settings and eventually settle on the prices that previously
+exhibited the best results. Throughout our experiments, the ﬁrst set of prices p0 used to
+initialize each method is always taken to be the center of the feasible set S.
+7.1. Stationary Demand Model
+First, we apply our methods in a stationary setting where the underlying structural pa-
+rameters zt,“ z, Vt “ V are ﬁxed over time. At the start of each simulation, we sample
+the entries of z, V independently as zij „ Np100, 20q, Vij „ Np0, 2q and U is ﬁxed as
+a random sparse binary matrix that reﬂects which of d possible categories each prod-
+19
+uct belongs to. Subsequently, we orthogonalize the columns of U and project V into
+V “ tV : VT ` V ľ λIu with λ “ 10 to ensure cross-product price elasticities are strictly
+positive deﬁnite (and our resulting online optimization problem is strongly convex).
+Figure 1 shows that our OPOK and OPOL algorithms strongly outperform the basic
+GDG algorithm when the dimensionality N greatly exceeds the intrinsic rank d. When
+N “ d and there is no low-rank structure to exploit, our OPOK/OPOL algorithms
+match the performance of standard GDG bandit optimization. Even in this stationary
+setting on which it is highly reliant, the standard Explore
+it approach does not perform as
+well as our more sophisticated bandit optimization techniques. Surprisingly, our OPOL
+method (which must infer the latent product features along with the pricing strategy)
+even slightly outperforms the OPOK approach, which has access to the ground-truth
+product features. This is because our SVD-estimated features actually better represent
+the subspace where projected pricing variation can maximally impact the overall observed
+demands. In contrast, the dimensionality-reduction of the OPOK algorithm ignores the
+eﬀects of noise in both our selected prices and the observed demands.
+(A) N “ 10, d “ 10
+(B) N “ 100, d “ 10
+Figure 1: Average cumulative regret (over 10 repetitions with standard-deviations shaded)
+of diﬀerent pricing strategies when underlying demand model is stationary.
+7.2. Model with Demand Shocks
+Next, we examine the performance of these methods in a non-stationary setting where
+the underlying demand model changes drastically at times T{3 and 2T{3. At the start of
+each period r0, T{3s, rT{3, 2T{3s, r2T{3, Ts: we simply redraw the underlying structural
+parameters zt, Vt from the same Gaussian distributions described in the previous section.
+Figure 2 shows that our bandit techniques quickly adapt to the changes in the underlying
+20
+0200040006000800010000T0.00.20.40.60.8Regret1e7ExploreitGDGOPOKOPOL0200040006000800010000T010000002000000300000040000005000000600000070000008000000RegretExploreitGDGOPOKOPOLdemand curves. In fact, the regret of the bandit algorithms starts decreasing over time,
+indicating that they begin outperforming the optimal ﬁxed price chosen in hindsight.
+Once again, our low-rank methods are able to achieve low regret for a large number of
+products unlike the existing approaches, while exhibiting the same performance as the
+GDG algorithm when there is no low-rank structure to exploit.
+(A) N “ 10, d “ 10
+(B) N “ 100, d “ 10
+Figure 2: Average regret (over 10 repetitions with standard-deviations shaded) of pricing
+strategies when underlying demand model contains structural shocks at times T{3, 2T{3.
+7.3. Drifting Demand Model
+Finally, we study these methods in another non-stationary setting where the demand
+curves slowly change over time. Here, the underlying structural parameters zt, Vt are
+initially drawn from the same previously described Gaussian distributions at time t “ 0,
+but then begin to drift over time via the following process:
+zt`1 “ zt ` w, Vt`1 “ ΠVpVt ` Wq
+(19)
+where the entries of w and W are i.i.d. samples from the Np0, 1q and Np0, 0.1q distribu-
+tions, respectively. ΠV denotes the projection of a matrix into the strongly positive-deﬁnite
+set V deﬁned previously. Figure 3 shows how our bandit pricing approach can nicely adapt
+to slowly changing demand curves, quickly identifying a better pricing strategy than the
+optimal ﬁxed price chosen in hindsight. Under this setting, our low-rank methods again
+exhibit much stronger performance than the GDG and Explore
+it algorithms when there is
+a large number of products to handle.
+21
+0200040006000800010000T010000002000000300000040000005000000600000070000008000000RegretExploreitGDGOPOKOPOL0200040006000800010000T010000002000000300000040000005000000600000070000008000000RegretExploreitGDGOPOKOPOL(A) N “ 10, d “ 10
+(B) N “ 100, d “ 10
+Figure 3: Average regret (over 10 repetitions with standard-deviations shaded) of various
+pricing strategies when underlying demand model drifts over time.
+8. Discussion
+By exploiting a low-rank structural condition which naturally emerges in dynamic pricing
+problems, this work introduces the ﬁrst online bandit optimization algorithm whose regret
+depends only on the intrinsic rank of the problem rather than the ambient dimensionality
+of the action space. Our low-rank bandit approach to dynamic pricing scales to a large
+number of products with highly intercorrelated demand curves, and the underlying de-
+mand model is allowed to vary over time or even be adversarially chosen. When applied
+to various high-dimensional dynamic pricing systems involving stationary and changing
+demand curves, our approach empirically outperforms standard bandit methods.
+Future extensions of this work could include adaptations for predictable sequences
+in which future demands can be partially forecasted [27], or generalizing our convex
+formulation and linear demand model [28]. Note the GDG algorithm [9] upon which
+our approach is based only relies on convexity of the revenue function, and it is only
+our SVD procedure for learning latent product features that necessitates a linear demand
+curve. While our work focused on dynamic pricing, it remains interesting to explore other
+bandit applications where similar low-rank structural conditions might prove useful.
+22
+0200040006000800010000T0100000020000003000000400000050000006000000RegretExploreitGDGOPOKOPOL0200040006000800010000T100000001000000200000030000004000000RegretExploreitGDGOPOKOPOLReferences
+[1] Dani V, Hayes TP, Kakade SM (2007) The price of bandit information for online
+optimization. Neural Information Processing Systems
+[2] Keskin NB, Zeevi A (2014) Dynamic pricing with an unknown demand model:
+asymptotically optimal semi-myopic policies. Operations Research 62: 1142–67
+[3] Besbes O, Zeevi A (2015) On the surprising suﬃciency of linear models for dynamic
+pricing with demand learning. Management Science 61: 723–39
+[4] Cohen M, Lobel I, Leme RP (2016) Feature-based dynamic pricing. ACM Conference
+on Economics and Computation
+[5] Javanmard A, Nazerzadeh H (2016) Dynamic pricing in high-dimensions.
+arXiv:arXiv:160907574
+[6] Javanmard A (2017) Perishability of data: Dynamic pricing under varying-coeﬃcient
+models. Journal of Machine Learning Research 18: 1–31
+[7] Witt U (1986) How can complex economical behavior be investigated? The example
+of the ignorant monopolist revisited. Behavioral Science 31: 173–188
+[8] Shalev-Shwartz S (2011) Online learning and online convex optimization. Founda-
+tions and Trends in Machine Learning 4: 107–194
+[9] Flaxman AD, Kalai AT, McMahan HB (2005) Online convex optimization in the
+bandit setting: Gradient descent without a gradient. Proceedings of the 16th Annual
+ACM-SIAM Symposium on Discrete Algorithms
+[10] Kleinberg R, Leighton T (2003) The value of knowing a demand curve: Bounds
+on regret for online posted-price auctions. Proceedings of the 44th Annual IEEE
+Symposium on Foundations of Computer Science
+[11] Besbes O, Zeevi A (2009) Dynamic pricing without knowing the demand function:
+Risk bounds and near-optimal algorithms. Operations Research 57: 1407–20
+[12] den Boer AV, Bert Z (2013) Simultaneously learning and optimizing using controlled
+variance pricing. Management Science 60: 770–83
+[13] Misra K, Schwartz EM, Abernethy J (2017) Dynamic online pricing with incomplete
+information using multi-armed bandit experiments. Available at SSRN: https: //
+ssrncom/ abstract= 2981814
+[14] Gopalan A, Maillard O, Zaki M (2016) Low-rank bandits with latent mixtures.
+arXiv:160901508
+[15] Djolonga J, Krause A, Cevher V (2013) High-dimensional gaussian process bandits.
+Neural Information Processing Systems
+[16] Hazan E, Levy KY (2014) Bandit convex optimization: Towards tight bounds. Neural
+Information Processing Systems
+23
+[17] Bubeck S, Lee YT, Eldan R (2017) Kernel-based methods for bandit convex opti-
+mization. Proceedings of 49th Annual ACM SIGACT Symposium on the Theory of
+Computing
+[18] Hazan E, Koren T, Livni R, Mansour Y (2016) Online learning with low rank experts.
+Conference on Learning Theory
+[19] Brand M (2006) Fast low-rank modiﬁcations of the thin singular value decomposition.
+Linear Algebra and its Applications 415: 20–30
+[20] Stange P (2008) On the eﬃcient update of the singular value decomposition. Pro-
+ceedings in Applied Mathematics and Mechanics 8: 10827–28
+[21] Honorio J, Jaakkola T (2014) Tight bounds for the expected risk of linear classiﬁers
+and PAC-Bayes ﬁnite-sample guarantees. Artiﬁcial Intelligence and Statistics
+[22] Dean S, Mania H, Matni N, Recht B, Tu S (2017) On the sample complexity of the
+linear quadratic regulator. arXiv:171001688
+[23] Yu Y, Wang T, Samworth R (2015) A useful variant of the Davis-Kahan theorem for
+statisticians. Biometrika 102: 315–323
+[24] Rigollet P (2015). High dimensional statistics. MIT Opencourseware:
+http://ocw.mit.edu/courses/mathematics/18-s997-high-dimensional-
+statistics-spring-2015/lecture-notes/
+[25] Rudelson M, Vershynin R (2008) The Littlewood-Oﬀord problem and invertibility of
+random matrices. Advances in Mathematics 218: 600–33
+[26] Horn R, Johnson CR (1991) Topics in Matrix Analysis. Cambridge Univ. Press
+[27] Rakhlin A, Sridharan K (2013) Online learning with predictable sequences. Confer-
+ence on Learning Theory
+[28] Hazan E, Levy KY, Shalev-Shwartz S (2016) On graduated optimization for stochas-
+tic non-convex problems. International Conference on Machine Learning
+24

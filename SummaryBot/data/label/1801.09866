@@ -1,0 +1,18 @@
+
+This paper presents methods to accelerate recurrent neural network
+based language models (RNNLMs) for online speech recognition
+systems. Firstly, a lossy compression of the past hidden layer out-
+puts (history vector) with caching is introduced in order to reduce
+the number of LM queries. Next, RNNLM computations are de-
+ployed in a CPU-GPU hybrid manner, which computes each layer
+of the model on a more advantageous platform. The added overhead
+by data exchanges between CPU and GPU is compensated through
+a frame-wise batching strategy. The performance of the proposed
+methods evaluated on LibriSpeech1 test sets indicates that the re-
+duction in history vector precision improves the average recognition
+speed by 1.23 times with minimum degradation in accuracy. On the
+other hand, the CPU-GPU hybrid parallelization enables RNNLM
+based real-time recognition with a four times improvement in speed.
+Index Terms— Online speech recognition, language model, re-
+current neural network, graphic processing unit
+1. 

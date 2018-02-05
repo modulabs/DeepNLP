@@ -1,0 +1,278 @@
+Fusarium Damaged Kernels Detection Using Transfer
+Learning on Deep Neural Network Architecture
+M´arcio Nicolau1,2, M´arcia Barrocas Moreira Pimentel1, Casiane Salete Tibola1
+Jos´e Mauricio Cunha Fernandes1,2, Willingthon Pavan2
+1Brazilian Agricultural Research Corporation (Embrapa)
+Passo Fundo – Rio Grande do Sul State – Brazil
+2Graduate Program in Applied Computing (PPGCA),
+University of Passo Fundo (UPF)
+Passo Fundo – Rio Grande do Sul State – Brazil
+{marcio.nicolau,marcia.pimentel,casiane.tibola,mauricio.fernandes}@embrapa.br
+pavan@upf.br
+Abstract. The present work shows the application of transfer learning for
+a pre-trained deep neural network (DNN), using a small image dataset (≈
+12,000) on a single workstation with enabled NVIDIA GPU card that takes
+up to 1 hour to complete the training task and archive an overall average
+accuracy of 94.7%. The DNN presents a 20% score of misclassiﬁcation for an
+external test dataset. The accuracy of the proposed methodology is equivalent
+to ones using HSI methodology (81%-91%) used for the same task, but with the
+advantage of being independent on special equipment to classify wheat kernel
+for FHB symptoms.
+Keynotes. Deep Learning, Fusarium Damaged Kernels, ImageNet, TensorFlow,
+Transfer Learning.
+1. Introduction
+The wheat is the main source of nutrients to the world population, most of its produc-
+tion is converted into ﬂour for human consumption. In Southern Brazil, where 90% of
+the domestic wheat is produced, Fusarium head blight (FHB), a fungal disease, is a ma-
+jor concern. Apart from yield loss, the causal agent Fusarium graminearum may cause
+mycotoxin contamination of wheat products, creating health problems.
+Therefore, to avoid potential health risks, Fusarium affected grains must be iden-
+tiﬁed and segregated, before their processing, to avoid its incorporation into food for
+humans and animal feed.
+Usually, the detection of Fusarium head blight (FHB) is carried out manually by
+human experts using a process that may be both lengthy and tiresome. Moreover, the
+effectiveness of this kind of detection may drop with factors such as fatigue, external
+distractions and optical illusions [2]. Thus, improving the detection of Fusarium Head
+Blight (FHB) in wheat kernels has been a major goal, due to the health risks associated
+with the ingestion of the mycotoxin, mainly deoxynivalenol (DON).
+Methods capable of performing this disease detection in an automatic way are
+highly demanded in the productive wheat chain, to segregate lots. Most automatic meth-
+ods proposed to date rely on image processing to perform their tasks [2, 3, 8].
+Barbedo et al. [2] used Hyperspectral imaging (HSI) for detecting Fusarium head
+blight (FHB) in wheat kernels using an algorithm. The outcome was a Fusarium index
+(FI), ranging from 0 to 1, that can be interpreted as the likelihood of the kernel to be
+damaged by FHB. According to the authors, hyperspectral imagery is currently not sensi-
+tive enough to estimate DON content directly. However, an indirect estimation from the
+Fusarium damaged kernels was successfully achieved, with an accuracy of approximately
+91% [2].
+Other study investigated the use of hyperspectral imaging (HSI) for deoxyni-
+valenol (DON) screening in wheat kernels. The developed algorithm achieved accuracies
+of 72% and 81% for the three- and two-class classiﬁcation schemes, respectively. The
+results, although not accurate enough to provide conclusive screening, indicating that the
+algorithm could be used for initial screening to detect wheat batches that warrant further
+analysis regarding their DON content [3].
+Min and Cho [9] presented a review about nondestructive detection of fungi and
+mycotoxins in grains, focusing on spectroscopic techniques and chemometrics. The spec-
+troscopy has advantages over conventional methods including the rapidness and nonde-
+structive nature of this approach. However, some limitations as expensive and complex
+setup equipment’s and low accuracy due to external interferents exist, which must be
+overcome before widespread adoption of these techniques.
+The application of computer vision on digital images offers a high-throughput and
+non-invasive alternative to analytical and immunological methods. This paper presents an
+automated method to detect Fusarium Damaged Kernels, which uses the application of
+computer vision to digital images.
+The main goal of this work is the use of machine learning algorithms and computer
+vision techniques to detect Fusarium Damaged Kernels in wheat, based on digital images.
+2. Material and Methods
+Digital images of Fusarium Head Blight symptomatic and non-symptomatic wheat ker-
+nels were available at the National Research Centre for Wheat (Embrapa Wheat), located
+in Passo Fundo, Rio Grande do Sul State, Brazil.
+The images were obtained by recording a video of 06:25 minutes using an Olym-
+pus SP-810UZ digital camera with 36x optical zoom, 24mm wide-angle view, and 14-
+megapixel resolution, 720p HD video and Olympus Lens 36x Wide Optical Zoom ED
+4.3-154.8mm 1:2.9-5.
+All tasks run on an iMac workstation conﬁgured with 32GB of RAM DDR3
+1600MHz, a 3.5GHz quad-core Intel Core i7 processor, and a NVIDIA GeForce GTX
+780M GPU with 4GB of GDDR5 memory. The TensorFlow 1.0.1 built from source with
+CUDA Toolkit 8.0 and cuDNN v5.1 to enable GPU support. All scripts were developed
+using Python 2.7.
+2.1. Methodology
+To classify digital images in predeﬁned classes, we could use one of the several methods
+developed in recent two decades [10, 6]. Methodologies to solve this kind of problem was
+developed both in Artiﬁcial Intelligence (AI), a research area in Computer Science, and
+in Statistics.
+The main differences between Statistics and AI approach are the size of the task,
+for statistics point of view, algorithms and techniques are limited when then input size
+of image dataset are greater than tens of thousand pictures and for a large number of
+classiﬁcation sets.
+During the training stage of a system to classify images and objects based only
+on information content embedded in a single digital ﬁle, it is necessary that this system
+would detect all possible contexts where the object could occur. Small differences in
+color, luminosity, angle and other could be misinterpreted by the proposed system and
+results in the wrong or low-level prediction classiﬁcation.
+The key advantage of using AI strategy in the image classiﬁcation task are re-
+lated to knowing how to combine layers and manage the relationship between levels of
+information, without needing any strong assumption related to the type of dependency or
+relational structure among input information.
+In some cases, the improvements in the accuracy and precision gain are archive
+using these ﬁne tune setting, but the most of the effort is made only with the input infor-
+mation, in other words, the processes are designed to take the most of the self-learning
+way.
+2.2. Deep Convolution Neural Network (DNN)
+The most used architecture of the neural network for image classiﬁcation task is called
+convolutional neural network (CNN). The convolution operation or, sometimes called
+convolution layer is related to the operation to process or respond to “stimuli” in a limited
+region known as the receptive ﬁeld.
+The receptive ﬁeld from each neuron contains a partial overlap of information
+from input layer (raw image) and, in this way, the preprocessing or further operations
+occur with a minimal amount of effort. Other advantages of this technique are related
+to the possibility of using distributed algorithms (even GPU versions) to calculate, ﬁlters
+and processing small pieces of information, one each time and aggregated the results
+when necessary [7].
+The deep portion of CNN come from the stacking or combination of several layers
+where the output of preceding layer is used as an input for the next one. The most common
+layers employed in DNN are convolution, ReLU (Rectiﬁed Linear Units), tanh (Hyper-
+bolic Tangent Function), max pooling, average pooling, fully connected, concat, dropout
+and softmax. To better understand this relationship see a CNN example in Figure 1.
+2.3. Transfer Learning
+Transfer learning is a machine learning method which utilizes a pre-trained neural net-
+work, this technique allows the detachment of the lasts outer layer (classiﬁcation layer)
+Figure 1. An example of relationship between layers in a CNN with convolution,
+max pooling and dense neuron connections annotated on the illustration.
+Source: [7, Figure 2]
+and uses the remains structure to retraining and get new weights corresponding the classes
+of interest – damaged kernel in our case (Figure 2).
+Figure 2. An illustration of a representation of a Deep Convolutional Neural Net-
+work, trained on top of ImageNet with detailed information about Feature Extrac-
+tion part and Classiﬁcation part. Each small box represents one of the layer types
+in the Inception Network: Convolution AvgPool, MaxPool, Concat, Dropout, Fully
+Connected and Softmax.
+Source: Adapted from [4, Figure 5]
+In this work, we use as a pre-trained neural network the output from [11]. Szegedy
+et al. [11] developed a 22 layer deep convolution neural network on top of ImageNet for
+classifying 1000 leaf-node categories, using 1.2 million images for training, 50,000 for
+validation and 100,000 images for testing.
+In brief, transfer learning makes it possible to classify new classes based on a new
+set of images, reusing the feature extraction part and re-train the classiﬁcation part of
+the new picture set. Since feature extraction part of the network it was already trained
+(which is the most complex part), the new neural network could be trained with less
+computational resources and time.
+2.4. Machine Learning Framework
+Nowadays we have some options to build and analyze deep neural networks using ma-
+chine learning algorithms. The ﬁnal choice would base on the computational infrastruc-
+ture available to run this task, either the number of classes, the intended purpose and
+where the ﬁnal Net will be deployed to handle.
+For this work, it is necessary a framework for machine learning that could run
+on a distributed system with both CPU and GPU, with the possibility to deploy the ﬁnal
+network to servers, desktops, mobile applications and embedded systems in an easy way.
+Alongside these needs, it is necessary that the chosen framework could easily im-
+plement the Transfer Learning techniques, described before. Based on these requirements,
+the natural choice is TensorFlow [1].
+Abadi et al. [1] presented TensorFlow as an interface for expressing and executing
+machine learning algorithms that can be performed with little or no change in a broad
+range of heterogeneous systems, ranging from mobile devices such as phones and tablets
+up to large-scale distributed systems of hundreds of machines and thousands of computa-
+tional devices such as GPU cards.
+2.5. Image Pre-processing
+To generate the normal kernel images was used the FFMPEG library1 to split the 6:25
+minutes movie into 11,555 individual ﬁles (1280x720). Both normal and damaged kernel
+images were arranged in the separate folder for later use.
+Before using the images for generating the neural network, they as randomly al-
+located in two distinct image sets: 80% and 20% for training and validation set, respec-
+tively. In the process of training the Net, other parts of wheat plant structure like spikes
+and leaves were used too in the composition of the DNN intending to classify better the
+wheat damaged kernels.
+3. Results and Rationale
+Comparing the effort described in [11] to training a whole DNN from scratch with the
+number of pictures necessary to get reasonable results. In our case, the number of pictures
+available at the moment (≈ 12,000) probably will not archive this scores and deﬁnitely,
+the time and computational infrastructure necessary to training and evaluate the resultant
+DNN must be larger than installed capacity.
+A broad range of applications are using transfer learning, Devikar [4] describe the
+use in image classiﬁcation of various dog breeds with an overall accuracy of 96% from
+11 dog breeds. Wang et al. [13] describes the application for remote scene classiﬁcation
+and attempt to form a baseline for transferring pre-trained DNN to remote sensing images
+with various spatial and spectral information.
+Esteva et al. [5] describes the use of DNN for dermatologist-level classiﬁcation of
+skin cancer, trained end-to-end from images directly, using only pixels and disease labels
+as inputs for a dataset of 129,450 clinical images.
+1FFMPEG library, see more information on http://www.ffmpeg.org.
+Tk´aˇc and Verner [12] presents many business applications, using artiﬁcial neural
+networks, related to ﬁnancial distress and bankruptcy problems, stock price forecasting,
+and decision support, with particular attention to classiﬁcation tasks. For other uses of
+CNN and DNN, see [10, 6].
+The training procedure was carried out on the described workstation and took up
+to 1 hour to ﬁnish, and the output retrained neural network archive an overall average
+accuracy of 94.7%. The main structure of the ﬁnal neural network is presented in Figure
+3.
+For validation purposes and to check the correctness in classifying new images of
+wheat kernels (with and without Fusarium damage) we choose a new dataset to validate
+against DNN. These images were from National Research Centre for Wheat articles pub-
+lished over last decade about this content, alongside with other open source images of
+Fusarium damaged kernel found over the Internet.
+At this point, we could share our positive experience in using the transfer learning
+techniques in relation to time to training a DNN with a new set of images and classes and
+the overall accuracy achieved with this initial image dataset.
+The results from validation dataset present a total of 20% of misclassiﬁcation, and
+in half (10%) the new images were classiﬁed as damaged leaves class. This results could
+be related to two main reasons: (a) the small number of pictures with Fusarium Damaged
+Kernels and (b) the prevalence of the normal wheat kernels present in the initial dataset
+(≈ 80%).
+4. Conclusions
+The associated use of Transfer Learning, TensorFlow, and Inception-v3 cut the time nec-
+essary to training and the necessity to have a large image dataset (≈ 120,000) to start the
+classiﬁcation procedure with a good accuracy level, compared to training a DNN from
+scratch.
+The misclassiﬁcation for damaged leaves class could be associated with the char-
+acteristics of damage both in kernel and leaves (in the most cases) where the region color
+of lesions was more blight that the standard wheat kernel.
+Unfortunately, the symptoms on leaves present in this initial dataset was not sep-
+arated by diseases.Thus, it was not possible to claim that some visual characteristics of
+FHB in leaves could be transferred to kernel evaluations in our context. This hypothesys
+needs to be investigated by adding new images to the present dataset related to Fusarium
+Damaged Kernel and wheat leaves with FHB symptoms.
+Beside this misclassiﬁcation for a new dataset, the overall average accuracy
+archived (94.7%) for this Fusarium Damaged Kernels Deep Neural Network (FDK-
+DNN). Therefore, there is a potential of using this methodology for classifying Fusarium
+Damaged Kernel by means of smartphone camera.
+The accuracy of the proposed methodology is equivalent to ones using HSI
+methodology presented by [3].
+An interesting future work could be related to using a mixed of RGB pictures, and
+layers from HSI operational spectra for Fusarium Damaged Kernel proposed by [2].
+Figure 3.
+An illustration
+of Deep Convolutional Neu-
+ral Network,
+trained using
+TensorFlow [1] and Transfer
+Learning techniques from a
+pre-trained Inception-v3 [11]
+for an image dataset contain-
+ing Fursarim Damaged Ker-
+nel, normal kernel, spikes
+and leaves from wheat. The
+output deep neural network
+archive an overall average ac-
+curacy of 94.7%.
+kernels using hyperspectral imaging. Biosystems Engineering, 155:24–32, 2017.
+[4] P. Devikar. Transfer learning for image classiﬁcation of various dog breeds.
+In-
+ternational Journal of Advanced Research in Computer Engineering & Technology
+(IJARCET), 5(12):2707–2715, 2016.
+[5] A. Esteva, B. Kuprel, R. A. Novoa, J. Ko, S. M. Swetter, H. M. Blau, and S. Thrun.
+Dermatologist-level classiﬁcation of skin cancer with deep neural networks. Nature,
+542(7639):115–118, 2017.
+[6] Y. Guo, Y. Liu, A. Oerlemans, S. Lao, S. Wu, and M. S. Lew. Deep learning for
+visual understanding: A review. Neurocomputing, 187:27 – 48, 2016. ISSN 0925-
+2312. doi: https://doi.org/10.1016/j.neucom.2015.09.116. Recent Developments on
+Deep Big Vision.
+[7] A. Krizhevsky, I. Sutskever, and G. E. Hinton. Imagenet classiﬁcation with deep
+convolutional neural networks. In Advances in neural information processing sys-
+tems, pages 1097–1105, 2012.
+[8] P. V. Maloney, S. Petersen, R. A. Navarro, D. Marshall, A. L. McKendry, J. M.
+Costa, and J. P. Murphy. Digital image analysis method for estimation of fusarium-
+damaged kernels in wheat. Crop Science, 54(5):2077–2083, 2014.
+[9] H. Min and B.-K. Cho. Spectroscopic techniques for nondestructive detection of
+fungi and mycotoxins in agricultural materials: A review. Journal of Biosystems
+Engineering, 40(1):67–77, 2015.
+References
+[1] M. Abadi, A. Agarwal, P. Barham, E. Brevdo, Z. Chen, C. Citro, G. S. Corrado,
+A. Davis, J. Dean, M. Devin, et al. Tensorﬂow: Large-scale machine learning on
+heterogeneous distributed systems. arXiv preprint arXiv:1603.04467, 2016.
+[2] J. G. Barbedo, C. S. Tibola, and J. M. Fernandes. Detecting fusarium head blight
+in wheat kernels using hyperspectral imaging. Biosystems Engineering, 131:65–76,
+2015.
+[3] J. G. A. Barbedo, C. S. Tibola, and M. I. P. Lima. Deoxynivalenol screening in wheat
+[10] J. Schmidhuber. Deep learning in neural networks: An overview. Neural Networks,
+61:85 – 117, 2015. ISSN 0893-6080. doi: https://doi.org/10.1016/j.neunet.2014.09.
+003.
+[11] C. Szegedy, W. Liu, Y. Jia, P. Sermanet, S. Reed, D. Anguelov, D. Erhan, V. Van-
+houcke, and A. Rabinovich. Going deeper with convolutions. In Computer Vision
+and Pattern Recognition (CVPR), 2015.
+[12] M. Tk´aˇc and R. Verner. Artiﬁcial neural networks in business: Two decades of
+ISSN 1568-4946. doi:
+research. Applied Soft Computing, 38:788 – 804, 2016.
+https://doi.org/10.1016/j.asoc.2015.09.040.
+[13] J. Wang, C. Luo, H. Huang, H. Zhao, and S. Wang. Transferring pre-trained deep
+cnns for remote scene classiﬁcation with general features learned from linear pca
+network. Remote Sensing, 9(3):225, 2017.

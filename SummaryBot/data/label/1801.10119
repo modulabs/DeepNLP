@@ -1,0 +1,28 @@
+
+The linearly constrained nonconvex nonsmooth program has drawn much attention over the
+last few years due to its ubiquitous power of modeling in the area of machine learning. A variety
+of important problems, including deep learning, matrix factorization and phase retrieval, can be
+reformulated as the problem of optimizing a highly nonconvex and nonsmooth objective function
+with some linear constraints. However, it is challenging to solve a linearly constrained nonconvex
+nonsmooth program, which is much complicated than its unconstrained counterpart. In fact, the
+feasible region is a polyhedron, where a simple projection is intractable in general, and moreover, the
+per-iteration cost is extremely expensive in real scenario, where the dimension of decision variable is
+high. Therefore, it has been recognized promising to develop a provable and practical algorithm for
+solving linearly constrained nonconvex nonsmooth programs.
+In this paper, we develop an incremental path-following splitting algorithm, denoted as IPFS,
+with a theoretical guarantee and a low computational cost.
+In speciﬁc, we show that this algo-
+rithm converges to an ǫ-approximate stationary solution within O(1/ǫ) iterations with very low
+per-iteration cost. To the best of our knowledge, this is the ﬁrst incremental method to solve linearly
+constrained nonconvex nonsmooth programs with a theoretical guarantee. Experiments conducted
+on the constrained concave penalized linear regression (CCPLR) and nonconvex support vector ma-
+chine (NCSVM) demonstrate that the proposed algorithm is more eﬀective and stable than other
+competing methods.
+Keywords: Linearly constrained nonconvex nonsmooth program; increment; path-following; splitting
+method; iteration complexity.
+∗Department of Industrial Engineering and Operations Research, UC Berkeley, California, USA. Email: dar-
+ren lin@berkeley.edu
+†College of Computer, National University of Defense Technology, Changsha, China. Email: linboqiao@gmail.com
+‡Tencent AI Lab, Shenzhen, China. Email: wliu@ee.columbia.edu
+§School of Computer Engineering, Nanyang Technological University, Singapore. Email: chhoi@ntu.edu.sg
+1

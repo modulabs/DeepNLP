@@ -1,0 +1,927 @@
+©2017 IEEE. Personal use of this material is permitted. Permission from IEEE must be obtained for all other uses, in any current or future media, including
+reprinting/republishing this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists,
+or reuse of any copyrighted component of this work in other works
+Deep Learning of Constrained Autoencoders for
+Enhanced Understanding of Data
+Babajide O. Ayinde, Student Member, IEEE, and Jacek M. Zurada, Life Fellow, IEEE
+Abstract—Unsupervised feature extractors are known to per-
+form an efﬁcient and discriminative representation of data.
+Insight into the mappings they perform and human ability to
+understand them, however, remain very limited. This is especially
+prominent when multilayer deep learning architectures are used.
+This paper demonstrates how to remove these bottlenecks within
+the architecture of Nonnegativity Constrained Autoencoder (NC-
+SAE). It is shown that by using both L1 and L2 regularization
+that induce nonnegativity of weights, most of the weights in the
+network become constrained to be nonnegative thereby resulting
+into a more understandable structure with minute deterioration
+in classiﬁcation accuracy. Also, this proposed approach extracts
+features that are more sparse and produces additional output
+layer sparsiﬁcation. The method is analyzed for accuracy and
+feature interpretation on the MNIST data, the NORB normalized
+uniform object data, and the Reuters text categorization dataset.
+Index Terms—Sparse autoencoder, part-based representation,
+white-box model, deep learning, receptive ﬁeld.
+I. INTRODUCTION
+D EEP learning (DL) networks take the form of heuristic
+and rich architectures that develop unique intermediate
+data representation. The complexity of architectures is re-
+ﬂected by both the sizes of layers and, for a large number
+of data sets reported in the literature, also by the processing.
+In fact, the architectural complexity and the excessive number
+of weights and units are often built
+in into the DL data
+representation by design and are deliberate [1–5]. Although
+deep architectures are capable of learning highly complex
+mappings, they are difﬁcult to train, and it is usually hard
+to interpret what each layer has learnt. Moreover, gradient-
+based optimization with random initialization used in training
+is susceptible to converging to local minima [6], [7].
+In addition, it is generally believed that humans analyze
+complex interactions by breaking them into isolated and
+understandable hierarchical concepts. The emergence of part-
+based representation in human cognition can be conceptually
+tied to the nonnegativity constraints [8]. One way to enable
+easier human understandability of concepts in neural networks
+is to constrain the network’s weights to be nonnegative. Note
+that such representation through nonnegative weights of a
+multilayer network perceptron can implement any shattering
+B. O. Ayinde is with the Department of Electrical and Computer En-
+gineering, University of Louisville, Louisville, KY, 40292 USA (e-mail:
+babajide.ayinde@louisville.edu).
+J. M. Zurada is with the Department of Electrical and Computer Engineer-
+ing, University of Louisville, Louisville, KY, 40292 USA, and also with the
+Information Technology Institute, University of Social Science,Ł´odz 90-113,
+Poland (Corresponding author, e-mail: jacek.zurada@louisville.edu).
+This work was supported in part by the NSF under grant 1641042.
+of points provided suitable negative bias values are used [9].
+Drawing inspiration from the idea of Nonnegative Matrix
+Factorization (NMF) and sparse coding [8], [10], the hidden
+structure of data can be unfolded by learning features that
+have capabilities to model the data in parts. Although NMF
+enforces the encoding of both the data and features to be
+nonnegative thereby resulting in additive data representation,
+however,
+incorporating sparse coding within NMF for the
+purpose of encoding data is computationally expensive, while
+with AEs, this incorporation is learning-based and fast. In
+addition, the performance of a deep network can be enhanced
+using Nonnegativity Constrained Sparse Autoencoder (NCAE)
+with part-based data representation capability [11], [12].
+It is remarked that weight regularization is a concept that has
+been employed both in the understandability and generaliza-
+tion context. It is used to suppress magnitudes of the weights
+by reducing the sum of their squares. Enhancement in sparsity
+can also be achieved by penalizing sum of absolute values of
+the weights rather than the sum of their squares [13–17]. In
+this paper, the work proposed in [11] is extended by modifying
+the cost function to extract more sparse features, encouraging
+nonnegativity of the network weights, and enhancing the
+understandability of the data. Other related model
+is the
+Nonnegative Sparse Autoencoder (NNSAE) trained with an
+online algorithm with tied weights and linear output activation
+function to mitigate the training hassle [18]. While [18] uses a
+piecewise linear decay function to enforce nonnegativity and
+focuses on shallow architecture, the proposed uses a composite
+norm with focus on deep architectures. Dropout is another
+recently introduced and widely used heuristic to sparsify AEs
+and prevent overﬁtting by randomly dropping units and their
+connections from the neural network during training [19], [20].
+More recently, different paradigm of AEs that constrain
+the output of encoder to follow a chosen prior distribution
+have been proposed [21–23]. In variational autoencoding, the
+decoder is trained to reconstruct the input from samples that
+follow chosen prior using variational inference [21]. Realistic
+data points can be reconstructed in the original data space
+by feeding the decoder with samples from chosen prior
+distribution. On the other hand, adversarial AE matches the
+encoders output distribution to an arbitrary prior distribution
+using adversarial training with discriminator and the generator
+[22]. Upon adversarial training, encoder learns to map data
+distribution to the prior distribution.
+The problem addressed here is three-fold: (i) The inter-
+pretability of AE-based deep layer architecture fostered by en-
+forcing high degree of weight’s nonnegativity in the network.
+This improves on NCAEs that show negative weights despite
+imposing nonnegativity constraints on the network’s weights
+[11]. (ii) It is demonstrated how the proposed architecture can
+be utilized to extract meaningful representations that unearth
+the hidden structure of a high-dimensional data. (iii) It is
+shown that the resulting nonnegative AEs do not deteriorate
+their classiﬁcation performance. This paper considerably ex-
+pands the scope of the AE model ﬁrst introduced in [24]
+by: (i) introducing smoothing function for L1 regularization
+for numerical stability, (ii) illustrating the connection between
+the proposed regularization and weights’ nonnegativity, (iii)
+drawing more insight into variety of dataset, (iv) comparing
+the proposed with recent AE architectures, and lastly (v) sup-
+porting the interpretability claim with new experiments on text
+categorization data. The paper is structured as follows: Section
+II introduces the network conﬁguration and the notation for
+nonnegative sparse feature extraction. Section III discusses
+the experimental designs and Section IV presents the results.
+Finally, conclusions are drawn in Section V.
+II. NONNEGATIVE SPARSE FEATURE EXTRACTION USING
+CONSTRAINED AUTOENCODERS
+As shown in [8], one way of representing data is by
+shattering it
+into various distinct pieces in a manner that
+additive merging of these pieces can reconstruct the original
+data. Mapping this intuition to AEs, the idea is to sparsely
+disintegrate data into parts in the encoding layer and subse-
+quently additively process the parts to recombine the original
+data in the decoding layer. This disintegration can be achieved
+by imposing nonnegativity constraint on the network’s weights
+[11], [25], [26].
+A. L1/L2-Nonnegativity Constrained Sparse Autoencoder
+(L1/L2-NCSAE)
+In order to encourage higher degree of nonnegativity in
+network’s weights, a composite penalty term (1) is added to
+the objective function resulting in the cost function expression
+for L1/L2-NCSAE:
+n(cid:48)(cid:88)
+(cid:0)W, b(cid:1) = JAE + β
+sl(cid:88)
+2(cid:88)
+r=1
+(cid:13)(cid:13)(cid:13)(cid:13) 1
+(cid:18)
+sl+1(cid:88)
+fL1/L2
+m(cid:88)
+(cid:0)w(l)
+k=1
+ij
+(cid:1)
+DKL
+hr(x(k))
+JL1/L2-NCSAE
+l=1
+i=1
+j=1
+(1)
+where W = {W(1), W(2)} and b = {bx, bh} represent the
+weights and biases of encoding and decoding layers respec-
+tively; sl is the number of neurons in layer l. w(l)
+represents
+the connection between jth neuron in layer l−1 and ith neuron
+ij
+in layer l and for given input x,
+(cid:13)(cid:13)(cid:13)σ(W(2)σ(W(1)x(k) + bx) + bh) − x(k)(cid:13)(cid:13)(cid:13)2
+(2)
+|| (cid:5) ||2 is
+where m is the number of training examples,
+the Euclidean norm. DKL((cid:5)) is the Kullback-Leibler (KL)
+divergence for sparsity control [27] with p denoting the desired
+m(cid:88)
+JAE =
+k=1
+activation and the average activations of hidden units, n(cid:48) is
+the number of hidden units, hj(x(k)) = σ(W(1)
+j x(k) + bx,j)
+denotes the activation of hidden unit j due to input x(k), and
+σ((cid:5)) is the element-wise application of the logistic sigmoid,
+σ(x) = 1/(1 + exp(−x)), β controls the sparsity penalty term,
+and
+(cid:40)
+fL1/L2 (wij) =
+α1Γ(wij, κ) +
+||wij||2
+α2
+wij < 0
+wij ≥ 0
+(3)
+where α1 and α2 are L1 and L2 nonnegativity-constraint
+weight penalty factors, respectively. p, β, α1, and α2 are
+experimentally set to 0.05, 3, 0.0003, and 0.003, respectively
+using 9000 randomly sampled images from the training set
+as a held-out validation set for hyperparameter tuning and the
+network is retrained on the entire dataset. The weights are
+updated as below using the error backpropagation:
+w(l)
+ij = w(l)
+ij − ξ
+∂w(l)
+ij
+JL1/L2-NCSAE(W, b)
+b(l)
+i = b(l)
+i − ξ
+∂b(l)
+JL1/L2-NCSAE(W, b)
+(4)
+(5)
+where ξ > 0 is the learning rate and the gradient of L1/L2-
+NCSAE loss function is computed as in (6).
+∂w(l)
+ij
+JL1/L2-NCSAE(W, b) =
+(cid:0)W, b(cid:1)
+(cid:13)(cid:13)(cid:13)(cid:13) 1
+(cid:18)
+DKL
+JAE
+∂w(l)
+ij
++ β
++ g(cid:0)w(l)
+∂w(l)
+ij
+(cid:1)
+ij
+(cid:19)
+hj(x(k))
+m(cid:88)
+k=1
+(6)
+where g(wij) is a composite function denoting the derivative
+of fL1/L2(wij) (3) with respect to wij as in (7).
+(cid:26) α1∇w (cid:107)wij(cid:107) + α2wij
+wij < 0
+wij ≥ 0
+(7)
+g(wij) =
+(cid:19)
+Although the penalty function in (1)
+is an extension
+of NCAE (obtained by setting α1 to zero), a close scrutiny
+of the weight distribution of both the encoding and decoding
+layer
+in NCAE reveals that many weights are still not
+nonnegative despite imposing nonnegativity constraints. The
+reason for this is that the original L2 norm used in NCAE
+penalizes the negative weights with big magnitudes stronger
+than those with smaller magnitudes. This forces a good
+number of the weights to take on small negative values. This
+paper uses additional L1 to even out this occurrence, that is,
+the L1 penalty forces most of the negative weights to become
+nonnegative.
+B. Implication of imposing nonnegative parameters with com-
+posite decay function
+The graphical illustration of the relation between the weight
+distribution and the composite decay function is shown in
+3
+(a)
+(b)
+(c)
+(d)
+Fig. 1: (a) Symmetric (G3) and skewed (G1 and G2) weight distributions. Decay function with three values of α1 and α2 for
+weight distribution (b) G3 (c) G1 and (d) G2.
+Fig. 1. Ideally, addition of Frobenius norm of the weight
+matrix (α||W||2
+F ) to the reconstruction error in (2) imposes
+a Gaussian prior on the weight distribution as shown in
+curve G3 in Fig. 1a. However, using the composite function
+in (3) results in imposition of positively-skewed deformed
+Gaussian distribution as in curves G1 and G2. The degree
+of nonnegativity can be adjusted using parameters α1 and
+α2. Both parameters have to be carefully chosen to enforce
+nonnegativity while simultaneously ensuring good supervised
+learning outcomes. The effect of L1 (α2 = 0), L2 (α1 = 0)
+and L1/L2 (α1 (cid:54)= 0 and α2 (cid:54)= 0) nonnegativity penalty terms
+on weight updates for weight distributions G1, G2 and G3 are
+respectively shown in Fig. 1c,d, and b. It can be observed for
+all the three distributions that L1/L2 regularization enforces
+stronger weight decay than individual L1 and L2 regulariza-
+tion. Other observation from Fig. 1 is that the more positively-
+skewed the weight distribution becomes, the lesser the weight
+decay function.
+The consequences of minimizing (1) are that: (i) the average
+reconstruction error is reduced (ii) the sparsity of the hidden
+layer activations is increased because more negative weights
+are forced to zero thereby leading to sparsity enhancement,
+and (iii) the number of nonnegative weights is also increased.
+The resultant effect of penalizing the weights simultaneously
+with L1 and L2 norm is that large positive connections are
+preserved while their magnitudes are shrunk. However, the
+L1 norm in (3) is non-differentiable at the origin, and this can
+lead to numerical instability during simulations. To circumvent
+this drawback, one of the well known smoothing function that
+approximates L1 norm as in (3) is utilized. Given any ﬁnite
+dimensional vector z and positive constant κ, the following
+smoothing function approximates L1 norm:
+||z|| > κ
+||z|| ≤ κ
+||z|| > κ
+||z|| ≤ κ
+(8)
+(9)
+(cid:40) ||z||
+Γ(z, κ) =
+||z||2
+2κ
+with gradient
+∇zΓ(z, κ) =
+(cid:40) z
+||z||
+For convenience, we adopt (8) to smoothen the L1 penalty
+function and κ is experimentally set to 0.1.
+III. EXPERIMENTS
+the dataset
+In the experiments,
+three data sets are used, namely:
+MNIST [28], NORB normalized-uniform [29], and Reuters-
+21578 text categorization dataset. The Reuters-21578 text
+categorization dataset comprises of documents that featured
+in 1987 Reuters newswire. The ModApte split was em-
+to 10 most frequent classes.
+ployed to limit
+The ModApte split was utilized to limit
+the categories
+to 10 most frequent categories. The bag-of-words format
+that has been stemmed and stop-word removed was used;
+see http://people.kyb.tuebingen.mpg.de/pgehler/rap/ for further
+clariﬁcation. The dataset contains 11, 413 documents with
+12, 317 dimensions. Two techniques were used to reduce the
+dimensionality of each document in order to preserve the most
+informative and less correlated words [30]. To reduce the
+dimensionality of each document to contain the most informa-
+tive and less correlated words, words were ﬁrst sorted based
+on their frequency of occurrence in the dataset. Words with
+frequency below 4 and above 70 were then eliminated. The
+most informative words that do not occur in every topic were
+selected based on information gain with the class attribute. The
+remaining words (or features) in the dataset were sorted using
+this method, and the less important features were removed
+based on the desired dimension of documents. In this paper,
+the length of the feature vector for each of the documents was
+reduced to 200.
+In the preliminary experiment, the subset 1, 2 and 6 from
+the MNIST handwritten digits as extracted for the purpose
+of understanding how the deep network constructed using
+L1/L2-NCSAE processes and classiﬁes its input. For easy in-
+terpretation, a small deep network was constructed and trained
+by stacking two AEs with 10 hidden neurons each and 3
+softmax neurons. The number of hidden neurons was chosen to
+obtain reasonably good classiﬁcation accuracy while keeping
+the network reasonably small. The network is intentionally
+kept small because the full MNIST data would require larger
+hidden layer size and this may limit network interpretability.
+An image of digit 2 is then ﬁltered through the network, and
+it can be observed in Fig. 2 that sparsiﬁcation of the weights
+in all the layers is one of the aftermath of nonnegativity
+−1−0.500.5100.20.40.60.81weight wProbability Distribution P(w)  G1G2G3−1−0.500.51−2−1.5−1−0.50wg(w)   α1= 1,α2= 1α1= 1,α2= 0α1= 0,α2= 1−1−0.500.51−2−1.5−1−0.50wg(w)   α1= 1,α2= 1α1= 1,α2= 0α1= 0,α2= 1−0.500.511.5−1.4−1.2−1−0.8−0.6−0.4−0.20wg(w)   α1= 1,α2= 1α1= 1,α2= 0α1= 0,α2= 14
+Fig. 2: Filtering the signal through the L1/L2-NCSAE trained using the reduced MNIST data set with class labels 1, 2 and
+6. The test image is a 28×28 pixels image unrolled into a vector of 784 values. Both the input test sample and the receptive
+ﬁelds of the ﬁrst autoencoding layer are presented as images. The weights of the output layer are plotted as a diagram with
+one row for each output neuron and one column for every hidden neuron in (L − 1)th layer. The architecture is 784-10-10-3.
+The range of weights are scaled to [-1,1] and mapped to the graycolor map. w = −1 is assigned to black, w = 0 to grey, and
+w = 1 is assigned to white color. That is, black pixels indicate negative, grey pixels indicate zero-valued weights and white
+pixels indicate positive weights.
+constraints imposed on the network. Another observation is
+that most of the weights in the network have been conﬁned to
+nonnegative domain, which removes opaqueness of the deep
+learning process. It can be seen that the fourth and seventh
+receptive ﬁelds of the ﬁrst AE layer have dominant activations
+(with activation values 0.12 and 0.13 respectively) and they
+capture most information about the test input. Also, they are
+able to ﬁlter distinct part of input digit. The outputs of the ﬁrst
+layer sigmoid constitute higher level features extracted from
+test image with emphasis on the fourth and seventh features.
+Subsequently in second layer the second, sixth, eight, and tenth
+neurons have dominant activations (with activation values
+0.0914, 0.0691, 0.0607, and 0.0606 respectively) because
+they have stronger connections with the dominant neurons
+in ﬁrst layer than the rest. Lastly in the softmax layer, the
+second neuron was 99.62% activated because it has strongest
+connections with the dominant neurons in second layer thereby
+classifying the test image as ”2”.
+The fostering of interpretability is also demonstrated using
+a subset of NORB normalized-uniform dataset [29] with class
+labels ”four-legged animals”, ”human ﬁgures”, ”airplanes”.
+The 1024-10-5-3 network conﬁguration was trained on the
+subset of the NORB data using two stacked L1/L2-NCSAEs
+and a Softmax layer. Fig. 3b shows the randomly sampled test
+patterns and the weights and activations of ﬁrst and second
+AE layer are shown in Fig. 3a. The bar charts indicate the
+activations of hidden units for the sample input patterns. The
+features learned by units in each layer are localized, sparse and
+allow easy interpretation of isolated data parts. The features
+mostly show nonnegative weights making it easier to visualize
+to what input object patterns they respond. It can be seen that
+units in the network discriminate among objects in the images
+and react differently to input patterns. Third, sixth, eight, and
+ninth hidden units of layer 1 capture features that are common
+to objects in class ”2” and react mainly to them as shown in
+the ﬁrst layer activations. Also, the features captured by the
+second layer activations reveal that second and ﬁfth hidden
+units are mainly stimulated by objects in class ”2”.
+The outputs of Softmax layer represent the a posteriori class
+probabilities for a given sample and are denoted as Softmax
+scores. An important observation from Fig. 3a,b, and c is
+that hidden units in both layers did not capture signiﬁcant
+representative features for class ”1” white color-coded test
+sample. This is one of the reasons why it is misclassiﬁed into
+class ”3” with probability of 0.57. The argument also goes for
+class ”1” dark-grey color-coded test sample misclassiﬁed into
+class ”3” with probability of 0.60. In contrast, hidden units in
+both layers capture signiﬁcant representative features for class
+”2” test samples of all color codes. This is why all class ”2”
+test samples are classiﬁed correctly with high probabilities as
+shown in Fig. 3d. Lastly, the network contains a good number
+of representative features for class ”3” test samples and was
+able to classify 4 out of 5 correctly as given in Fig. 3e.
+IV. RESULTS AND DISCUSSION
+A. Unsupervised Feature Learning of Image Data
+In the ﬁrst set of experiments, three-layer L1/L2-NCSAE,
+NCAE [11], DpAE [19], and conventional SAE network with
+196 hidden neurons were trained using MNIST dataset of
+handwritten digits and their ability to discover patterns in
+Test sample    (Image) Weights and biases of hidden  neurons in Layer 1, each image is  formed from weights of a single  neuron 1.  The dot-products  of  the input and  Neuron weights in  Layer 1 2.  The bias is added,  then the sigmoid is  applied 3.  The bias is added,  then the sigmoid is applied  4.  The dot-product  with classification  layer weights. Biases  are added 5.  Finally, the softmax  nonlinearity is applied  to get probabilities -5.881 -3.329 -3.169 -2.919 -3.163 -3.173 -3.098 -27.69 -3.567 -3.344 = 0.072 = 0.044 = 0.022 = 0.12 = 0.036 = 0.073 = 0.13 = 0.016 = 0.038 = 0.082 -3.917 -4.142 -3.550 -3.381 -3.699 -3.969 -3.410 -3.987 -3.899 -3.793 = 0.0425 = 0.0914 = 0.0468 = 0.0439 = 0.0393  = 0.0691 = 0.0528 = 0.0607 = 0.0401 = 0.0606 = 53.16 = 61.07 = 55.39 0.0004 for “1” 0.9962 for “2” 0.0034 for “6” Weights and biases of hidden  neurons in Layer 2. Each  row is  a vector of weights of a single  neuron Matrix of classification weights  where each row represents one  output neuron  5
+Fig. 3: The weights were trained using two stacked L1/L2-NCSAEs. RFs learned from the reduced NORB dataset are plotted
+as images at the bottom part of (a). The intensity of each pixel is proportional to the magnitude of the weight connected to
+that pixel in the input image with negative value indicating black, positive values white, and the value 0 corresponding to gray.
+The biases are not shown. The activations of ﬁrst layer hidden units for the NORB objects presented in (b) are depicted on the
+bar chart on top of the RFs. The weights of the second layer AE are plotted as a diagram at the topmost part of (a). Each row
+of the plot corresponds to the weight of each hidden unit of second AE and each column for weight of every hidden unit of
+the ﬁrst layer AE. The magnitude of the weight corresponds to the area of each square; white indicates positive, grey indicates
+zero, and black negative sign. The activations of second layer hidden units are shown as bar chart in the right-hand side of
+the second layer weight diagram. Each column shows the activations of each hidden unit for ﬁve color-coded examples of the
+same object. The outputs of Softmax layer for color-coded test objects with class labels (c) ”fourlegged animals” tagged as
+class 1, (d) ”human ﬁgures” as class 2, and (e) ”airplanes” as class 3.
+high dimensional data are compared. These experiments were
+run one time and recorded. The encoding weights W(1), also
+known as receptive ﬁelds or ﬁlters as in the case of image
+data, are reshaped, scaled, centered in a 28 × 28 pixel box
+and visualized. The ﬁlters learned by L1/L2-NCSAE are
+compared with that learned by its counterparts, NCAE and
+SAE. It can be easily observed from the results in Fig. 4 that
+L1/L2-NCSAE learned receptive ﬁelds that are more sparse
+and localized than those of SAE, DpAE, and NCAE. It is
+remarked that the black pixels in both SAE and DpAE features
+are results of the negative weights whose values and numbers
+are reduced in NCAE with nonnegativity constraints, which
+are further reduced by imposing an additional L1 penalty term
+in L1/L2-NCSAE as shown in the histograms located on the
+right side of the ﬁgure. In the case of L1/L2-NCSAE, tiny
+strokes and dots which constitute the basic part of handwritten
+digits, are unearthed compared to SAE, DpAE, and NCAE.
+Most of the features learned by SAE are major parts of the
+digits or the blurred version of the digits, which are obviously
+not as sparse as those learned by L1/L2-NCSAE. Also, the
+features learned by DpAE are fuzzy compared to those of
+L1/L2-NCSAE which are sparse and distinct. Therefore, the
+achieved sparsity in the encoding can be traced to the ability of
+L1 and L2 regularization in enforcing high degree of weights’
+nonnegativity in the network.
+Likewise in Fig. 5a, L1/L2-NCSAE with other AEs are
+compared in terms of reconstruction error, while varying the
+number of hidden nodes. As expected, it can be observed that
+L1/L2-NCSAE yields a reasonably lower reconstruction error
+on the MNIST training set compared to SAE, DpAE, and
+NCAE. Although, a close scrutiny of the result also reveals
+that the reconstruction error of L1/L2-NCSAE deteriorates
+compared to NCAE when the hidden size grows beyond 400.
+However on the average, L1/L2-NCSAE reconstructs better
+than other AEs considered. It can also be observed that DpAE
+with 50% dropout has high reconstruction error when the
+hidden layer size is relatively small (100 or less). This is
+because the few neurons left are unable to capture the dy-
+namics in the data, which subsequently results in underﬁtting
+the data. However, the reconstruction error improves as the
+hidden layer size is increased. Lower reconstruction error
+in the case of L1/L2-NCSAE and NCAE is an indication
+that nonnegativity constraint facilitates the learning of parts
+of digits that are essential for reconstructing the digits. In
+addition,
+the KL-divergence sparsity measure reveals that
+L1/L2-NCSAE has more sparse hidden activations than SAE,
+DpAE and NCAE for different hidden layer size as shown
+in Fig. 5b. Again, averaging over all the training examples,
+L1/L2-NCSAE yields less activated hidden neurons compared
+to its counterparts. Also, using t-distributed stochastic neighbor
+3 2 1 3 2 1 1 2 3 (a) (b) (e) Softmax  scores (c) (d) 0.84    0.16      0.00 0.59    0.40      0.01 0.32    0.08      0.60 0.27    0.16      0.57 0.09    0.91      0.00 0.01    0.99      0.00 0.06    0.94      0.00 0.15    0.85      0.00 0.03    0.97      0.00 0.24    0.14      0.62 0.22    0.13      0.65 0.55    0.25      0.20 0.31    0.18      0.52 0.24    0.13      0.63 Weights of 5 hidden units in Layer 2 Weights of 10 hidden units in Layer 1 Activations of  Layer 2 hidden  units  Activations of  Layer 1 hidden  units  Class  1 images  Class  2 images  Class  3  images  0.87    0.13      0.00 6
+(a) SAE
+(b) DpAE
+(c) NCAE
+(d) L1/L2-NCSAE
+Fig. 4: 196 receptive ﬁelds (W(1)) with weight histograms learned from MNIST digit data set using (a) SAE, (b) DpAE
+(c) NCAE, and (d) L1/L2-NCSAE. Black pixels indicate negative, and white pixels indicate positive weights. The range of
+weights are scaled to [-1,1] and mapped to the graycolor map. w = −1 is assigned to black, w = 0 to grey, and w = 1 is
+assigned to white color.
+(a)
+(b)
+Fig. 5: (a) Reconstruction error and (b) Sparsity of hidden units measured by KL-divergence using MNIST train dataset with
+p = 0.05.
+embedding (t-SNE) to project the 196-D representation of
+MNIST handwritten digits to 2D space, the distribution of
+features encoded by 196 encoding ﬁlters of DpAE, NCAE,
+and L1/L2-NCSAE are respectively visualized in Figs. 6a,
+b, and c. A careful look at Fig. 6a reveals that digits ”4”
+and ”9” are overlapping in DpAE, and this will inevitably
+increase the chance of misclassifying these two digits. It can
+also be observed in Fig. 6b corresponding to NCAE that digit
+”2” is projected with two different landmarks. In sum, the
+manifolds of digits with L1/L2-NCSAE are more separable
+than its counterpart as shown in Fig. 6c, aiding the classiﬁer
+to map out the separating boundaries among the digits more
+easily.
+In the second experiment, SAE, NCAE, L1/L2-NCSAE,
+and DpAE with 200 hidden nodes were trained using the
+NORB normalized-uniform dataset. The NORB normalized-
+uniform dataset, which is the second dataset, contains 24, 300
+training images and 24, 300 test
+images of 50 toys from
+5 generic categories: four-legged animals, human ﬁgures,
+airplanes, trucks, and cars. The training and testing sets consist
+of 5 instances of each category. Each image consists of two
+channels, each of size 96× 96 pixels. The inner 64× 64 pixels
+of one of the channels cropped out and resized using bicubic
+interpolation to 32 × 32 pixels that form a vector with 1024
+entries as the input. Randomly selected weights of 90 out of
+200 neurons are plotted in Fig. 7. It can be seen that L1/L2-
+NCSAE learned more sparse features compared to features
+learned by all the other AEs considered. The receptive ﬁelds
+100200300400500024681012No. of hidden nodesReconstruction error  SAENCAEL1/L2−NCSAEDpAE4955001.922.12.22.3  10020030040050000.020.040.060.080.10.120.140.160.18No. of hidden nodesKL−Divergence  SAENCAEL1/L2−NCSAEDpAE4804905002468x 10−3  7
+Fig. 6: t-SNE projection [31] of 196D representations of MNIST handwritten digits using (a) DpAE (b) NCAE (c) L1/L2-
+NCSAE.
+(a) SAE
+(b) DpAE
+(c) NCAE
+Fig. 7: Weights of randomly selected 90 out of 200 receptive ﬁlters of (a) SAE (b) DpAE (c) NCAE, and (d) L1/L2-NCSAE
+using NORB dataset. The range of weights are scaled to [-1,1] and mapped to the graycolor map. w <= −1 is assigned to
+black, w = 0 to grey, and w >= 1 is assigned to white color.
+(d) L1/L2-NCSAE
+(a)
+(b)
+(c)
+Fig. 8: The distribution of 200 encoding (W(1)) and decoding ﬁlters (W(2)) weights learned from NORB dataset using (a)
+DpAE (b) NCAE (c) L1/L2-NCSAE.
+learned by L1/L2-NCSAE captured the real actual edges of
+the toys while the edges captured by NCAE are fuzzy, and
+-0.15-0.1-0.0500.050.10.15010002000numberµ=-0.0027**-0.15-0.1-0.0500.050.10.15010002000numberµ=-0.0024**-0.6-0.4-0.200.20.40.60.801000200030004000numberAvg(W 1(i,j))= -0.0026*-0.6-0.4-0.200.20.40.60.8020004000numberAvg(W 2(i,j))=0.0826**-0.500.510500010000numberAvg(W 1(i,j))= 0.0017-0.500.510500010000numberAvg(W 2(i,j))=0.1573*8
+Fig. 9: Visualizing 20D representations of a subset of Reuters Documents data using (a) DpAE, (b) NCAE, and (c) L1/L2-
+NCSAE.
+(a)
+(b)
+Fig. 10: Deep network trained on Reuters-21578 data using (a) DpAE, (b) L1/L2-NCSAE. The area of each square is
+proportional to the weight’s magnitude. The range of weights are scaled to [-1,1] and mapped to the graycolor map. w = −1
+is assigned to black, w = 0 to grey, and w = 1 is assigned to white color.
+those learned by DpAE and SAE are holistic. As shown in
+the weight distribution depicted in Fig. 8, L1/L2-NCSAE has
+both its encoding and decoding weights centered around zero
+with most of its weights positive when compared with those
+of DpAE and NCAE that have weights distributed almost even
+on both sides of the origin.
+B. Unsupervised Semantic Feature Learning from Text Data
+In this experiment DpAE, NCAE, and L1/L2-NCSAE are
+evaluated and compared based on their ability to extract
+semantic features from text data, and how they are able to
+discover the underlined structure in text data. For this purpose,
+the Reuters-21578 text categorization dataset with 200 features
+is utilized to train all the three types of AEs with 20 hidden
+nodes. A subset of 500 examples belonging to categories
+”grain”, ”crude”, and ”money-fx” was extracted from the
+test set. The experiments were run three times, averaged and
+recorded. In Fig. 9, the 20-dimensional representations of the
+Reuters data subset using DpAE, NCAE, and L1/L2-NCSAE
+are visualized. It can be observed that L1/L2-NCSAE is able
+to disentangle the documents into three distinct categories
+with more linear manifolds than NCAE. In addition, L1/L2-
+NCSAE is able to group documents that are closer in the
+semantic space into the same categories than DpAE that ﬁnds
+it difﬁcult to group the documents into any distinct categories
+with less overlap.
+TABLE I: Classiﬁcation accuracy on MNIST and NORB dataset
+Dataset
+MNIST
+NORB
+SAE
+NCAE
+NNSAE
+L1/L2-NCSAE
+DAE (50% input dropout)
+DpAE (50% hidden dropout)
+AAE
+SAE
+NCAE
+NNSAE
+L1/L2-NCSAE
+DAE (50% input dropout)
+DpAE (50% hidden dropout)
+Before ﬁne-tuning
+Mean (± SD)
+p-value
+0.735 ± 0.015
+<0.001
+0.844 (±0.0085)
+0.0018
+0.702 (±0.027) <0.0001
+0.847 (±0.0077)
+0.551 (±0.011) <0.0001
+0.172 (±0.0021) <0.0001
+0.562 ± 0.0245 <0.0001
+0.696 (±0.021)
+0.406
+0.208 (±0.025) <0.0001
+0.695 (±0.0084)
+0.461 (±0.0019) <0.0001
+0.491 (±0.0013) <0.0001
+AAE
+After ﬁne-tuning
+Mean (± SD)
+p-value
+0.977 ± 0.0007 <0.001
+0.974 (±0.0012)
+0.812
+0.970 (±0.001) <0.0001
+0.974 (±0.0087)
+0.972 (±0.0021)
+0.034
+0.964 (±0.0017) <0.0001
+0.912 (±0.0016) <0.0001
+0.814 ± 0.0099
+0.041
+0.817 (±0.0095)
+0.001
+0.738 (± 0.012) <0.001
+0.812 (±0.0001)
+0.807 (±0.0015)
+0.0103
+0.815 (±0.0038) <0.0001
+0.791 (±0.041) <0.0001
+# Epochs
+400
+126
+400
+84
+400
+400
+1000
+400
+305
+400
+196
+400
+400
+1000
+C. Supervised Learning
+In the last set of experiments, a deep network was con-
+structed using two stacked L1/L2-NCSAE and a softmax layer
+for classiﬁcation to test if the enhanced ability of the network
+to shatter data into parts and lead to improved classiﬁcation.
+Eventually, the entire deep network is ﬁne-tuned to improve
+the accuracy of the classiﬁcation. In this set of experiments,
+the performance of pre-training a deep network with L1/L2-
+NCSAE is compared with those pre-trained with recent AE
+architectures. The MNIST and NORB data sets were utilized,
+and every run of the experiments is repeated ten times and
+averaged to combat the effect of random initialization. The
+classiﬁcation accuracy of the deep network pre-trained with
+NNSAE [18], DpAE [19], DAE [32], AAE [22], NCAE, and
+L1/L2-NCSAE using MNIST and NORB data respectively
+are detailed in Table I. The network architectures are 784-
+196-20-10 and 1024-200-20-5 for MNIST and NORB dataset
+respectively. It is remarked that for training of AAE with
+two layers of 196 hidden units in the encoder, decoder,
+discriminator, and other hyperparameters tuned as described
+in [22],
+the accuracy was 83.67%. The AAE reported in
+Table I used encoder, decoder, and discriminator each with
+two layers of 1000 hidden units and trained for 1000 epochs.
+The classiﬁcation accuracy and speed of convergence are the
+ﬁgures of merit used to benchmark L1/L2-NCSAE with other
+AEs.
+It is observed from the result that L1/L2-NCSAE-based
+deep network gives an improved accuracy before ﬁne-tuning
+compared to methods such as NNSAE, NCAE, DpAE, and
+NCAE. However, the performance in terms of classiﬁcation
+accuracy after ﬁne-tuning is very competitive. In fact, it can
+be inferred from the p-value of the experiments conducted
+on MNIST and NORB in Table I that there is no signiﬁcant
+difference in the accuracy after ﬁne-tuning between NCAE
+and L1/L2-NCSAE even though most of the weights in
+L1/L2-NCSAE are nonnegativity constrained. Therefore it is
+remarked that even though the interpretability of the deep
+network has been fostered by constraining most of the weights
+to be nonnegative and sparse, nothing signiﬁcant has been
+lost in terms of accuracy. In addition, network trained with
+L1/L2-NCSAE was also observed to converge faster than its
+counterparts. On the other hand, NNSAE also has nonnegative
+weights but with deterioration in accuracy, which is more con-
+spicuous especially before the ﬁne-tuning stage. The improved
+accuracy before ﬁne-tuning in L1/L2-NCSAE based network
+can be traced to its ability to decompose data more into
+distinguishable parts. Although the performance of L1/L2-
+NCSAE after ﬁne-tuning is similar to those of DAE and NCAE
+but better than NNSAE, DpAE, and AAE, L1/L2-NCSAE
+constrains most of the weights to be nonnegative and sparse
+to foster transparency than for other AEs. However, DpAE and
+NCAE performed slightly more accurate than L1/L2-NCSAE
+on NORB after network ﬁne-tuning.
+In light of constructing an interpretable deep network,
+an L1/L2-NCSAE pre-trained deep network with 10 hidden
+neurons in the ﬁrst AE layer, 5 hidden neurons in the second
+AE, and 10 output neurons (one for each category) in the
+softmax layer was constructed. It was trained on Reuters
+data, and compared with that pre-trained using DpAE. The
+interpretation of the encoding layer of the ﬁrst AE is provided
+by listing words associated with 10 strongest weights, and
+the interpretation of the encoding layer of the second AE is
+portrayed as images characterized by both the magnitude and
+sign of the weights. Compared to the AE with weights of
+both signs shown in Fig. 10a, Fig. 10b allows for much better
+insight into the categorization of the topics.
+Topic earn in the output weight matrix resonates with the
+5th hidden neuron most, lesser with the 3rd, and somewhat
+with the 4th. This resonance can happen only when the 5th
+hidden neuron reacts to input by words of columns 1 and 4,
+and in addition, to a lesser degree, when the 3rd hidden neuron
+reacts to input by words of the 3rd column of words. So, in
+tandem, the dominant columns 1, 4 and then also 3 are sets
+of words that trigger the category earn.
+Analysis of the term words for the topic acq leads to a
+similar conclusion. This topic also resonates with the two
+dominant hidden neurons 5 and 3 and somewhat also with
+neuron 2. These neurons 5 and 3 are driven again by the
+columns of words 1,4, and 3. The difference between the
+categories is now that to a lesser degree, the category acq is
+inﬂuenced by the 6th column of words. An interesting point
+is in contribution of the 3rd column of words. The column
+connects only to the 4th hidden neuron but weights from
+this neuron in the output layer are smaller and hence less
+signiﬁcant than for any other of the ﬁve neurons (or rows)
+of the output weight matrix. Hence this column is of least
+relevance in the topical categorization.
+D. Experiment Running Times
+The training time for networks with and without the non-
+negativity constraints was compared. The constrained network
+converges faster and requires lesser number of training epochs.
+In addition, the unconstrained network requires more time per
+epoch than the constrained one. The running time experiments
+were performed using full MNIST benchmark dataset on In-
+tel(r) Core(TM) i7-6700 CPU @ 3.40Ghz and a 64GB of RAM
+running a 64-bit Windows 10 Enterprise edition. The software
+implementation has been with MATLAB 2015b with batch
+Gradient Descent method, and LBFGS in minFunc ( [33]) is
+used to minimize the objective function. The usage times for
+constrained and unconstrained networks were also compared.
+We consider the usage time in milliseconds (ms) as the time
+elapsed in ms a fully trained deep network requires to classify
+all the test samples. The unconstrained network took 48 ms per
+epoch in the training phase while the constrained counterpart
+took 46 ms. Also, the unconstrained network required 59.9
+ms usage time, whereas the network with nonnegative weights
+took 55 ms. From the above observations, it is remarked that
+the nonnegativity constraint simpliﬁes the resulting network.
+V. CONCLUSION
+This paper addresses the concept and properties of special
+regularization of DL AE that takes advantage of non-negative
+encodings and at the same time of special regularization. It
+has been shown that by using both L1 and L2 to penalize the
+negative weights, most of them are forced to be nonnegative
+and sparse, and hence the network interpretability is enhanced.
+In fact, it is also observed that most of the weights in the
+Softmax layer become nonnegative and sparse. In sum, it has
+been observed that encouraging nonnegativity in NCAE-based
+deep architecture forces the layers to learn part-based repre-
+sentation of their input and leads to a comparable classiﬁcation
+accuracy before ﬁne-tuning the entire deep network and not-
+so-signiﬁcant accuracy deterioration after ﬁne-tuning. It has
+also been shown on select examples that concurrent L1 and
+L2 regularization improve the network interpretability. The
+performance of the proposed method was compared in terms of
+sparsity, reconstruction error, and classiﬁcation accuracy with
+the conventional SAE and NCAE, and we utilized MNIST
+handwritten digits, Reuters documents, and the NORB dataset
+to illustrate the proposed concepts.
+10
+REFERENCES
+[1] Y. Bengio and Y. LeCun, “Scaling learning algorithms towards ai,”
+Large-Scale Kernel Machines, vol. 34, no. 1, pp. 1–41, 2007.
+[2] Y. Bengio, “Learning deep architectures for ai,” Foundations and
+trends® in Machine Learning, vol. 2, no. 1, pp. 1–127, 2009.
+[3] G. Hinton and R. Salakhutdinov, “Reducing the dimensionality of data
+with neural networks,” Science, vol. 313, no. 5786, pp. 504–507, 2006.
+[4] L. Deng, “A tutorial survey of architectures, algorithms, and applications
+for deep learning,” APSIPA Transactions on Signal and Information
+Processing, vol. 3, p. e2, 2014.
+[5] S. Bengio, L. Deng, H. Larochelle, H. Lee, and R. Salakhutdinov,
+“Guest editors introduction: Special section on learning deep architec-
+tures,” IEEE Transactions on Pattern Analysis and Machine Intelligence,
+vol. 35, no. 8, pp. 1795–1797, 2013.
+[6] Y. Bengio, P. Lamblin, D. Popovici, and H. Larochelle, “Greedy layer-
+wise training of deep networks,” Advances in Neural Information
+Processing Systems, vol. 19, p. 153, 2007.
+[7] B. Ayinde and J. Zurada, “Clustering of receptive ﬁelds in autoencoders,”
+in Neural Networks (IJCNN), 2016 International Joint Conference on.
+IEEE, 2016, pp. 1310–1317.
+[8] D. D. Lee and H. S. Seung, “Learning the parts of objects by non-
+negative matrix factorization,” Nature, vol. 401, no. 6755, pp. 788–791,
+1999.
+[9] J. Chorowski and J. M. Zurada, “Learning understandable neural
+networks with nonnegative weight constraints,” Neural Networks and
+Learning Systems, IEEE Transactions on, vol. 26, no. 1, pp. 62–69,
+2015.
+[10] B. A. Olshausen and D. J. Field, “Emergence of simple-cell receptive
+ﬁeld properties by learning a sparse code for natural images,” Nature,
+vol. 381, no. 6583, pp. 607–609, 1996.
+[11] E. Hosseini-Asl, J. M. Zurada, and O. Nasraoui, “Deep learning of
+part-based representation of data using sparse autoencoders with non-
+negativity constraints,” Neural Networks and Learning Systems, IEEE
+Transactions on, vol. 27, no. 12, pp. 2486–2498, 2016.
+[12] M. Ranzato, Y. Boureau, and Y. LeCun, “Sparse feature learning for deep
+belief networks,” Advances in Neural Information Processing Systems,
+vol. 20, pp. 1185–1192, 2007.
+[13] M. Ishikawa, “Structural learning with forgetting,” Neural Networks,
+vol. 9, no. 3, pp. 509–521, 1996.
+[14] P. L. Bartlett, “The sample complexity of pattern classiﬁcation with
+neural networks: the size of the weights is more important than the size
+of the network,” Information Theory, IEEE Transactions on, vol. 44,
+no. 2, pp. 525–536, 1998.
+[15] G. Gnecco and M. Sanguineti, “Regularization techniques and subopti-
+mal solutions to optimization problems in learning from data,” Neural
+Computation, vol. 22, no. 3, pp. 793–829, 2010.
+[16] J. Moody, S. Hanson, A. Krogh, and J. A. Hertz, “A simple weight decay
+can improve generalization,” Advances in Neural Information Processing
+Systems, vol. 4, pp. 950–957, 1995.
+[17] O. E. Ogundijo, A. Elmas, and X. Wang, “Reverse engineering gene
+regulatory networks from measurement with missing values,” EURASIP
+Journal on Bioinformatics and Systems Biology, vol. 2017, no. 1, p. 2,
+2017.
+[18] A. Lemme, R. Reinhart, and J. Steil, “Online learning and generalization
+of parts-based image representations by non-negative sparse autoen-
+coders,” Neural Networks, vol. 33, pp. 194–203, 2012.
+[19] G. E. Hinton, N. Srivastava, A. Krizhevsky, I. Sutskever, and R. R.
+Salakhutdinov, “Improving neural networks by preventing co-adaptation
+of feature detectors,” arXiv preprint arXiv:1207.0580, 2012.
+[20] N. Srivastava, G. Hinton, A. Krizhevsky, I. Sutskever, and R. Salakhut-
+dinov, “Dropout: A simple way to prevent neural networks from over-
+ﬁtting,” The Journal of Machine Learning Research, vol. 15, no. 1, pp.
+1929–1958, 2014.
+[21] D. P. Kingma and M. Welling, “Auto-encoding variational bayes,” arXiv
+preprint arXiv:1312.6114, 2013.
+[22] A. Makhzani, J. Shlens, N. Jaitly, and I. Goodfellow, “Adversarial
+autoencoders,” arXiv preprint arXiv:1511.05644, 2015.
+[23] Y. Burda, R. Grosse, and R. Salakhutdinov, “Importance weighted
+autoencoders,” arXiv preprint arXiv:1509.00519, 2015.
+[24] B. O. Ayinde, E. Hosseini-Asl, and J. M. Zurada, “Visualizing and
+understanding nonnegativity constrained sparse autoencoder in deep
+learning,” in Rutkowski L., Korytkowski M., Scherer R., Tadeusiewicz
+R., Zadeh L., Zurada J. (eds) Artiﬁcial Intelligence and Soft Computing.
+ICAISC 2016. Lecture Notes in Computer Science, vol 9692. Springer,
+2016, pp. 3–14.
+[25] S. J. Wright and J. Nocedal, Numerical optimization.
+York, 1999, vol. 2.
+Springer New
+11
+[26] T. D. Nguyen, T. Tran, D. Phung, and S. Venkatesh, “Learning parts-
+based representations with nonnegative restricted boltzmann machine,”
+in Asian Conference on Machine Learning, 2013, pp. 133–148.
+[27] A. Ng, “Sparse autoencoder,” in CS294A Lecture notes. URL https:
+//web.stanford.edu/class/cs294a/sparseAutoencoder 2011new.pdf: Stan-
+ford University, 2011.
+[28] Y. LeCun, L. Bottou, Y. Bengio, and P. Haffner, “Gradient-based learning
+applied to document recognition,” Proceedings of the IEEE, vol. 86,
+no. 11, pp. 2278–2324, 1998.
+[29] Y. LeCun, F. J. Huang, and L. Bottou, “Learning methods for generic
+object recognition with invariance to pose and lighting,” in Computer
+Vision and Pattern Recognition, 2004. CVPR 2004. Proceedings of the
+2004 IEEE Computer Society Conference on, vol. 2.
+IEEE, 2004, pp.
+II–97.
+[30] P.-N. Tan, M. Steinbach, V. Kumar et al., Introduction to data mining.
+Pearson Addison Wesley Boston, 2006, vol. 1.
+[31] L. V. der Maaten and G. Hinton, “Visualizing data using t-sne,” Journal
+of Machine Learning Research, vol. 9, no. 11, 2008.
+[32] P. Vincent, H. Larochelle, Y. Bengio, and P. Manzagol, “Extracting
+and composing robust features with denoising autoencoders,” in 25th
+International Conference on Machine Learning. ACM, 2008, pp. 1096–
+1103.
+[33] R. H. Byrd, P. Lu, J. Nocedal, and C. Zhu, “A limited memory algo-
+rithm for bound constrained optimization,” SIAM Journal on Scientiﬁc
+Computing, vol. 16, no. 5, pp. 1190–1208, 1995.
+Babajide Ayinde (S’09) received the M.Sc. de-
+gree in Engineering Systems and Control from the
+King Fahd University of Petroleum and Minerals,
+Dhahran, Saudi Arabia. He is currently a Ph.D.
+student at the University of Louisville, Kentucky,
+USA and a recipient of University of Louisville
+fellowship. His current research interests include
+unsupervised feature learning and deep learning
+techniques and applications.
+Jacek M. Zurada
+(M’82-SM’83-F’96-LF’14)
+Ph.D., has received his degrees from Gdansk In-
+stitute of Technology, Poland. He now serves as a
+Professor of Electrical and Computer Engineering at
+the University of Louisville, KY. He authored or co-
+authored several books and over 380 papers in com-
+putational
+intelligence, neural networks, machine
+learning, logic rule extraction, and bioinformatics,
+and delivered over 100 presentations throughout the
+world.
+In 2014 he served as IEEE V-President, Technical
+Activities (TAB Chair). He also chaired the IEEE TAB Periodicals Committee,
+and TAB Periodicals Review and Advisory Committee and was the Editor-
+in-Chief of the IEEE Transactions on Neural Networks (1997-03), Associate
+Editor of the IEEE Transactions on Circuits and Systems, Neural Networks
+and of The Proceedings of the IEEE. In 2004-05, he was the President of the
+IEEE Computational Intelligence Society.
+Dr. Zurada is an Associate Editor of Neurocomputing, and of several other
+journals. He has been awarded numerous distinctions, including the 2013
+Joe Desch Innovation Award, 2015 Distinguished Service Award, and ﬁve
+honorary professorships. He has been a Board Member of IEEE, IEEE CIS
+and IJCNN.

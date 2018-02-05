@@ -1,0 +1,722 @@
+Kernel Distillation for Gaussian Processes
+Congzheng Song1∗, Yiming Sun2∗
+1 Department of Computer Science, Cornell University
+2 Department of Statistics, Cornell University
+{cs2296,ys784}@cornell.edu
+Abstract
+Gaussian processes (GPs) are ﬂexible models that
+can capture complex structure in large-scale dataset
+due to their non-parametric nature. However, the
+usage of GPs in real-world application is limited
+due to their high computational cost at inference
+time.
+In this paper, we introduce a new frame-
+work, kernel distillation, for kernel matrix approx-
+imation. The idea adopts from knowledge distilla-
+tion in deep learning community, where we approx-
+imate a fully trained teacher kernel matrix of size
+n × n with a student kernel matrix. We combine
+inducing points method with sparse low-rank ap-
+proximation in the distillation procedure. The dis-
+tilled student kernel matrix only cost O(m2) stor-
+age where m is the number of inducing points and
+m (cid:28) n. We also show that one application of
+kernel distillation is for fast GP prediction, where
+we demonstrate empirically that our approximation
+provide better balance between the prediction time
+and the predictive performance compared to the al-
+ternatives.
+1 Introduction
+Gaussian Processes (GPs) [Rasmussen, 2004] are powerful
+tools for regression and classiﬁcation problems as these mod-
+els are able to learn complex representation of data through
+expressive covariance kernels. However, the application of
+GP in real-world is limited due to their poor scalability. For
+a training data of size n, GPs requires O(n3) computation
+and O(n2) storage for training and O(n2) computation and
+storage for inference a single test point.
+One of the most popular approach to scale GPs to larger
+[Seeger et al., 2003;
+dataset is inducing points methods
+Titsias, 2009; Lawrence et al., 2003]. These methods, though
+enables GPs to be applied on larger datasets, can result in
+degradation of performance due to the requirement of choos-
+ing m (cid:28) n inducing points [Wilson et al., 2014].
+Another way of scaling GPs is through structure exploita-
+tion [Saatc¸i, 2012; Wilson et al., 2014]. These methods uti-
+lizes existing algebraic structure in the covariance matrix to
+∗Equal contribution
+achieve fast exact learning and inference. However, all these
+methods require the input data to have a grid structure which
+generally do not hold for real-world data .
+Recently, the structured kernel interpolation (SKI) frame-
+work and KISS-GP [Wilson and Nickisch, 2015] further im-
+prove the scalability of GPs by unifying inducing points
+methods and structure exploitation. SKI extends all structure
+exploiting approaches to arbitrarily located data by interpo-
+lating covariance matrix on a multidimensional grid (the in-
+ducing points). With SKI framework and KISS-GP, the train-
+ing cost reduce to O(n) for computation and storage, and al-
+most constant time prediction [Wilson et al., 2015]. Although
+KISS-GP can be massively scalable, the number of inducing
+points on grid grows exponentially with dimensions and it
+also requires kernel to be separable or stationary in order to
+exploit structure.
+On the other hand, we have seen a trend of deploying
+machine learning systems from servers to various resource-
+limited devices, such as mobile phone, robotics etc [Howard
+et al., 2017]. Modern machine learning models such as
+deep neural networks consist of millions of parameters and
+cannot be naively deployed on these devices due to com-
+putational and storage limitations. Many works have stud-
+ied how to compress a large neural networks to a smaller
+one so that deployment of these complex models becomes
+possible on resource-limited devices [Buciluˇa et al., 2006;
+Hinton et al., 2015; Chen et al., 2015; Han et al., 2015].
+GPs also have shown great applicability to tasks on
+resource-limited devices, such as control in robotics [Deisen-
+roth et al., 2015], for their modeling ﬂexibility and uncer-
+tainty measurements. All the previous solutions for scal-
+ing GPs focus on training GPs from scratch. Though some
+of these methods might be applied directly to deployment
+of GPs on resource-limited devices, the potential beneﬁts of
+transferring the knowledge from trained model were not dis-
+cussed. We wish to investigate the possibility of compressing
+a trained exact GP model to a smaller approximate GP model
+while preserve the predictive power of the exact model.
+In this paper, we propose, kernel distillation, a framework
+to approximate a trained GP model. Kernel distillation ex-
+tends inducing point methods with insights from SKI frame-
+work and utilizes the knowledges from the trained model. In
+particular, our contributions are:
+• We approximate the exact kernel matrix with a sparse
+and low-rank structured matrix. We formulate the kernel
+matrix approximation problem as a constrained F -norm
+minimization problem, leading to more accurate kernel
+approximation compared to previous approximation ap-
+proaches.
+• Our method is a general purpose kernel approximation
+method. We do not require kernel function to be sepa-
+rable or stationary and do not assume input data to have
+any special structure.
+• KISS-GP suffers from curse of dimensionality due to the
+grid structure of inducing points. Instead, we select in-
+ducing points using clustering algorithm on input data,
+which allow us to handle high-dimensional case without
+worrying about explosion of inducing points.
+• We show one application of kernel distillation is fast and
+accurate prediction for GP. We evaluate our approach on
+various real-world datasets, and the empirical results ev-
+idence that kernel distillation can better preserving the
+predictive power of a fully trained GP model and im-
+proving the speed simultaneously compared to other al-
+ternatives.
+2 Background
+2.1 Gaussian Processes
+We provide a brief introduction for Gaussian Processes for
+regression problem in this paper. We denote the dataset as
+D and it consists of input feature vectors X = {x1, . . . , xn}
+and real-value targets y = {y1, . . . , yn}.
+A Gaussian Process (GP) is a collection of random vari-
+ables such that any ﬁnite subset of such random variables
+have a joint Gaussian distribution. Using GP, We can model a
+distribution over functions f (x) ∼ GP(µ, kγ), where any set
+of function values forms a joint Gaussian distribution charac-
+terized by mean function µ(·) and covariance mapping func-
+tion kγ(·,·) where γ is the set of hyper-parameters to be
+trained. The most common kernel function is RBF kernel
+deﬁned as:
+kRBF(x, z) = exp(−0.5||x − z||2/l2)
+where l is the hyper-parameter.
+With GP, we can model the function values evaluated on
+training data so that:
+[f (x1), . . . , f (xn)](cid:62) ∼ N (µµµ, KXX )
+where µµµi = µ(xi) and the i, j entry of the covariance
+(KXX )i,j = kγ(xi, xj). We use kγ(X, X) to denote the
+calculation of KXX for simplicity through out the paper.
+Based on Gaussian Identity, we can arrive at posterior pre-
+dictive distribution for inference [Rasmussen and Williams,
+2006]:
+f(cid:63)|X, X(cid:63), y ∼ N (KX(cid:63)X (KXX + σ2I)−1y,
+KX(cid:63)X(cid:63) − KX(cid:63)X (KXX + σ2I)−1KXX(cid:63) ).
+The matrix KX(cid:63)X = kγ(X(cid:63), X) is the covariance measured
+between X(cid:63) and X. The prediction for mean and variance
+cost O(n) in time and O(n2) in storage per test point.
+Inducing Point Methods
+Training GPs involves marginalizing the log likelihood of
+data so that it is only conditioned on the hyper-parameters γ,
+which costs O(n3) in time and O(n2) in storage . For the
+purpose of this paper, we do not focus on training procedure
+the GPs and we refer the readers to previous literature [Ras-
+mussen and Nickisch, 2015] for details on training.
+2.2
+The most common approach to approximate GP is inducing
+point methods. Examples of inducing points methods are
+Subset of Regressors (SoR) [Silverman, 1985], Deterministic
+Training Conditional (DTC) and the Fully Independent Train-
+ing Conditional (FITC) Approximation [Snelson and Ghahra-
+mani, 2005]. There methods could be viewed to use ˜k(x, z)
+to approximate true kernel function k(x, z):
+˜kSoR(x, z) = KxU K−1
+˜kFITC(x, z) = ˜kSoR(x, z) + δx,z
+U U KU z
+(cid:16)
+k(x, z) − ˜kSoR
+(cid:17)
+for a set of m inducing points U = [ui], i = 1 . . . m. For
+SoR, the approximated kernel matrix KXU K−1
+U U KU X has
+rank at most m. FITC achieves full rank approximation with
+diagonal correction, which improves the performance signif-
+icantly in practice.
+These low rank approximations reduce mean and variance
+prediction time from O(n) and O(n2) to O(m) and O(m2).
+The storage cost for mean and variance prediction is reduced
+from O(n) and O(n2) to O(n) and O(nm). These meth-
+ods, however, suffer from a severe deterioration in predictive
+performance when n is very large as it requires m (cid:28) n to
+achieve efﬁciency gain [Wilson et al., 2014].
+2.3 Structure Exploiting Methods
+Another family of approaches for scalable GP learning and
+inference is to exploit existing algebraic structure in KXX.
+However, these structures are only exploitable for certain
+kinds of kernel function. For example, Toeplitz method [Cun-
+ningham et al., 2008] requires a stationary kernel and Kro-
+necker methods [Saatc¸i, 2012; Wilson et al., 2014] requires a
+product and stationary kernel. In addition, the exact inference
+of these approaches requires x to be on rectilinear grid which
+constraints its application to only limited kinds of data.
+Structured Kernel Interpolation (SKI) [Wilson and Nick-
+isch, 2015] uniﬁes inducing points methods and structure ex-
+ploiting approaches. SKI starts with extending SoR method
+by approximating KXU ≈ W KU U . SKI further scales GPs
+by placing U on grid structure so that structure exploiting is
+possible. The overall approximation for KXX is:
+KXX ≈ KXU K−1
+= W KU U W (cid:62) = ˜KSKI
+U U KU X ≈ W KU U K−1
+U U KU U W (cid:62)
+where values of W are the interpolation weights of X to U
+and W can be extremely sparse as each row only has 4 non-
+zero values. The special structure of SKI approximation en-
+ables. The inference cost of GPs with SKI reduce to O(n) for
+both time and storage.
+It is worth noticing that in SKI framework, m could be
+much larger than n due to structure exploitation. However,
+enforcing inducing points to be grid structured limits applica-
+tion of SKI to low-dimensional data (d ≤ 4) as the number of
+grid point increases exponentially as the dimension increases.
+2.4 Knowledge Distillation in Deep Learning
+Knowledge distillation [Hinton et al., 2015] is used for trans-
+ferring the generalization ability from an ensemble of large
+neural networks to a light-weight model which is more suit-
+able for deployment. The core idea behind knowledge distil-
+lation is that we train a neural network model with large ca-
+pacity, or an ensemble of neural networks, as a teacher model.
+Once the teacher model has been trained, we then use the out-
+put produced by the teacher model as “soft targets” to train a
+small model as the student model.
+Instead of training a student model from scratch, one can
+also compress a large neural network directly into a smaller
+one [Chen et al., 2015; Han et al., 2015]. These works ap-
+ply techniques such as hashing, pruning and quantization to
+the weight parameters of the neural networks. As a result,
+the compressed neural network has much fewer parameters
+without much drop in predictive performance.
+As we will see in the next section, our kernel distillation
+framework inherits the ideas of both knowledge distillation
+and model compression. We compress the exact teacher ker-
+nel matrix with a scalable structure while the compression
+process involving optimization from teacher model, which
+can be viewed as a form of knowledge distillation.
+3 Kernel Distillation
+In this section, we detail our method for kernel distillation.
+We assume that we have access to a trained exact GP with
+full kernel matrix KXX as teacher model and all the training
+data {X, y}. We also assume that we perform kernel distilla-
+tion on a machine with enough computational power to store
+KXX. After kernel distillation, we can apply the distilled stu-
+dent model for on a resource-limited device for inference and
+other applications.
+3.1 Sparse Low-rank Kernel Approximation
+Algorithm 1 outlines our distillation approach.
+Formulation We propose to use a student kernel matrix with
+a sparse and low-rank structure, ˜KXX = W KU U W (cid:62) to ap-
+proximate a fully trained kernel matrix KXX. W is a sparse
+matrix and KU U is the covariance evaluated at a set of induc-
+ing points U.
+Similar to KISS-GP [Wilson and Nickisch, 2015], we ap-
+proximate KXU with ˜KXU = W KU U . In KISS-GP, W is
+calculated using cubic interpolation on grid-structured induc-
+ing points. The number of inducing points grows exponen-
+tially as the dimension of input data grows, limiting KISS-GP
+applicable to low-dimensional data.
+Instead of enforcing inducing points U to be on grid, which
+causes curse of dimensionality, we choose m centroids as in-
+ducing points U using K-means clustering on X.
+In addi-
+tion, we store U in KD-tree T for fast nearest neighbor search
+which will be used in later optimization.
+Algorithm 1 Sparse Low-rank Kernel Approximation
+1: Input: A well trained kernel function kγ, training feature
+vectors X and targets y, step size η, number of iterations
+T and sparsity b.
+J ← indices for b nearest neighbors of xi in U
+Wi(J) ← argminβ||βKU U (J) − (KXU )i||2
+2: Output: Approximated kernel matrix W KU,U W (cid:62)
+3: U ← K-MEANS(X)
+4: KXX ← kγ(X, X)
+5: KU U ← kγ(U, U )
+6: KXU ← kγ(X, U )
+7: Step 1: Initialization
+8: W ← 0 ∈ Rn×m
+9: for each xi in X do
+10:
+11:
+12: end for
+13: Step 2: Gradient Descent
+14: for t = 1 to T do
+15:
+16:
+17:
+18:
+19:
+20: end for
+E ← W KU U W (cid:62) − KXX
+Ei,i ← 2Ei,i for 1 ≤ i ≤ n
+∇W ← E(cid:62)W KU U
+Project each row of ∇W to b-sparse space
+Update W ← W − η∇W
+In kernel distillation, we ﬁnd optimal W through a con-
+strained optimization problem. We constrain each row of W
+to have at most b non-zero entries. We set the objective func-
+tion to be the F -norm error between teacher kernel and stu-
+dent kernel:
+||KXX − W KU U W (cid:62)||F
+min
+subject to ||Wi||0 ≤ b ∀i
+where ||Wi||0 denotes the number of non-zero entries at row
+i of W .
+Initialization The initial values of W are crucial for the
+later optimization. We initialize W with optimal solution
+to ||KXU − W KU U||F with the sparsity constraint. More
+speciﬁcally, for each xi in X, we ﬁnd its b nearest points in
+U by querying T . We denote the indices of these b neighbors
+as J. We then initialize each row Wi of W by solving the
+following linear least square problem:
+minWi(J)
+||Wi(J)KU U (J) − (KXU )i||2
+where Wi(J) denotes the entries in row Wi indexed by J and
+KU U (J) denotes the rows of KU U indexed by J. The entries
+in Wi with index not in J are set to zero.
+Optimization After W is initialized, we solve the F -norm
+minimization problem using standard gradient descent. De-
+tails of the gradient calculation is given in Algorithm 1. To
+satisfy the sparsity constraint, in each iteration, we project
+each row of the gradient ∇W to b-sparse space according the
+indices J, and then update W accordingly.
+3.2 Fast Prediction
+One direct application of kernel distillation is for fast predic-
+tion with approximated kernel matrix. Given a test point x(cid:63),
+Methods
+FITC [Qui˜nonero-Candela and Rasmussen, 2005]
+KISS-GP [Wilson et al., 2015]
+Kernel distillation
+Storage
+Mean Prediction Variance Prediction
+O(nm)
+O(m2)
+O(1) O(n + 4d)
+O(m2)
+O(b log m + b3)
+O(m)
+O(1)
+O(b log m + b3)
+Table 1: Time and storage complexity for prediction for FITC, KISS and Distillation. m is number of reducing points, d is the dimension of
+data and b is the non zero elements we choose in Algorithm 1.
+(a) |KXX − Kdistill|
+(b) |KXX − KKISS|
+(c) |KXX − KSoR|
+(d) Error v.s. b
+Figure 1: Kernel Reconstruction Experiments. (a) - (c) Absolute error matrix for reconstructing KXX with kernel distillation, KISS-GP and
+SoR respectively. (d) F -norm error for reconstructing KXX with distillation under different setting of b (sparsity constraint) for W .
+we follow similar approximation scheme in the distillation at
+test time where we try to approximate Kx(cid:63)X:
+Kx(cid:63)X ≈ ˜Kx(cid:63)X = W(cid:63) ˜KU X = W(cid:63)KU U W (cid:62)
+where W(cid:63) is forced to be sparse for efﬁciency. Then the mean
+and variance prediction can be approximated by:
+E[f(cid:63)] ≈ ˜Kx(cid:63)X ( ˜KXX + σ2I)−1y
+≈ W(cid:63)KU U W (cid:62)( ˜KXX + σ2I)−1y
+= W(cid:63) ˜ααα
+V ar[f(cid:63)] ≈ Kx(cid:63)x(cid:63) − ˜Kx(cid:63)X [ ˜KXX + σ2I]−1 ˜KXx(cid:63)
+≈ Kx(cid:63)x(cid:63) − W(cid:63)KU U W (cid:62)[ ˜KXX + σ2I]−1W KU U W (cid:62)
+= Kx(cid:63)x(cid:63) − W(cid:63)V W (cid:62)
+(cid:63)
+(cid:63)
+where both
+˜ααα =KU U W (cid:62)( ˜KXX + σ2I)−1y
+V =KU U W (cid:62)[ ˜KXX + σ2I]−1W KU U
+can be precomputed during distillation.
+Now the key question is how to estimate W(cid:63) efﬁciently.
+We use the same procedure as in the initialization of W to
+compute W(cid:63). We start by ﬁnds b nearest neighbors of x(cid:63) in
+U and mark the indices as J(cid:63) and set elements of W(cid:63) whose
+indices are not in J(cid:63) to 0. For entries with indices in J(cid:63), we
+solve the following least square problem to get the optimal
+values for W(cid:63)(J(cid:63)):
+||W(cid:63)(J(cid:63))KU U (J(cid:63)) − Kx(cid:63)U (J(cid:63))||2.
+min
+W(cid:63)(J(cid:63))
+We can see that it takes O(b log m) to query the nearest
+neighbors, O(b3) to get W(cid:63) and O(b) and O(b2) for mean and
+variance prediction respectively. Therefore, in total, predic-
+tion time complexity is O(b log m + b3). As for storage com-
+plexity, we need to store precomputed vector for mean pre-
+diction and diagonal of matrix for variance prediction which
+cost O(m2).
+Table 1 provides comparison of time and storage complex-
+ity for different GP approximation approaches. The stor-
+age complexity for KISS-GP grows exponentially with di-
+mension of input data. In practice, to avoid the exponential
+growth, KISS-GP also learns a mapping P that project input
+data to low dimension during training [Wilson et al., 2015].
+The assumption that the input data are embedded in a low-
+dimensional space can sometimes hurt the predictive perfor-
+mance as we will demonstrate the experiment section. Kernel
+distillation, on the other hand, makes no assumption about
+the dimensionality of input data while can still achieve rea-
+sonably fast and accurate prediction and reduce the storage
+cost.
+3.3 Other Applications
+Apart from fast prediction for GPs, kernel distillation could
+also be used for other applications, such as online update for
+GPs [McIntire et al., 2016]. When the distilled model is de-
+ployed on mobile devices or robotics, we might want to adjust
+the model after seeing new data points. Online update could
+potentially beneﬁt from the sparse and low-rank structure of
+the distilled kernel. We leave it as a future work to explore
+how to integrate kernel distillation with online update of GPs.
+4 Experiments
+We evaluate kernel distillation on the ability to approximate
+the exact kernel, the predictive power and the speed at infer-
+ence time. In particular, we compare our approach to FITC
+and KISS-GP as they are the most popular approaches and
+are closely related to kernel distillation.
+4.1 Kernel Reconstruction
+We ﬁrst study how well can kernel distillation reconstruct the
+full teacher kernel matrix. We generate a 1000 × 1000 kernel
+matrix KXX from RBF kernel evaluated at (sorted) inputs X
+Dataset
+Boston Housing
+Abalone
+PUMADYM32N
+KIN40K
+Dim # train
+455
+3,133
+7,168
+10,000
+13
+32
+# test Exact
+0.076
+0.434
+0.044
+0.013
+51
+1,044
+1,024
+30,000
+FITC KISS-GP Distill
+0.091
+0.103
+0.438
+0.439
+0.069
+0.044
+0.030
+0.173
+0.095
+0.446
+1.001
+0.386
+Table 2: SMSE Results Comparison. Dim is the dimension of the input data. Number of inducing points (on 2D grid) for KISS-GP are 4,900,
+10K, 90K, 250K, and number of inducing points for FITC and kernel distillation are 70, 200, 1K, 1K for the for datasets respectively. The
+sparsity b is set to 20 for Boston Housing and 30 for all other datasets.
+predictions of kernel distillation are indistinguishable from
+exact GP and KISS-GP. As for variance, kernel distillation’s
+predictions are much closer to the variance outputs from exact
+GP, while the variance outputs predicted by KISS-GP are far
+away from the exact solution.
+This experiment shows a potential problem in KISS-GP,
+where it sacriﬁces its ability to provide uncertainty measure-
+ments, which is a crucial property of Bayesian modeling, for
+exchanging massive scalability. On the other hand, kernel
+distillation can honestly provide uncertainty prediction close
+to the exact GP model.
+4.3 Empirical Study
+We further evaluate the performance of kernel distillation on
+several benchmark regression data sets. A summary of the
+datasets is given in Table 2.
+Setup We compare kernel distillation with teacher kernel
+(exact GP), FITC as well as KISS-GP. We use the same in-
+ducing points selected by K-Means for both FITC and ker-
+nel distillation. For KISS-GP, as all the datasets do not lie
+in lower dimension, we project the input to 2D and con-
+struct 2D grid data as the inducing points. Number of in-
+ducing points (on 2D grid) for KISS-GP are set to 4,900 (70
+per grid dimension) for Boston Housing, 10K for Abalone,
+90K for PUMADYM32N, 250K for KIN40K. The number
+of inducing points for FITC and kernel distillation are 70 for
+Boston Housing, 200 for Abalone, 1k for PUMADYM32N
+and KINK40K. The sparsity b in kernel distillation is set to 20
+for Boston Housing and 30 for other datasets. For all meth-
+ods, we choose ARD kernel as the kernel function, which is
+deﬁned as:
+kARD(x, z) = exp(−0.5
+(xi − zi)2/σ2
+i )
+d(cid:88)
+i=1
+where d is the dimension of the input data and σi’s are the
+hyper-parameters to learn.
+All the experiments were conducted on a PC laptop with
+Intel Core(TM) i7-6700HQ CPU @ 2.6GHZ and 16.0 GB
+RAM.
+Predictive performance comparison We start by evaluating
+how well kernel distillation can preserve the predictive per-
+formance of the teacher kernel. The metrics we use for eval-
+uation is the standardized mean square error (SMSE) deﬁned
+as:
+SMSE(y, ˆy) =
+(yi − ˆyi)2/V ar(y)
+n(cid:88)
+i=1
+(a) Mean
+(b) Variance
+Figure 2: Mean (a) and variance (b) prediction comparison for
+KISS-GP and Kernel Distillation on 1D example.
+randomly sampled from N (0, 25). We compare kernel dis-
+tillation against KISS-GP and SoR (FITC is essentially SoR
+with diagonal correction as mentioned in Section 2). We set
+number of grid points for KISS-GP as 400 and number of in-
+ducing points for SoR is set to 200 and kernel distillation to
+100. We set the sparsity b to 6 for kernel distillation.
+The F -norm for errors for are 1.22 × 10−5, 8.17 × 10−6,
+2.39× 10−7 for KISS-GP, SoR and kernel distillation respec-
+tively. Kernel distillation achieves lowest F -norm error com-
+pared to FITC and KISS-GP even the number of inducing
+points is much fewer for kernel distillation. Moreover, from
+the absolute error matrices (Figure 1 a-c), we can see errors
+are more evenly distributed for kernel distillation, while there
+seems to exist a strong error pattern for the other two.
+We also show how the sparsity parameter b affect the ap-
+proximation quality. We evaluate the error with different
+choices for b as shown in Figure 1 (d). We observe that the er-
+ror converges when the sparsity b is above 5 in this example.
+This shows our structured student kernel can approximate the
+full teacher kernel reasonably well even when W is extremely
+sparse.
+4.2 Toy 1D Example
+To evaluate our distilled model’s predictive ability, we set
+up the following experiment. We sample n = 1000 data
+points X uniformly from [-10, 10]. We set our response
+y(x) = sin(x) exp(− x2
+2×52 ) +  with  ∼ N (0, 1). We train
+an exact GP with RBF kernel as teacher ﬁrst then apply ker-
+nel distillation with number of inducing points set to 100 and
+sparsity set to 10. We compare mean and variance predic-
+tion of kernel distillation with KISS-GP trained with 400 grid
+inducing points.
+The results are showed in Figure 2. As we can see, mean
+(a) Boston Mean
+(b) Boston Variance
+(c) Abalone Mean
+(d) Abalone Variance
+Figure 3: Test error and variance comparison on Boston Housing (a-b) and Abalone (c-d) under different choices of sparsity constraint b
+on W . For variance prediction comparison, we calculate the root square mean error between variance of exact GPs and approximate GPs
+(KISS-GP and kernel distillation).
+for true labels y and model predictions ˆy.
+Table 2 summarizes the results. We can see that exact GPs
+achieve lowest errors on all of the datasets. FITC gets second
+lowest error on almost all datasets except for Boston Hous-
+ing. Errors with kernel distillation are very close to FITC
+while KISS-GP has the largest errors on every dataset. The
+poor performance of KISS-GP might be resulted from the loss
+of information through the projection of input data to low di-
+mension.
+Effects of sparsity We further study the effects of sparsity b
+on predictive performance. We choose b to be range from [5,
+10, . . . , 40] and compare the test error and variance predic-
+tion for KISS-GP and kernel distillation on Boston Housing
+and Abalone datasets.
+The results are shown in Figure 3. As expected, the error
+for kernel distillation decreases as the sparsity increases and
+we only need b to be 15 or 20 to outperform KISS-GP. As for
+variance prediction, we plot the error between outputs from
+exact GPs and approximate GPs. We can see that kernel dis-
+tillation always provides more reliable variance output than
+KISS-GP on every level of sparsity.
+Speed comparison We now evaluate the speed of prediction
+with kernel distillation. Again, we compare the speed with
+FITC and KISS-GP. The setup for the approximate models
+is the same as the predictive performance comparison exper-
+iment. For each dataset, we run the test prediction on 1000
+points and report the average prediction time in seconds.
+Table 3 summarizes the results on speed. It shows that both
+KISS-GP and kernel distillation are much faster in predic-
+tion time compared to FITC for all datasets. Figure 4 shows
+the detailed comparison of prediction time between KISS-GP
+and kernel distillation. Though kernel distillation is slightly
+slower than KISS-GP, considering the improvement in accu-
+racy and more reliable uncertainty measurements, the cost in
+prediction time is acceptable. Also, though KISS-GP claims
+to have constant prediction time complexity in theory [Wilson
+et al., 2015], the actual implementation still is data-dependent
+and the speed varies on different datasets.
+In general, ker-
+nel distillation provides a better trade-off between predictive
+power and scalability than its alternatives.
+FITC KISS-GP
+Dataset
+0.00061
+0.0081
+Boston Housing
+0.00018
+Abalone
+0.0631
+0.0011
+PUMADYM32N 1.3414
+KIN40K
+1.7606
+0.0029
+Distill
+0.0017
+0.0020
+0.0035
+0.0034
+Table 3: Average prediction time in seconds for 1000 test data point
+of each dataset. Setup for the models is the same as in Table 2.
+Figure 4: Prediction time comparison for kernel distillation and
+KISS-GP. The vertical black line shows the standard deviation over
+5 rounds of experiments.
+5 Conclusion
+We have proposed a general framework, kernel distillation,
+for compressing a trained exact GPs kernel into a student ker-
+nel with low-rank and sparse structure. Our framework does
+not assume any special structure on input data or kernel func-
+tion, and thus can be applied ”out-of-box” on any datasets.
+Kernel distillation framework formulates the approximation
+as a constrained F -norm minimization between exact teacher
+kernel and approximate student kernel.
+The distilled kernel matrix reduces the storage cost to
+O(m2) compared to O(mn) for other inducing point meth-
+ods. Moreover, we show one application of kernel distilla-
+tion is for fast and accurate GP prediction. Kernel distillation
+can produce more accurate results than KISS-GP and the pre-
+diction time is much faster than FITC. Overall, our method
+provide a better balance between speed and predictive perfor-
+mance than other approximate GP approaches.
+[Rasmussen and Williams, 2006] Carl Edward Rasmussen
+and Christopher KI Williams. Gaussian processes for ma-
+chine learning. 2006.
+[Rasmussen, 2004] Carl Edward Rasmussen. Gaussian pro-
+cesses in machine learning. In Advanced lectures on ma-
+chine learning, pages 63–71. Springer, 2004.
+[Saatc¸i, 2012] Yunus Saatc¸i. Scalable inference for struc-
+tured Gaussian process models. PhD thesis, University
+of Cambridge, 2012.
+[Seeger et al., 2003] Matthias Seeger, Christopher Williams,
+and Neil Lawrence. Fast forward selection to speed up
+In Artiﬁcial Intel-
+sparse gaussian process regression.
+ligence and Statistics 9, number EPFL-CONF-161318,
+2003.
+[Silverman, 1985] Bernhard W Silverman. Some aspects of
+the spline smoothing approach to non-parametric regres-
+sion curve ﬁtting. Journal of the Royal Statistical Society.
+Series B (Methodological), pages 1–52, 1985.
+[Snelson and Ghahramani, 2005] Edward
+and
+Zoubin Ghahramani. Sparse gaussian processes using
+In Advances in neural
+information
+pseudo-inputs.
+processing systems, pages 1257–1264, 2005.
+Snelson
+[Titsias, 2009] Michalis K Titsias. Variational learning of in-
+ducing variables in sparse gaussian processes. In AISTATS,
+volume 12, pages 567–574, 2009.
+[Wilson and Nickisch, 2015] Andrew Wilson and Hannes
+Nickisch. Kernel interpolation for scalable structured
+gaussian processes (kiss-gp). In Proceedings of The 32nd
+International Conference on Machine Learning, pages
+1775–1784, 2015.
+[Wilson et al., 2014] Andrew Wilson, Elad Gilboa, John P
+Cunningham, and Arye Nehorai. Fast kernel learning
+In Advances
+for multidimensional pattern extrapolation.
+in Neural Information Processing Systems, pages 3626–
+3634, 2014.
+[Wilson et al., 2015] Andrew Gordon Wilson, Christoph
+Dann, and Hannes Nickisch. Thoughts on massively scal-
+able gaussian processes. arXiv preprint arXiv:1511.01870,
+2015.
+References
+[Buciluˇa et al., 2006] Cristian Buciluˇa, Rich Caruana, and
+Alexandru Niculescu-Mizil. Model compression. In Pro-
+ceedings of the 12th ACM SIGKDD international con-
+ference on Knowledge discovery and data mining, pages
+535–541. ACM, 2006.
+[Chen et al., 2015] Wenlin Chen, James Wilson, Stephen
+Tyree, Kilian Weinberger, and Yixin Chen. Compress-
+In Inter-
+ing neural networks with the hashing trick.
+national Conference on Machine Learning, pages 2285–
+2294, 2015.
+[Cunningham et al., 2008] John P Cunningham, Krishna V
+Shenoy, and Maneesh Sahani. Fast gaussian process meth-
+ods for point process intensity estimation. In Proceedings
+of the 25th international conference on Machine learning,
+pages 192–199. ACM, 2008.
+[Deisenroth et al., 2015] Marc Peter Deisenroth, Dieter Fox,
+and Carl Edward Rasmussen. Gaussian processes for data-
+IEEE Trans-
+efﬁcient learning in robotics and control.
+actions on Pattern Analysis and Machine Intelligence,
+37(2):408–423, 2015.
+[Han et al., 2015] Song Han, Huizi Mao, and William J
+Dally. Deep compression: Compressing deep neural net-
+works with pruning, trained quantization and huffman cod-
+ing. arXiv preprint arXiv:1510.00149, 2015.
+[Hinton et al., 2015] Geoffrey Hinton, Oriol Vinyals, and
+Jeff Dean. Distilling the knowledge in a neural network.
+arXiv preprint arXiv:1503.02531, 2015.
+[Howard et al., 2017] Andrew G Howard, Menglong Zhu,
+Bo Chen, Dmitry Kalenichenko, Weijun Wang, Tobias
+Weyand, Marco Andreetto, and Hartwig Adam. Mo-
+bilenets: Efﬁcient convolutional neural networks for mo-
+bile vision applications. arXiv preprint arXiv:1704.04861,
+2017.
+[Lawrence et al., 2003] Neil Lawrence, Matthias Seeger, and
+Ralf Herbrich. Fast sparse gaussian process methods:
+In Proceedings of the
+The informative vector machine.
+16th Annual Conference on Neural Information Process-
+ing Systems, number EPFL-CONF-161319, pages 609–
+616, 2003.
+[McIntire et al., 2016] Mitchell McIntire, Daniel Ratner, and
+Stefano Ermon. Sparse gaussian processes for bayesian
+In Proceedings of the Thirty-Second Con-
+optimization.
+ference on Uncertainty in Artiﬁcial Intelligence, UAI’16,
+pages 517–526, Arlington, Virginia, United States, 2016.
+AUAI Press.
+[Qui˜nonero-Candela and Rasmussen, 2005] Joaquin
+Qui˜nonero-Candela and Carl Edward Rasmussen. A
+unifying view of sparse approximate gaussian process
+Journal of Machine Learning Research,
+regression.
+6(Dec):1939–1959, 2005.
+[Rasmussen and Nickisch, 2015] Carl Edward Rasmussen
+and Hannes Nickisch. The gpml toolbox version 4.0. 2015.

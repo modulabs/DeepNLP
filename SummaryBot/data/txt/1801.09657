@@ -1,0 +1,495 @@
+Matrix Completion for Structured Observations
+Denali Molitor
+Department of Mathematics
+University of California, Los Angeles
+Los Angeles, CA 90095, USA
+Email: dmolitor@math.ucla.edu
+Deanna Needell
+Department of Mathematics
+University of California, Los Angeles
+Los Angeles, CA 90095, USA
+Email: deanna@math.ucla.edu
+Abstract— The need to predict or ﬁll-in missing data, often
+referred to as matrix completion, is a common challenge in to-
+day’s data-driven world. Previous strategies typically assume that
+no structural difference between observed and missing entries
+exists. Unfortunately, this assumption is woefully unrealistic in
+many applications. For example, in the classic Netﬂix challenge,
+in which one hopes to predict user-movie ratings for unseen
+ﬁlms, the fact that the viewer has not watched a given movie
+may indicate a lack of interest in that movie, thus suggesting
+a lower rating than otherwise expected. We propose adjusting
+the standard nuclear norm minimization strategy for matrix
+completion to account for such structural differences between
+observed and unobserved entries by regularizing the values of
+the unobserved entries. We show that the proposed method
+outperforms nuclear norm minimization in certain settings.
+thus violating the assumption of uniform sampling of observed
+entries across movies. On the ﬂip side, a missing entry may
+indicate a user’s lack of interest in that particular movie.
+Similarly, in sensor networks, entries may be missing because
+of geographic limitations or missing connections; in survey
+data, incomplete sections may be irrelevant or unimportant to
+the user. In these settings, it is then reasonable to expect that
+missing entries have lower values1 than observed entries.
+In this work, we propose a modiﬁcation to the traditional
+NNM for matrix completion that still results in a semi-deﬁnite
+optimization problem, but also encourages lower values among
+the unobserved entries. We show that this method works better
+than NNM alone under certain sampling conditions.
+I. INTRODUCTION
+Data acquisition and analysis is ubiquitous, but data often
+contains errors and can be highly incomplete. For example, if
+data is obtained via user surveys, people may only choose to
+answer a subset of questions. Ideally, one would not want to
+eliminate surveys that are only partially complete, as they still
+contain potentially useful information. For many tasks, such
+as certain regression or classiﬁcation tasks, one may require
+complete or completed data [SG02]. Alternatively, consider the
+problem of collaborative ﬁltering, made popular by the classic
+Netﬂix problem [BL07], [BK07], [KBV09], in which one aims
+to predict user ratings for unseen movies based on available
+user-movie ratings. In this setting, accurate data completion is
+the goal, as opposed to a data pre-processing task. Viewing
+users as the rows in a matrix and movies as the columns,
+we would like to recover unknown entries of the resulting
+matrix from the subset of known entries. This is the goal
+in many types of other applications, ranging from systems
+identiﬁcation [LV09] to sensor networks [BLWY06], [Sch86],
+[Sin08]. This task is known as matrix completion [Rec11]. If
+the underlying matrix is low-rank and the observed entries are
+sampled uniformly at random, one can achieve exact recovery
+with high probability under mild additional assumptions by
+using nuclear norm minimization (NNM) [CT10], [RFP10],
+[CR09], [Gro11], [CP10].
+For many applications, however, we expect structural dif-
+ferences between the observed and unobserved entries, which
+violate these classical assumptions. By structural differences,
+we mean that whether an entry is observed or unobserved need
+not be random or occur by some uniform selection mechanism.
+Consider again the Netﬂix problem. Popular, or well-received
+movies are more likely to have been rated by many users,
+A. Nuclear Norm Matrix Completion
+Let M ∈ Rn1×n2 be the unknown matrix we would like to
+recover and Ω be the set of indices of the observed entries.
+Let PΩ : Rn1×n2 → Rn1×n2, where
+(cid:40)
+[PΩ]ij =
+Mij
+(i, j) ∈ Ω
+(i, j) (cid:54)∈ Ω
+as in [CT10]. In many applications, it is reasonable to assume
+that the matrix M is low-rank. For example, we expect that
+relatively few factors contribute to a user’s movie preferences
+as compared to the number of users or number of movies con-
+sidered. Similarly, for health data, a few underlying features
+may contribute to many observable signs and symptoms.
+The minimization,
+(cid:99)M = argmin
+rank(A) s.t. PΩ(A) = PΩ(M )
+recovers the lowest rank matrix that matches the observed
+entries exactly. Unfortunately, this minimization problem is
+NP-hard, so one typically uses the convex relaxation
+||A||∗ s.t. PΩ(A) = PΩ(M ),
+(cid:99)M = argmin
+singular values, i.e. ||X||∗ := (cid:80)
+where || · ||∗ is the nuclear norm, given by the sum of the
+i σi(X) [CT10], [RFP10],
+(1)
+[CP10], [CR09].
+1Of course, some applications will tend to have higher values in missing
+entries, in which case our methods can be scaled accordingly.
+B. Matrix Completion for Structured Observations
+We propose adding a regularization term on the unobserved
+entries to promote adherence to the structural assumption that
+we expect these entries to be close to 0. We solve
+(cid:102)M = argmin
+L1 norm ||M||1 =(cid:80)
+||A||∗ + α||PΩC (A)|| s.t. PΩ(A) = PΩ(M ),
+(2)
+where α > 0 and || · || is an appropriate matrix norm. For
+example, if we expect most of the unobserved entries to be 0,
+but a few to be potentially large in magnitude, the entrywise
+ij |Mij| is a reasonable choice.
+C. Matrix Completion with Noisy Observations
+In reality, we expect that our data is corrupted by some
+amount of noise. We assume the matrix M, that we would
+like to recover, satisﬁes
+PΩY = PΩM + PΩZ,
+where PΩY are the observed values, M is low-rank and PΩZ
+represents the noise in the observed data. In [CP10], Cand´es
+and Plan suggest using the following minimization to recover
+the unknown matrix:
+||A||∗ s. t. ||PΩ(M − A)||F < δ.
+(3)
+(cid:99)M = argmin
+(cid:113)(cid:80)
+alent to (cid:99)M = argmin
+Recall, ||X||F =
+ij X 2
+ij. The formulation above is equiv-
+||PΩ(M − A)||F + ρ||A||∗
+(4)
+for some ρ = ρ(δ). The latter minimization problem is
+generally easier to solve in practice [CP10].
+In order to account for the assumption that the unobserved
+entries are likely to be close to zero, we again propose adding
+a regularization term on the unobserved entries and aim to
+solve(cid:102)M = argmin
+||PΩ(M − A)||F + ρ||A||∗ + α||PΩC (A)||. (5)
+II. NUMERICAL RESULTS
+A. Recovery without Noise
+We ﬁrst investigate the performance of (2) when the ob-
+served entries are exact, i.e. there is no noise or errors in the
+observed values. In Figure 1, we consider low-rank matrices
+M ∈ R30×30. To generate M of rank r, we take M = MLMR,
+where ML ∈ R30×r and MR ∈ Rr×30 are sparse matrices
+(with density 0.3 and 0.5, respectively) and whose nonzero
+entries are uniformly distributed at random between zero and
+one. We subsample from the zero and nonzero entries of
+the data matrix at various rates to generate a matrix with
+missing entries. We compare performance of (2) using L1
+regularization on the unobserved entries with standard NNM
+and report the error ratio ||(cid:102)M −M||F /||(cid:99)M −M||F for various
+sampling rates, where (cid:102)M and (cid:99)M are the solutions to (2)
+and (1), respectively. The regularization parameter α used
+is selected optimally from the set {10−1, 10−2, 10−3, 10−4}
+(discussed below). Values below one in Figure 1 indicate that
+the minimization with L1 regularization outperforms standard
+NNM. Results are averaged over ten trials. As expected, we
+ﬁnd that if the sampling of the nonzero entries is high, then the
+modiﬁed method (2) is likely to outperform standard NNM.
+We choose the parameter α, for the regularization term,
+to be optimal among α ∈ {10−1, 10−2, 10−3, 10−4} and
+report the values used in Figure 2. For large α, the recovered
+matrix will approach that for which all unobserved entries are
+predicted to be zero, and as α becomes close to zero, recovery
+by (2) approaches that of standard NNM.
+When the sampling rate of the zero entries is low and the
+sampling of the nonzero entries is high, in addition to (2)
+outperforming NNM, we also see that a larger value for α
+is optimal, supporting the claim that regularization improves
+performance. Higher α values are also sometimes optimal
+when the nonzero sampling rate is nearly zero. If there are
+very few nonzero entries sampled then the low-rank matrix
+recovered is likely to be very close to the zero matrix. In
+this setting, we expect
+that even with standard NNM the
+unobserved entries are thus likely to be recovered as zeros
+and so a larger coefﬁcient on the regularization term will not
+harm performance. When α is close to zero, the difference in
+performance is minimal, as the regularization will have little
+effect in this case.
+For (cid:102)M and (cid:99)M given by (2) and (1), respectively, with L1
+plot ||(cid:102)M − M||F /||(cid:99)M − M||F . We consider 30x30 matrices of various
+Fig. 1.
+regularization on the recovered values for
+the unobserved entries, we
+ranks and average results over ten trials, with α optimal among α ∈
+{10−1, 10−2, 10−3, 10−4}.
+B. Recovery with Noisy Observed Entries
+We generate matrices as in the previous section and now
+consider the minimization given in (4). Suppose the entries of
+the noise matrix Z are i.i.d. N (0, σ2). We set the parameter
+ρ, as done in [CP10], to be
+ρ = (
+n1 +
+n2)
+(cid:115) |Ω|
+σ.
+n1n2
+C. Matrix recovery of health data
+Next, we consider real survey data from 2126 patients
+responding to 65 particular questions provided by LymeDis-
+ease.org. Data used was obtained from the LymeDisease.org
+patient registry, MyLymeData, Phase 1, June 17, 2017. Ques-
+tion responses are integer values between zero and four and
+answering all questions was required, that is this subset of the
+data survey is complete (so we may calculate reconstruction
+errors). All patients have Lyme disease and survey questions
+ask about topics such as current and past symptoms, treatments
+and outcomes. For example, “I would say that currently in
+general my health is: 0-Poor, 1-Fair, 2-Good, 3-Very good,
+4-Excellent.” Although, this part of the data considered is
+complete, we expect that in general, patients are likely to
+record responses for particularly noticeable symptoms, while
+a missing response in a medical survey may indicate a lack
+of symptoms. Thus, in this setting, L1 regularization of the
+unobserved entries is a natural choice.
+Due to computational constraints, for each of the ten trials
+executed, we randomly sample 50 of these patient surveys to
+generate a 50x65 matrix. As in the previous experiments, we
+subsample from the zero and nonzero entries of the data matrix
+at various rates to generate a matrix with missing entries. We
+complete this subsampled matrix with both NNM (1) and (2)
+using L1 regularization on the unobserved entries and report
+||(cid:102)M −M||F /||(cid:99)M −M||F , averaged over ten trials in Figure 4.
+The parameter α, for the regularization term, is chosen to be
+optimal among α ∈ {10−1, 10−2, 10−3, 10−4} and we report
+the values used in Figure 5.
+The results for the Lyme disease data match closely those
+found in the synthetic experiments done with and without
+noise. Regularizing the L1-norm of the unobserved entries
+improves performance if the sampling of non-zero entries is
+sufﬁciently high and sampling of zero entries is sufﬁciently
+low.
+Fig. 2. Average optimal α value among α ∈ {10−1, 10−2, 10−3, 10−4}
+for the minimization given in (2) with L1 regularization on the recovered
+values for the unobserved entries. The matrices considered here are the same
+as in Figure 1.
+We speciﬁcally consider low-rank matrices M ∈ R30×30
+generated as in the previous section and a noise matrix Z
+with i.i.d. entries sampled from N (0, 0.01). Thus we set
+ρ = 2
+various sampling rates of the zero and nonzero entries of M in
+(cid:113)|Ω|
+30 ·0.1. We again report ||(cid:102)M −M||F /||(cid:99)M −M||F for
+Figure 3. Here,(cid:99)M and(cid:102)M are given by (4) and (5) respectively.
+We see improved performance with regularization when the
+sampling rate of the zero entries is low and the sampling of
+the nonzero entries is high.
+For (cid:102)M and (cid:99)M given by (2) and (1), respectively, with L1
+||(cid:102)M − M||F /||(cid:99)M − M||F . We consider 30x30 matrices of various ranks
+Fig. 3.
+regularization on the recovered values for the unobserved entries, we plot
+with normally distributed i.i.d. noise with standard deviation σ = 0.1
+added. We average results over ten trials and with α optimal among α ∈
+{10−1, 10−2, 10−3, 10−4}.
+For (cid:102)M and (cid:99)M given by (2) and (1), respectively, with L1
+||(cid:102)M −M||F /||(cid:99)M −M||F . We consider 50 patient surveys with 65 responses
+Fig. 4.
+regularization on the recovered values for the unobserved entries, we plot
+each chosen randomly from 2126 patient surveys. We average results over ten
+trials and with α optimal among α ∈ {10−1, 10−2, 10−3, 10−4}.
+A. Connection to Robust Principal Component Analysis
+(RPCA)
+The program (2) very closely resembles the method pro-
+posed in [CLMW11], called Robust Principal Component
+Analysis (RPCA). RPCA is a modiﬁed version of traditional
+Principal Component Analysis that is robust to rare corruptions
+of arbitrary magnitude. In RPCA, one assumes that a low-
+rank matrix has some set of its entries corrupted. The goal is
+to recover the true underlying matrix despite the corruptions.
+More simply, for the observed matrix Y ∈ Rn1×n2, we have
+the decomposition
+Y = L + S,
+where L is the low-rank matrix we would like to recover and
+S is a sparse matrix of corruptions. The strategy for ﬁnding
+this decomposition proposed in [CLMW11] is
+||L||∗ + α||S||1 s.t. L + S = Y.
+(6)
+argmin
+L,S
+This method can be extended to the matrix completion setting,
+in which one would like to recover unobserved values from
+observed values, of which a subset may be corrupted. In this
+setting, [CLMW11] proposes solving the following minimiza-
+tion problem
+||L||∗ + α||S||1 s.t. PΩ(L + S) = PΩ(Y ).
+argmin
+L,S
+We now return to our original matrix completion problem,
+in which we assume the observed entries to be exact. Let
+M ∈ Rn1×n2 again be the matrix we aim to recover. If we
+expect the unobserved entries of M to be sparse, that is, only
+a small fraction of them to be nonzero, we can rewrite the
+minimization (2) in a form similar to RPCA in which we know
+the support of the corruptions is restricted to the set ΩC, i.e.
+S = PΩC (S). We then have,
+||A||∗ + α||S||1 s.t. A + S = PΩ(M ).
+(7)
+argmin
+A,S
+This strategy differs from traditional RPCA in that we assume
+the observed data to be free from errors and therefore know
+that the corruptions are restricted to the set of unobserved
+entries.
+the following result.
+Directly applying Theorem 1.1 from [CLMW11], we have
+Proposition 2: Suppose M ∈ Rn1×n2 and M = U ΣV ∗
+gives the singular value decomposition of M. Suppose also
+max
+||U∗ei||2 ≤ µr
+n1
+||V ∗ei||2 ≤ µr
+n2
+||X||∞ = maxi,j |Xi,j|, ei
+where r is the rank of M,
+is the ith standard basis vector and µ is the incoherence
+parameter as deﬁned in [CLMW11]. Suppose that the set of
+observed entries, Ω, is uniformly distributed among all sets
+of cardinality of m and the support set of S0 of non-zero
+unobserved entries is uniformly distributed among all sets
+of cardinality s contained in ΩC. Then there is a numerical
+and
+||U V ∗||∞ ≤
+, max
+(cid:114) µr
+n1n2
+Fig. 5. Average optimal α value among α ∈ {10−1, 10−2, 10−3, 10−4}
+for the minimization given in (2) with L1 regularization on the recovered
+values for the unobserved entries in Lyme patient data.
+III. ANALYTICAL REMARKS
+We provide here some basic analysis of the regularization
+approach. First, in the simpliﬁed setting, in which all of the
+unobserved entries are exactly zero, the modiﬁed recovery
+given in (2) will always perform at least as well as traditional
+NNM.
+Proposition 1: Suppose M ∈ Rn1×n2 and Ω gives the set
+of index pairs of the observed entries. Assume that all of the
+unobserved entries are exactly zero, i.e. PΩC (M ) = 0. Then
+for
+(cid:99)M = argmin||A||∗ s.t. PΩ(A) = PΩ(M ),
+and(cid:102)M = argmin||A||∗ + α||PΩC (A)|| s.t. PΩ(A) = PΩ(M ),
+we have
+for any matrix norm || · ||.
+Proof: From the deﬁnitions of (cid:99)M and (cid:102)M,
+||(cid:102)M − M|| ≤ ||(cid:99)M − M||
+||(cid:99)M||∗ ≤ ||(cid:102)M||∗.
+For α > 0, we have
+Using the inequality above,
+||(cid:102)M||∗ + α||PΩC ((cid:102)M )|| ≤ ||(cid:99)M||∗ + α||PΩC ((cid:99)M )||
+≤ ||(cid:102)M||∗ + α||PΩC ((cid:99)M )||.
+||PΩC ((cid:102)M )|| ≤ ||PΩC ((cid:99)M )||.
+PΩ((cid:102)M ) = PΩ((cid:99)M ) = PΩ(M )
+and under the assumption that PΩC (M ) = 0, as
+||(cid:102)M − M|| = ||PΩC ((cid:102)M )|| ≤ ||PΩC ((cid:99)M )|| = ||(cid:99)M − M||.
+The desired result then follows since
+constant c such that with probability at least 1 − cn−10 the
+minimization in (7) with α = 1/
+n achieves exact recovery,
+provided that
+rank(L0) ≤ ρrn(2)µ−1(log n(1))−2 and s ≤ ρsn(1)n(2),
+where ρr and ρs are positive numerical constants.
+This proposition is a direct application of Theorem 1.1
+in [CLMW11] to the program given by (7). Note that here,
+the corruptions are exactly the unobserved entries that are
+nonzero. Thus, if s, the number of nonzero unobserved entries
+is small, this result may be stronger than corresponding matrix
+completion results that
+the larger,
+number of missing entries.
+instead depend on m,
+The authors of [CLMW11] note that RPCA can be thought
+of as a more challenging version of matrix completion. The
+reasoning being, that in matrix completion we aim to recover
+the set of unobserved entries, whose locations are known,
+whereas in the RPCA setting, we have a set of corrupted
+entries, whose locations are unknown, and for which we would
+like to both identify as erroneous and determine their correct
+values. Figure 1 of [CLMW11] provides numerical evidence
+that in practice RPCA does in fact require more stringent
+conditions to achieve exact recovery than the corresponding
+matrix completion problem. In image completion or repair,
+corruptions are often spatially correlated or isolated to speciﬁc
+regions of an image. In [LRZM12], the authors provide exper-
+imental evidence that incorporating an estimate of the support
+of the corruptions aids in recovery. By the same reasoning,
+we expect that a stronger result than suggested by Proposition
+2 likely holds, as we do not make use of the fact that we
+are able to restrict the locations of the corruptions (nonzero,
+unobserved entries) to a subset of the larger matrix.
+IV. DISCUSSION
+For incomplete data in which we expect that unobserved
+entries are likely to be 0, we ﬁnd that regularizing the values
+of the unobserved entries when performing NNM improves
+performance under various conditions. This improvement in
+performance holds for both synthetic data, with and without
+noise, as well as for Lyme disease survey data. We speciﬁcally
+investigate the performance of L1 regularization on the unob-
+served entries as it is a natural choice for many applications.
+Testing the validity of methods, such as (2), on real data
+is challenging, since this setting hinges on the assumption
+that unobserved data is structurally different than observed
+data and would require having access to ground truth values
+for the unobserved entries. In this paper, we choose to take
+complete data and artiﬁcially partition it into observed and
+unobserved entries. Another way to manage this challenge is
+to examine performance of various tasks, such as classiﬁcation
+or prediction, based on data that has been completed in
+different ways. In this setting, relative performance of different
+completion strategies will likely depend on the speciﬁc task
+considered. However, for many applications, one would like
+to complete the data in order to use it for a further goal. In
+this setting, judging the performance of the matrix completion
+algorithm by its effect on performance of the ultimate goal is
+very natural.
+We offer preliminary arguments as to why we might ex-
+pect the approach in (2) to work well under the structural
+assumption that unobserved entries are likely to be sparse
+or small in magnitude, however, stronger theoretical results
+are likely possible. For example, we show that regularizing
+the values of the unobserved entries when performing NNM
+improves performance in the case when all unobserved entries
+are exactly zero, but based on empirical evidence we expect
+improved performance under more general conditions.
+A range of papers, including [CT10], [RFP10], [CR09],
+[Gro11], discuss the conditions under which exact matrix
+completion is possible under the assumption that the observed
+entries of the matrix are sampled uniformly at random. Under
+what reasonable structural assumptions on the unobserved
+entries might we still be able to specify conditions that will
+lead to exact recovery? We save such questions for future
+work.
+ACKNOWLEDGMENTS
+The authors would like to thank LymeDisease.org for the
+use of data derived from MyLymeData to conduct this study.
+We would also like to thank the patients for their contributions
+to MyLymeData, and Anna Ma for her guidance in working
+with this data. In addition, the authors were supported by NSF
+CAREER DMS #1348721, NSF BIGDATA DMS #1740325,
+and MSRI NSF DMS #1440140.
+REFERENCES
+[BK07]
+[BL07]
+R. M. Bell and Y. Koren. Lessons from the Netﬂix prize
+challenge. Acm Sigkdd Explorations Newsletter, 9(2):75–79,
+2007.
+J. Bennett and S. Lanning. The Netﬂix prize. In Proceedings
+of KDD cup and workshop, volume 2007, page 35. New York,
+NY, USA, 2007.
+[BLWY06] P. Biswas, T.-C. Lian, T.-C. Wang, and Y. Ye. Semideﬁnite
+programming based algorithms for sensor network localization.
+ACM Trans. Sensor Networks (TOSN), 2(2):188–220, 2006.
+[CLMW11] E. J. Cand´es, X. Li, Y. Ma, and J. Wright. Robust principal
+[CP10]
+[CR09]
+[CT10]
+[Gro11]
+[KBV09]
+component analysis? J. of the ACM, 58(1):1–37, 2011.
+E. J. Cand`es and Y. Plan. Matrix completion with noise.
+Proceedings of the IEEE, 9(6):925–936, 2010.
+E. J. Cand`es and B. Recht. Exact matrix completion via convex
+optimization. Found. Comput. Math., 9(6):717–772, 2009.
+E. J. Cand`es and T. Tao. The power of convex relaxation:
+Near-optimal matrix completion. IEEE Trans. Inform. Theory,
+56(5):2053–2080, 2010.
+D. Gross. Recovering low-rank matrices from few coefﬁcients in
+any basis. IEEE Trans. Inform. Theory, 57(3):1548–1566, 2011.
+Y. Koren, R. Bell, and C. Volinsky. Matrix factorization
+techniques for recommender systems. Computer, 42(8), 2009.
+[LV09]
+[Rec11]
+[RFP10]
+[LRZM12] X. Liang, X. Ren, Z. Zhang, and Y. Ma. Repairing sparse low-
+rank texture. Computer Vision–ECCV 2012, pages 482–495,
+2012.
+Z. Liu and L. Vandenberghe. Interior-point method for nuclear
+norm approximation with application to system identiﬁcation.
+SIAM J. Matrix Analysis and Appl., 31(3):1235–1256, 2009.
+B. Recht. A simpler approach to matrix completion. J. Machine
+Learning Research, 12(Dec):3413–3430, 2011.
+B. Recht, M. Fazel, and P. A. Parrilo. Guaranteed minimum
+rank solutions to linear matrix equations via nuclear norm
+minimization. SIAM Review, 52(3):471–501, 2010.
+R. Schmidt. Multiple emitter location and signal parameter
+estimation. IEEE Trans. Antennas and Propagation, 34(3):276–
+280, 1986.
+J. L. Schafer and J. W. Graham. Missing data: our view of the
+state of the art. Psychological methods, 7(2):147, 2002.
+A. Singer. A remark on global positioning from local distances.
+Proc. National Academy of Sciences, 105(28):9507–9511, 2008.
+[Sch86]
+[SG02]
+[Sin08]
