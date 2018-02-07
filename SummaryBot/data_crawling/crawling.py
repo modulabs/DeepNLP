@@ -18,6 +18,17 @@ from urllib.request import urlopen
 from bs4 import BeautifulSoup
 
 
+# crawling
+# 0. download directory create
+# 1. paper pdf download
+# 2. pdf save
+# 3. pdf -> txt
+# 4. delete BlankCarriageReturn
+# 5. txt save
+# 6. paper, label
+
+
+
 # 0. download directory create
 
 pdfdirectory = "../data/pdf"
@@ -174,4 +185,8 @@ for a in soup.find_all('a', href=True):
         url = urlbase + a['href']
         print(url)
         download(url)
+
+
+
+
 
