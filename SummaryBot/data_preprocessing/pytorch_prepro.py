@@ -1,3 +1,4 @@
+import sys
 import os
 import json
 import requests
@@ -8,16 +9,18 @@ import pandas as pd
 from pprint import pprint
 from itertools import chain
 
-from config import Config
-from lib import data_utils
+# from config import Config
+# from lib import data_utils
 
 from torchtext.vocab import Vocab
 from torchtext import data
 
-config = Config()
+label_path = "data/label/1801.08985"
 
-data_path = config.data_path
-kin_train = data_path + 'valid_pos_neg.txt'
+with open(label_path, 'r') as f:
+    print(f.readlines())
+
+sys.exit(0)
 
 train_query_idx = data_path + config.train_query_idx
 train_pos_idx = data_path + config.train_pos_idx
