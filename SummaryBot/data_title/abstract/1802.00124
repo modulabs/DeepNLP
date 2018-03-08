@@ -1,0 +1,18 @@
+
+Model pruning has become a useful technique that improves the computational
+efﬁciency of deep learning, making it possible to deploy solutions on resource-
+limited scenarios. A widely-used practice in relevant work assumes that a smaller-
+norm parameter or feature plays a less informative role at the inference time. In
+this paper, we propose a channel pruning technique for accelerating the compu-
+tations of deep convolutional neural networks (CNNs), which does not critically
+rely on this assumption. Instead, it focuses on direct simpliﬁcation of the channel-
+to-channel computation graph of a CNN without the need of performing a compu-
+tational difﬁcult and not always useful task of making high-dimensional tensors of
+CNN structured sparse. Our approach takes two stages: the ﬁrst being to adopt an
+end-to-end stochastic training method that eventually forces the outputs of some
+channels being constant, and the second being to prune those constant channels
+from the original neural network by adjusting the biases of their impacting layers
+such that the resulting compact model can be quickly ﬁne-tuned. Our approach
+is mathematically appealing from an optimization perspective and easy to repro-
+duce. We experimented our approach through several image learning benchmarks
+and demonstrate its interesting aspects and the competitive performance.

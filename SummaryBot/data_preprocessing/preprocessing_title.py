@@ -46,70 +46,38 @@ labeldirectory = "../data_title/title"
 vocab_path = "../data_title/vocab"
 
 
-def  fileWordLenCheck(filepath):
-    file = open(filepath, 'rt')
-    text = file.read()
-    file.close()
+def basic_tokenizer(line, normalize_digits=True):
+    """ A basic tokenizer to tokenize text into tokens.
+    Feel free to change this to suit your need. """
+    line = re.sub('<u>', '', line)
+    line = re.sub('</u>', '', line)
+    line = re.sub('\[', '', line)
+    line = re.sub('\]', '', line)
+    words = []
+    _WORD_SPLIT = re.compile("([.,!?\"'-<>:;)(])")
+    _DIGIT_RE = re.compile(r"\d")
+    for fragment in line.strip().lower().split():
+        for token in re.split(_WORD_SPLIT, fragment):
+            if not token:
+                continue
+            if normalize_digits:
+                token = re.sub(_DIGIT_RE, '#', token)
+            words.append(token)
+    return words
 
-    # split into words
-    tokens = word_tokenize(text)
-
-    # convert to lower case
-    for w in tokens:
-        if len(w) > 100:
-            print(w)
-            return True
-
-    return False
-
-for root, dirs, files in os.walk(paperdirectory):
-    for filename in files:
-        if '_ids' in filename:
-            os.remove( paperdirectory + "/" + filename )
-
-
-for root, dirs, files in os.walk(labeldirectory):
-    for filename in files:
-        if '_ids' in filename:
-            os.remove( labeldirectory + "/" + filename )
+def load_vocab(vocab_path):
+    # print("load vocab ...")
+    with open(vocab_path, 'rb') as f:
+        words = f.read().decode('utf-8').splitlines()
+    return {words[i]: i for i in range(len(words))}
 
 
-# pdf -> txt 로 잘못 저장된 파일 삭제
-
-for root, dirs, files in os.walk(paperdirectory):
-    for filename in files:
-        if fileWordLenCheck( paperdirectory + "/" + filename ) :
-            os.remove(paperdirectory + "/" + filename)
-
-
-for root, dirs, files in os.walk(labeldirectory):
-    for filename in files:
-        if fileWordLenCheck( labeldirectory + "/" + filename ) :
-            os.remove(labeldirectory + "/" + filename)
+def sentence2id(_vocab, line):
+    return [_vocab.get(token, _vocab['<unk>']) for token in basic_tokenizer(line)]
 
 
 def deleteStopword(text):
-
-    # split into words
-    tokens = word_tokenize(text)
-
-    # convert to lower case
-    tokens = [w.lower() for w in tokens]
-
-    # remove punctuation from each word =>  !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
-    table = str.maketrans('', '', string.punctuation)
-    stripped = [w.translate(table) for w in tokens]
-
-    # remove remaining tokens that are not alphabetic
-    words = [word for word in stripped if word.isalpha()]
-
-    # filter out stop words
-    stop_words = set(stopwords.words('english'))
-    words = [w for w in words if not w in stop_words]
-
-    # print(words)
-    return words
-
+    return basic_tokenizer(text)
 
 def deleteUnnecessaryPOS(words):
     # pos tagging
@@ -194,34 +162,7 @@ saveVocab(vocab)
 # paper, label index 로 변경
 
 
-def load_vocab(vocab_path):
-    # print("load vocab ...")
-    with open(vocab_path, 'rb') as f:
-        words = f.read().decode('utf-8').splitlines()
-    return {words[i]: i for i in range(len(words))}
 
-
-def sentence2id(_vocab, line):
-    return [_vocab.get(token, _vocab['<unk>']) for token in basic_tokenizer(line)]
-
-def basic_tokenizer(line, normalize_digits=True):
-    """ A basic tokenizer to tokenize text into tokens.
-    Feel free to change this to suit your need. """
-    line = re.sub('<u>', '', line)
-    line = re.sub('</u>', '', line)
-    line = re.sub('\[', '', line)
-    line = re.sub('\]', '', line)
-    words = []
-    _WORD_SPLIT = re.compile("([.,!?\"'-<>:;)(])")
-    _DIGIT_RE = re.compile(r"\d")
-    for fragment in line.strip().lower().split():
-        for token in re.split(_WORD_SPLIT, fragment):
-            if not token:
-                continue
-            if normalize_digits:
-                token = re.sub(_DIGIT_RE, '#', token)
-            words.append(token)
-    return words
 
 
 def token2id(  data, mode):

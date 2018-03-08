@@ -1,0 +1,18 @@
+—Clustering is essential to many tasks in pattern
+recognition and computer vision. With the advent of deep learn-
+ing, there is an increasing interest in learning deep unsupervised
+representations for clustering analysis. Many works on this
+domain rely on variants of auto-encoders and use the encoder out-
+puts as representations/features for clustering. In this paper, we
+show that an l2 normalization constraint on these representations
+during auto-encoder training, makes the representations more
+separable and compact in the Euclidean space after training.
+This greatly improves the clustering accuracy when k-means
+clustering is employed on the representations. We also propose a
+clustering based unsupervised anomaly detection method using
+l2 normalized deep auto-encoder representations. We show the
+effect of l2 normalization on anomaly detection accuracy. We
+further show that
+the proposed anomaly detection method
+greatly improves accuracy compared to previously proposed deep
+methods such as reconstruction error based anomaly detection.
