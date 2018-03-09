@@ -1,0 +1,8 @@
+—In this paper, we propose a novel approach, 3D-RecGAN++, which reconstructs the complete 3D structure of a given object
+from a single arbitrary depth view using generative adversarial networks. Unlike existing work which typically requires multiple views of
+the same object or class labels to recover the full 3D geometry, the proposed 3D-RecGAN++ only takes the voxel grid representation of a
+depth view of the object as input, and is able to generate the complete 3D occupancy grid with a high resolution of 2563 by recovering
+the occluded/missing regions. The key idea is to combine the generative capabilities of autoencoders and the conditional Generative
+Adversarial Networks (GAN) framework, to infer accurate and ﬁne-grained 3D structures of objects in high-dimensional voxel space.
+Extensive experiments on large synthetic datasets and real-world Kinect datasets show that the proposed 3D-RecGAN++ signiﬁcantly
+outperforms the state of the art in single view 3D object reconstruction, and is able to reconstruct unseen types of objects.

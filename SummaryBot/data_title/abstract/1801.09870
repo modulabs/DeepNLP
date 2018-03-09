@@ -1,0 +1,10 @@
+. We propose a new method to eﬃciently compute load-ﬂows
+(the steady-state of the power-grid for given productions, consumptions
+and grid topology), substituting conventional simulators based on diﬀer-
+ential equation solvers. We use a deep feed-forward neural network trained
+with load-ﬂows precomputed by simulation. Our architecture permits to
+train a network on so-called “n-1” problems, in which load ﬂows are evalu-
+ated for every possible line disconnection, then generalize to “n-2” problems
+without re-training (a clear advantage because of the combinatorial nature
+of the problem). To that end, we developed a technique bearing similarity
+with “dropout”, which we named “guided dropout”.

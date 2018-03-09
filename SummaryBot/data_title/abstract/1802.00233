@@ -1,0 +1,39 @@
+. A decision tree T in Bm := {0, 1}m is a binary tree where
+each of its internal nodes is labeled with an integer in [m] = {1, 2, . . . , m},
+each leaf is labeled with an assignment a ∈ Bm and each internal node
+has two outgoing edges that are labeled with 0 and 1, respectively. Let
+A ⊂ {0, 1}m. We say that T is a decision tree for A if (1) For every a ∈ A
+there is one leaf of T that is labeled with a. (2) For every path from the
+root to a leaf with internal nodes labeled with i1, i2, . . . , ik ∈ [m], a leaf
+labeled with a ∈ A and edges labeled with ξi1 , . . . , ξik ∈ {0, 1}, a is the
+only element in A that satisﬁes aij = ξij for all j = 1, . . . , k.
+Our goal is to write a polynomial time (in n := |A| and m) algorithm
+that for an input A ⊆ Bm outputs a decision tree for A of minimum
+depth. This problem has many applications that include, to name a few,
+computer vision, group testing, exact learning from membership queries
+and game theory.
+Arkin et al. and Moshkov [4,14] gave a polynomial time (ln|A|)- approx-
+imation algorithm (for the depth). The result of Dinur and Steurer [6] for
+set cover implies that this problem cannot be approximated with ratio
+(1− o(1))· ln|A|, unless P=NP. Moskov studied in [14] the combinatorial
+measure of extended teaching dimension of A, ETD(A). He showed that
+ETD(A) is a lower bound for the depth of the decision tree for A and
+then gave an exponential time ETD(A)/ log(ETD(A))-approximation al-
+gorithm.
+In this paper we further study the ETD(A) measure and a new com-
+binatorial measure, DEN(A), that we call the density of the set A. We
+show that DEN(A) ≤ ETD(A) + 1. We then give two results. The ﬁrst
+result is that the lower bound ETD(A) of Moshkov for the depth of the
+decision tree for A is greater than the bounds that are obtained by the
+classical technique used in the literature. The second result is a poly-
+nomial time (ln 2)DEN(A)-approximation (and therefore (ln 2)ETD(A)-
+approximation) algorithm for the depth of the decision tree of A. We
+also show that a better approximation ratio implies P=NP.
+We then apply the above results to learning the class of disjunctions
+of predicates from membership queries [5]. We show that the ETD of
+this class is bounded from above by the degree d of its Hasse diagram.
+We then show that Moshkov algorithm can be run in polynomial time
+and is (d/ log d)-approximation algorithm. This gives optimal algorithms
+when the degree is constant. For example, learning axis parallel rays over
+constant dimension space.
+

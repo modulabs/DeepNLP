@@ -1,0 +1,10 @@
+—We present a fast Compressive Sensing algorithm for
+the reconstruction of binary signals {0, 1}-valued binary signals
+from its linear measurements. The proposed algorithm minimizes
+a non-convex penalty function that is given by a weighted sum
+of smoothed ℓ0 norms, under the [0, 1] box-constraint.
+It is experimentally shown that the proposed algorithm is not
+only signiﬁcantly faster than linear-programming-based convex
+optimization algorithms, but also shows a better recovery per-
+formance under several different metrics.
+
