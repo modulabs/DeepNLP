@@ -3,37 +3,87 @@ import json
 import requests
 import re
 import time
+import numpy as np
 
 import pandas as pd
 from pprint import pprint
 from itertools import chain
 
-from config import Config
-from lib import data_utils
-
 from torchtext.vocab import Vocab
 from torchtext import data
 
-config = Config()
+import sys
+import os
 
-data_path = config.data_path
-kin_train = data_path + 'valid_pos_neg.txt'
+abstract_path = './SummaryBot/data_title/abstract/'
+title_path = './SummaryBot/data_title/title/'
 
-train_query_idx = data_path + config.train_query_idx
-train_pos_idx = data_path + config.train_pos_idx
-train_neg_idx = data_path + config.train_neg_idx
-train_vocab_idx = data_path + config.train_vocab_idx
+#타이틀과 Abstract데이터를 로드한다. title은 /n을 공백으로 치환하고, abstract같은 경우에는 /n을 '\u2028' - line Seperator로 치환
+#https://www.fileformat.info/info/unicode/char/2028/index.htm
 
-######1. Data Loading#####
-train_db = pd.read_csv(kin_train, sep="\t", header=None, names=["query", "pos", "neg1", "neg2", "neg3", "neg4"])
 
-query = list(train_db['query'])
-pos = list(train_db['pos'])
-neg1 = list(train_db['neg1'])
+vocab_dict={
+    "<PAD>": 1
+}
 
-QA_list = list(zip(query, pos, neg1))
+def load_title(path, bucket=10):
+    
+    idx_title = []
 
-#Data Loading
+    with open(path, 'r') as f:
+
+        read_lines = f.readlines()
+        
+        for line in read_lines:
+            split_line = line.split("\n")
+            sent = ([int(token) for token in split_line[0].split(" ")] + [(vocab_dict["<PAD>"])] * bucket)[:bucket]
+            idx_title.append(sent)
+    
+    return idx_title
+
+
+# print(load_title(abstract_path+'1801.08618_ids.enc'))
+
+def load_abstract(path, bucket=50):
+    
+    idx_sent = []
+    
+    with open(path, "r", encoding="utf-8") as f:
+
+        read_lines = f.readlines()
+        for line in read_lines:
+            split_line = line.split("\n")
+            sent = ([int(token) for token in split_line[0].split(" ")] + [(vocab_dict["<PAD>"])] * bucket)[:bucket]
+            idx_sent.append(sent)
+            
+    return idx_sent
+
+print(load_abstract(abstract_path+'1801.08618_ids.enc'))
+
+# print(vocab_dict["<PAD>"])
+
+sys.exit(0)
+    
+# with open(abstract_path+'1801.08618_ids.enc', 'r') as f:
+#     abstract_raw=f.readlines()
+#     abstract=[ids.replace("\n", u"\u2028") for ids in abstract_raw]
+
+# print(title)
+# print(abstract)
+
+#배치 형태의 데이터 치환
+batch_size = 1
+
+batch_idx = np.random.choice(np.arange(len(title)), int(batch_size), False).astype(int)
+print(batch_idx)
+
+
+sys.exit(0)
+
+
+
+
+# Data Loading
 
 ######2. Convert to Train#####
 text_field = data.Field(
