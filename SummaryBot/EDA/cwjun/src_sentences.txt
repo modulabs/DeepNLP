@@ -1,0 +1,124 @@
+— The need to predict or ﬁll-in missing data, often referred to as matrix completion, is a common challenge in to- day’s data-driven world.
+Previous strategies typically assume that no structural difference between observed and missing entries exists.
+Unfortunately, this assumption is woefully unrealistic in many applications.
+For example, in the classic Netﬂix challenge, in which one hopes to predict user-movie ratings for unseen ﬁlms, the fact that the viewer has not watched a given movie may indicate a lack of interest in that movie, thus suggesting a lower rating than otherwise expected.
+We propose adjusting the standard nuclear norm minimization strategy for matrix completion to account for such structural differences between observed and unobserved entries by regularizing the values of the unobserved entries.
+We show that the proposed method outperforms nuclear norm minimization in certain settings.
+thus violating the assumption of uniform sampling of observed entries across movies.
+On the ﬂip side, a missing entry may indicate a user’s lack of interest in that particular movie.
+Similarly, in sensor networks, entries may be missing because of geographic limitations or missing connections; in survey data, incomplete sections may be irrelevant or unimportant to the user.
+In these settings, it is then reasonable to expect that missing entries have lower values1 than observed entries.
+In this work, we propose a modiﬁcation to the traditional NNM for matrix completion that still results in a semi-deﬁnite optimization problem, but also encourages lower values among the unobserved entries.
+We show that this method works better than NNM alone under certain sampling conditions.
+
+Recurrent neural networks have achieved excellent performance in many applica- tions.
+However, on portable devices with limited resources, the models are often too large to deploy.
+For applications on the server with large scale concurrent requests, the latency during inference can also be very critical for costly computing resources.
+In this work, we address these problems by quantizing the network, both weights and activations, into multiple binary codes {−1, +1}.
+We formulate the quantization as an optimization problem.
+Under the key observation that once the quantization coefﬁcients are ﬁxed the binary codes can be derived efﬁciently by binary search tree, alternating minimization is then applied.
+We test the quantiza- tion for two well-known RNNs, i.e., long short term memory (LSTM) and gated recurrent unit (GRU), on the language models.
+Compared with the full-precision counter part, by 2-bit quantization we can achieve ∼16× memory saving and ∼6× real inference acceleration on CPUs, with only a reasonable loss in the accuracy.
+By 3-bit quantization, we can achieve almost no loss in the accuracy or even surpass the original model, with ∼10.5× memory saving and ∼3× real inference acceleration.
+Both results beat the exiting quantization works with large margins.
+We extend our alternating quantization to image classiﬁcation tasks.
+In both RNNs and feedforward neural networks, the method also achieves excellent performance.
+
+The  development  of  accurate  and  transferable  machine learning  (ML)  potentials  for predicting  molecular  energetics  is  a  challenging  task.
+The  process  of  data  generation  to  train  such  ML  potentials is a task neither well understood nor researched in detail.
+In this work, we present a fully  automated  approach  for  the  generation  of  datasets  with  the  intent  of  training  universal  ML  potentials.
+It  is based on the concept  of active learning  (AL) via Query by Committee (QBC),  which uses the disagreement between an ensemble of ML potentials to infer the reliability of the  ensemble’s prediction.
+QBC allows our AL algorithm to automatically sample regions of chemical  space  where  the  machine  learned  potential  fails  to  accurately  predict  the  potential  energy.
+AL  improves the overall fitness of ANAKIN-ME (ANI) deep learning potentials in rigorous test cases  by mitigating human biases in deciding what new training data to use.
+AL also reduces the training  set size to a fraction of the data required when using naive random sampling techniques.
+To provide  validation of our AL approach we develop the COMP6 benchmark (publicly available on GitHub),  which contains a diverse set of organic molecules.
+We show the use of our proposed AL technique  develops  a  universal  ANI  potential  (ANI-1x),  which  provides  very  accurate  energy  and  force  predictions on the entire COMP6 benchmark.
+This universal potential achieves a level of accuracy  on par with the best ML potentials for single molecule or materials, while remaining applicable to  the general class of organic molecules comprised of the elements CHNO.
+
+Deep learning involves a difﬁcult non-convex optimization problem with a large number of weights between any two adjacent layers of a deep structure.
+To handle large data sets or complicated networks, distributed training is needed, but the calculation of function, gradient, and Hessian is expensive.
+In particular, the communication and the synchronization cost may become a bottleneck.
+In this paper, we focus on situations where the model is distributedly stored, and propose a novel distributed Newton method for training deep neural networks.
+By variable and feature-wise data partitions, and some careful designs, we are able to explicitly use the Jacobian matrix for matrix-vector products in the Newton method.
+Some techniques are incorporated to reduce the running time as well as the memory con- sumption.
+First, to reduce the communication cost, we propose a diagonalization method such that an approximate Newton direction can be obtained without com- munication between machines.
+Second, we consider subsampled Gauss-Newton matrices for reducing the running time as well as the communication cost.
+Third, to reduce the synchronization cost, we terminate the process of ﬁnding an ap- proximate Newton direction even though some nodes have not ﬁnished their tasks.
+Details of some implementation issues in distributed environments are thoroughly investigated.
+Experiments demonstrate that the proposed method is effective for the distributed training of deep neural networks.
+In compared with stochastic gra- dient methods, it is more robust and may give better test accuracy.
+
+In this paper, we introduce ”Power Linear Unit” (PoLU) which increases the nonlinearity capacity of a neural net- work and thus helps improving its performance.
+PoLU adopts several advantages of previously proposed activa- tion functions.
+First, the output of PoLU for positive inputs is designed to be identity to avoid the gradient vanishing problem.
+Second, PoLU has a non-zero output for negative inputs such that the output mean of the units is close to zero, hence reducing the bias shift effect.
+Thirdly, there is a satu- ration on the negative part of PoLU, which makes it more noise-robust for negative inputs.
+Furthermore, we prove that PoLU is able to map more portions of every layer’s in- put to the same space by using the power function and thus increases the number of response regions of the neural net- work.
+We use image classiﬁcation for comparing our pro- posed activation function with others.
+In the experiments, MNIST, CIFAR-10, CIFAR-100, Street View House Numbers (SVHN) and ImageNet are used as benchmark datasets.
+The neural networks we implemented include widely-used ELU- Network, ResNet-50, and VGG16, plus a couple of shallow networks.
+Experimental results show that our proposed ac- tivation function outperforms other state-of-the-art models with most networks.
+
+.
+A decision tree T in Bm := {0, 1}m is a binary tree where each of its internal nodes is labeled with an integer in [m] = {1, 2, .
+.
+.
+, m}, each leaf is labeled with an assignment a ∈ Bm and each internal node has two outgoing edges that are labeled with 0 and 1, respectively.
+Let A ⊂ {0, 1}m.
+We say that T is a decision tree for A if (1) For every a ∈ A there is one leaf of T that is labeled with a.
+(2) For every path from the root to a leaf with internal nodes labeled with i1, i2, .
+.
+.
+, ik ∈ [m], a leaf labeled with a ∈ A and edges labeled with ξi1 , .
+.
+.
+, ξik ∈ {0, 1}, a is the only element in A that satisﬁes aij = ξij for all j = 1, .
+.
+.
+, k.
+Our goal is to write a polynomial time (in n := |A| and m) algorithm that for an input A ⊆ Bm outputs a decision tree for A of minimum depth.
+This problem has many applications that include, to name a few, computer vision, group testing, exact learning from membership queries and game theory.
+Arkin et al.
+and Moshkov [4,14] gave a polynomial time (ln|A|)- approx- imation algorithm (for the depth).
+The result of Dinur and Steurer [6] for set cover implies that this problem cannot be approximated with ratio (1− o(1))· ln|A|, unless P=NP.
+Moskov studied in [14] the combinatorial measure of extended teaching dimension of A, ETD(A).
+He showed that ETD(A) is a lower bound for the depth of the decision tree for A and then gave an exponential time ETD(A)/ log(ETD(A))-approximation al- gorithm.
+In this paper we further study the ETD(A) measure and a new com- binatorial measure, DEN(A), that we call the density of the set A.
+We show that DEN(A) ≤ ETD(A) + 1.
+We then give two results.
+The ﬁrst result is that the lower bound ETD(A) of Moshkov for the depth of the decision tree for A is greater than the bounds that are obtained by the classical technique used in the literature.
+The second result is a poly- nomial time (ln 2)DEN(A)-approximation (and therefore (ln 2)ETD(A)- approximation) algorithm for the depth of the decision tree of A.
+We also show that a better approximation ratio implies P=NP.
+We then apply the above results to learning the class of disjunctions of predicates from membership queries [5].
+We show that the ETD of this class is bounded from above by the degree d of its Hasse diagram.
+We then show that Moshkov algorithm can be run in polynomial time and is (d/ log d)-approximation algorithm.
+This gives optimal algorithms when the degree is constant.
+For example, learning axis parallel rays over constant dimension space.
+
+.
+Intrusion  detection for computer network systems has  been  becoming  one of the most critical tasks for network administrators today.
+It  has an important role for organizations, governments and our society  due to the valuable resources hosted on computer networks.
+Traditional  misuse detection strategies are unable to detect new and unknown intru-  sion  types.
+In  contrast,  anomaly detection in  network security  aims  to  distinguish  between illegal  or  malicious events and  normal behavior of  network systems.
+Anomaly detection can be considered as a classification  problem where  it  builds  models of normal network behavior, of which it  uses  to  detect  new patterns  that  significantly deviate  from the  model.
+Most  of the  current  approaches on  anomaly  detection is  based  on the  learning of normal behavior and anomalous actions.
+They  do not include  memory that is they do not take into account previous events classify new  ones.
+In  this  paper, we propose a one-class collective anomaly detection  model based  on  neural  network learning.
+Normally a  Long  Short-Term  Memory Recurrent Neural Network (LSTM  RNN) is trained only on nor-  mal  data,  and  it  is  capable of predicting several time-steps ahead of an  input.
+In  our approach, a  LSTM  RNN  is  trained on normal time series  data  before performing a  prediction for each time-step.
+Instead  of con-  sidering  each  time-step separately,  the  observation of prediction  errors  from a  certain number of time-steps is  now proposed as  a  new idea  for  detecting collective anomalies.
+The  prediction  errors of a  certain  num-  ber  of the latest time-steps above a  threshold will  indicate  a  collective  anomaly.
+The  model is  evaluated on a  time series version of the KDD  1999 dataset.
+The  experiments demonstrate that the proposed model is  capable to detect collective anomaly efficiently.
+
+—Non-recurring trafﬁc congestion is caused by tem- porary disruptions, such as accidents, sports games, adverse weather, etc.
+We use data related to real-time trafﬁc speed, jam factors (a trafﬁc congestion indicator), and events collected over a year from Nashville, TN to train a multi-layered deep neural network.
+The trafﬁc dataset contains over 900 million data records.
+The network is thereafter used to classify the real- time data and identify anomalous operations.
+Compared with traditional approaches of using statistical or machine learning techniques, our model reaches an accuracy of 98.73 percent when identifying trafﬁc congestion caused by football games.
+Our approach ﬁrst encodes the trafﬁc across a region as a scaled image.
+After that the image data from different timestamps is fused with event- and time-related data.
+Then a crossover operator is used as a data augmentation method to generate training datasets with more balanced classes.
+Finally, we use the receiver operating characteristic (ROC) analysis to tune the sensitivity of the classiﬁer.
+We present the analysis of the training time and the inference time separately.
+
