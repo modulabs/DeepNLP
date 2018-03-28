@@ -1,0 +1,14 @@
+
+While neural networks have achieved high accuracy on standard image classiﬁ-
+cation benchmarks, their accuracy drops to nearly zero in the presence of small
+adversarial perturbations to test inputs. Defenses based on regularization and ad-
+versarial training have been proposed, but often followed by new, stronger attacks
+that defeat these defenses. Can we somehow end this arms race? In this work,
+we study this problem for neural networks with one hidden layer. We ﬁrst pro-
+pose a method based on a semideﬁnite relaxation that outputs a certiﬁcate that for
+a given network and test input, no attack can force the error to exceed a certain
+value. Second, as this certiﬁcate is differentiable, we jointly optimize it with the
+network parameters, providing an adaptive regularizer that encourages robustness
+against all attacks. On MNIST, our approach produces a network and a certiﬁcate
+that no attack that perturbs each pixel by at most  = 0.1 can cause more than
+35% test error.

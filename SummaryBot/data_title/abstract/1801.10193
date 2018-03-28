@@ -1,0 +1,22 @@
+
+The identification of novel drug-target (DT) interactions is a substantial part
+of the drug discovery process. Most of the computational methods that have
+been proposed to predict DT interactions have focused on binary classification,
+where the goal is to determine whether a DT pair interacts or not. However,
+protein-ligand interactions assume a continuum of binding strength values, also
+called binding affinity and predicting this value still remains a challenge. The
+increase in the affinity data available in DT knowledge-bases allow the use of
+advanced learning techniques such as deep learning architectures in the predic-
+tion of binding affinities. In this study, we propose a deep-learning based model
+that uses only sequence information of both targets and drugs to predict DT
+interaction binding affinities. The few studies that focus on DT binding affinity
+prediction either use 3D structure of protein-ligand complexes or 2D features of
+compounds. One novel approach used in this work is the modeling of protein
+sequences and compound 1D representations with convolutional neural networks
+(CNNs). The results show that the proposed deep learning based model that uses
+the 1D representations of targets and drugs is an effective approach for drug tar-
+get binding affinity prediction. The model in which a high-level representation
+of a drug is constructed via CNNs and Smith-Waterman similarity is used for
+proteins achieved the best Concordance Index (CI) performance, outperforming
+KronRLS, a state-of-the-art algorithm for DT binding affinity prediction, with
+statistical significance.

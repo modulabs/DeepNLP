@@ -21,7 +21,3 @@ straints and quality of service. JointDNN achieves up to 18× and
 32× reductions on the latency and mobile energy consumption of
 querying DNNs compared to the status-quo approaches, respec-
 tively.
-KEYWORDS
-mobile cloud computing, deep learning, deep neural networks, in-
-telligent services
-1 

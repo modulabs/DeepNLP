@@ -1,0 +1,13 @@
+
+Projective cone scheduling deﬁnes a large class of rate-stabilizing policies for queueing models relevant to several
+applications. While there exists considerable theory on the properties of projective cone schedulers, there is little
+practical guidance on choosing the parameters that deﬁne them. In this paper, we propose an algorithm for designing an
+automated projective cone scheduling system based on observations of an expert projective cone scheduler. We show that
+the estimated scheduling policy is able to emulate the expert in the sense that the average loss realized by the learned
+policy will converge to zero. Speciﬁcally, for a system with n queues observed over a time horizon T , the average loss for
+. This upper bound holds regardless of the statistical characteristics of the system.
+the algorithm is O
+The algorithm uses the multiplicative weights update method and can be applied online so that additional observations
+of the expert scheduler can be used to improve an existing estimate of the policy. This provides a data-driven method
+for designing a scheduling policy based on observations of a human expert. We demonstrate the eﬃcacy of the algorithm
+with a simple numerical example and discuss several extensions.

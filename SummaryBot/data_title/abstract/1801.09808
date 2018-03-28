@@ -1,0 +1,10 @@
+
+Linear approximations to the decision boundary of a complex model have become
+one of the most popular tools for interpreting predictions. In this paper, we study
+such linear explanations produced either post-hoc by a few recent methods or
+generated along with predictions with contextual explanation networks (CENs).
+We focus on two questions: (i) whether linear explanations are always consistent or
+can be misleading, and (ii) when integrated into the prediction process, whether and
+how explanations affect performance of the model. Our analysis sheds more light
+on certain properties of explanations produced by different methods and suggests
+that learning models that explain and predict jointly is often advantageous.

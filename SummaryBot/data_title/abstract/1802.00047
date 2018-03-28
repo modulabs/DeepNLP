@@ -1,0 +1,12 @@
+
+We consider the matrix completion problem with a deterministic pattern of observed
+entries and aim to ﬁnd conditions such that there will be (at least locally) unique
+solution to the non-convex Minimum Rank Matrix Completion (MRMC) formulation.
+We answer the question from a somewhat diﬀerent point of view and to give a geometric
+perspective. We give a suﬃcient and “almost necessary” condition (which we call the
+well-posedness condition) for the local uniqueness of MRMC solutions and illustrate
+with some special cases where such condition can be veriﬁed. We also consider the
+convex relaxation and nuclear norm minimization formulations. Then we argue that the
+low-rank approximation approaches are more stable than MRMC and further propose
+a sequential statistical testing procedure to determine the rank of the matrix from
+observed entries. Finally, numerical examples veriﬁed the validity of our theory.

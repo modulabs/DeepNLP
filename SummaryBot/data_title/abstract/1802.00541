@@ -1,0 +1,16 @@
+
+Deep neural networks are complex and opaque.
+As they enter application in a variety of impor-
+tant and safety critical domains, users seek meth-
+ods to explain their output predictions. We develop
+an approach to explaining deep neural networks
+by constructing causal models on salient concepts
+contained in a CNN. We develop methods to ex-
+tract salient concepts throughout a target network
+by using autoencoders trained to extract human-
+understandable representations of network activa-
+tions. We then build a bayesian causal model us-
+ing these extracted concepts as variables in order
+to explain image classiﬁcation. Finally, we use this
+causal model to identify and visualize features with
+signiﬁcant causal inﬂuence on ﬁnal classiﬁcation.
