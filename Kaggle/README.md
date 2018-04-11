@@ -1,6 +1,8 @@
 - 카글 튜토리얼 : DeepLearningMovies https://github.com/wendykan/DeepLearningMovies
 >  25,000개의 영화 리뷰 댓글 내용과 그에 딸린 추천/비추천이 일치하는지, 그 정확도를 두고 호불호를 예측하는 모형
+- 
 >  워드백 모형이란 ? 
+- 
 >  Word2Vec의 장점 
 * [ ]  많은 양의 데이터를 End2End로 학습시키기 때문에 라벨데이터가 필요 없음
 * [ ]  기존 RNN모델 대비 학습시간을 크게 단축시킴
