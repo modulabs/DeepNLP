@@ -1,0 +1,1050 @@
+
+% Default to the notebook output style
+
+    
+
+
+% Inherit from the specified cell style.
+
+
+
+
+    
+\documentclass[11pt]{article}
+
+    
+    
+    \usepackage[T1]{fontenc}
+    % Nicer default font (+ math font) than Computer Modern for most use cases
+    \usepackage{mathpazo}
+
+    % Basic figure setup, for now with no caption control since it's done
+    % automatically by Pandoc (which extracts ![](path) syntax from Markdown).
+    \usepackage{graphicx}
+    % We will generate all images so they have a width \maxwidth. This means
+    % that they will get their normal width if they fit onto the page, but
+    % are scaled down if they would overflow the margins.
+    \makeatletter
+    \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth
+    \else\Gin@nat@width\fi}
+    \makeatother
+    \let\Oldincludegraphics\includegraphics
+    % Set max figure width to be 80% of text width, for now hardcoded.
+    \renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=.8\maxwidth]{#1}}
+    % Ensure that by default, figures have no caption (until we provide a
+    % proper Figure object with a Caption API and a way to capture that
+    % in the conversion process - todo).
+    \usepackage{caption}
+    \DeclareCaptionLabelFormat{nolabel}{}
+    \captionsetup{labelformat=nolabel}
+
+    \usepackage{adjustbox} % Used to constrain images to a maximum size 
+    \usepackage{xcolor} % Allow colors to be defined
+    \usepackage{enumerate} % Needed for markdown enumerations to work
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+    \usepackage{textcomp} % defines textquotesingle
+    % Hack from http://tex.stackexchange.com/a/47451/13684:
+    \AtBeginDocument{%
+        \def\PYZsq{\textquotesingle}% Upright quotes in Pygmentized code
+    }
+    \usepackage{upquote} % Upright quotes for verbatim code
+    \usepackage{eurosym} % defines \euro
+    \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
+    \usepackage[utf8x]{inputenc} % Allow utf-8 characters in the tex document
+    \usepackage{fancyvrb} % verbatim replacement that allows latex
+    \usepackage{grffile} % extends the file name processing of package graphics 
+                         % to support a larger range 
+    % The hyperref package gives us a pdf with properly built
+    % internal navigation ('pdf bookmarks' for the table of contents,
+    % internal cross-reference links, web links for URLs, etc.)
+    \usepackage{hyperref}
+    \usepackage{longtable} % longtable support required by pandoc >1.10
+    \usepackage{booktabs}  % table support for pandoc > 1.12.2
+    \usepackage[inline]{enumitem} % IRkernel/repr support (it uses the enumerate* environment)
+    \usepackage[normalem]{ulem} % ulem is needed to support strikethroughs (\sout)
+                                % normalem makes italics be italics, not underlines
+    
+
+    
+    
+    % Colors for the hyperref package
+    \definecolor{urlcolor}{rgb}{0,.145,.698}
+    \definecolor{linkcolor}{rgb}{.71,0.21,0.01}
+    \definecolor{citecolor}{rgb}{.12,.54,.11}
+
+    % ANSI colors
+    \definecolor{ansi-black}{HTML}{3E424D}
+    \definecolor{ansi-black-intense}{HTML}{282C36}
+    \definecolor{ansi-red}{HTML}{E75C58}
+    \definecolor{ansi-red-intense}{HTML}{B22B31}
+    \definecolor{ansi-green}{HTML}{00A250}
+    \definecolor{ansi-green-intense}{HTML}{007427}
+    \definecolor{ansi-yellow}{HTML}{DDB62B}
+    \definecolor{ansi-yellow-intense}{HTML}{B27D12}
+    \definecolor{ansi-blue}{HTML}{208FFB}
+    \definecolor{ansi-blue-intense}{HTML}{0065CA}
+    \definecolor{ansi-magenta}{HTML}{D160C4}
+    \definecolor{ansi-magenta-intense}{HTML}{A03196}
+    \definecolor{ansi-cyan}{HTML}{60C6C8}
+    \definecolor{ansi-cyan-intense}{HTML}{258F8F}
+    \definecolor{ansi-white}{HTML}{C5C1B4}
+    \definecolor{ansi-white-intense}{HTML}{A1A6B2}
+
+    % commands and environments needed by pandoc snippets
+    % extracted from the output of `pandoc -s`
+    \providecommand{\tightlist}{%
+      \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+    % Add ',fontsize=\small' for more characters per line
+    \newenvironment{Shaded}{}{}
+    \newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{{#1}}}
+    \newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{{#1}}}}
+    \newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{{#1}}}
+    \newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{{#1}}}
+    \newcommand{\RegionMarkerTok}[1]{{#1}}
+    \newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\NormalTok}[1]{{#1}}
+    
+    % Additional commands for more recent versions of Pandoc
+    \newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{{#1}}}
+    \newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{{#1}}}
+    \newcommand{\ImportTok}[1]{{#1}}
+    \newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{{#1}}}}
+    \newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{{#1}}}
+    \newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{{#1}}}
+    \newcommand{\BuiltInTok}[1]{{#1}}
+    \newcommand{\ExtensionTok}[1]{{#1}}
+    \newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{{#1}}}
+    \newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{{#1}}}
+    \newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{{#1}}}}}
+    
+    
+    % Define a nice break command that doesn't care if a line doesn't already
+    % exist.
+    \def\br{\hspace*{\fill} \\* }
+    % Math Jax compatability definitions
+    \def\gt{>}
+    \def\lt{<}
+    % Document parameters
+    \title{TF.DATA\_Summary}
+    
+    
+    
+
+    % Pygments definitions
+    
+\makeatletter
+\def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
+    \let\PY@ul=\relax \let\PY@tc=\relax%
+    \let\PY@bc=\relax \let\PY@ff=\relax}
+\def\PY@tok#1{\csname PY@tok@#1\endcsname}
+\def\PY@toks#1+{\ifx\relax#1\empty\else%
+    \PY@tok{#1}\expandafter\PY@toks\fi}
+\def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
+    \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
+\def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
+
+\expandafter\def\csname PY@tok@w\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
+\expandafter\def\csname PY@tok@c\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.74,0.48,0.00}{##1}}}
+\expandafter\def\csname PY@tok@k\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.69,0.00,0.25}{##1}}}
+\expandafter\def\csname PY@tok@o\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ow\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@ne\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.82,0.25,0.23}{##1}}}
+\expandafter\def\csname PY@tok@nv\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@no\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@ni\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.60,0.60,0.60}{##1}}}
+\expandafter\def\csname PY@tok@na\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.49,0.56,0.16}{##1}}}
+\expandafter\def\csname PY@tok@nt\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@s\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sd\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@si\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@se\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sr\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@ss\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sx\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@m\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@gh\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gu\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gr\endcsname{\def\PY@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@ge\endcsname{\let\PY@it=\textit}
+\expandafter\def\csname PY@tok@gs\endcsname{\let\PY@bf=\textbf}
+\expandafter\def\csname PY@tok@gp\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@go\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.53,0.53}{##1}}}
+\expandafter\def\csname PY@tok@gt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.27,0.87}{##1}}}
+\expandafter\def\csname PY@tok@err\endcsname{\def\PY@bc##1{\setlength{\fboxsep}{0pt}\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{\strut ##1}}}
+\expandafter\def\csname PY@tok@kc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kd\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@kr\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@bp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@fm\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@vc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vg\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@vm\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sa\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@dl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@s2\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@s1\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@mb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@il\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mo\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ch\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cm\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cpf\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@c1\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cs\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+
+\def\PYZbs{\char`\\}
+\def\PYZus{\char`\_}
+\def\PYZob{\char`\{}
+\def\PYZcb{\char`\}}
+\def\PYZca{\char`\^}
+\def\PYZam{\char`\&}
+\def\PYZlt{\char`\<}
+\def\PYZgt{\char`\>}
+\def\PYZsh{\char`\#}
+\def\PYZpc{\char`\%}
+\def\PYZdl{\char`\$}
+\def\PYZhy{\char`\-}
+\def\PYZsq{\char`\'}
+\def\PYZdq{\char`\"}
+\def\PYZti{\char`\~}
+% for compatibility with earlier versions
+\def\PYZat{@}
+\def\PYZlb{[}
+\def\PYZrb{]}
+\makeatother
+
+
+    % Exact colors from NB
+    \definecolor{incolor}{rgb}{0.0, 0.0, 0.5}
+    \definecolor{outcolor}{rgb}{0.545, 0.0, 0.0}
+
+
+
+    
+    % Prevent overflowing lines due to hard-to-break entities
+    \sloppy 
+    % Setup hyperref package
+    \hypersetup{
+      breaklinks=true,  % so long urls are correctly broken across lines
+      colorlinks=true,
+      urlcolor=urlcolor,
+      linkcolor=linkcolor,
+      citecolor=citecolor,
+      }
+    % Slightly bigger margins than the latex defaults
+    
+    \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+    
+    
+
+    \begin{document}
+    
+    
+    \maketitle
+    
+    
+
+    
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}1}]:} \PY{o}{\PYZpc{}}\PY{o}{!}TEX \PY{n+nv}{encoding} \PY{o}{=} UTF\PYZhy{}8 Unicode
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+UsageError: Line magic function `\%!TEX` not found.
+
+    \end{Verbatim}
+
+    \hypertarget{tf-dev-summit---tf.data}{%
+\section{TF DEV Summit - TF.DATA}\label{tf-dev-summit---tf.data}}
+
+\begin{itemize}
+\tightlist
+\item
+  Modu Labs - 신성진 by. Deep NLP
+\end{itemize}
+
+    \hypertarget{tf.datauxb97c-uxc2dcuxc791uxd558uxae30-uxc804uxc5d0-uxc54cuxc544uxc57c-uxd560-uxac1cuxb150}{%
+\section{TF.DATA를 시작하기 전에 알아야 할
+개념!}\label{tf.datauxb97c-uxc2dcuxc791uxd558uxae30-uxc804uxc5d0-uxc54cuxc544uxc57c-uxd560-uxac1cuxb150}}
+
+\hypertarget{background---dynamic-vs.static}{%
+\subsection{Background - Dynamic
+vs.~Static}\label{background---dynamic-vs.static}}
+
+\hypertarget{dynamic-uxbc29uxc2dduxc73cuxb85c-uxb370uxc774uxd130uxb97c-uxcc98uxb9acuxd558uxba74-uxbaa8uxb4e0-uxb370uxc774uxd130uxb97c-uxba54uxbaa8uxb9acuxc5d0-uxc62cuxb9acuxc9c0-uxc54auxace0-uxd544uxc694uxd560-uxb54cuxb9cc-uxcd94uxcd9cuxd55cuxb2e4.-tf.datauxb97c-uxc2dcuxc791uxd558uxae30-uxc804uxc5d0-iterator-generator-yielduxc5d0-uxb300uxd574-uxc774uxd574uxd558uxace0-uxc788uxc5b4uxc57c-uxd65cuxc6a9uxc774-uxc6a9uxc774uxd558uxb2e4.}{%
+\subsubsection{Dynamic 방식으로 데이터를 처리하면, 모든 데이터를
+메모리에 올리지 않고, 필요할 때만 추출한다. tf.data를 시작하기 전에
+iterator / Generator / Yield에 대해 이해하고 있어야 활용이
+용이하다.}\label{dynamic-uxbc29uxc2dduxc73cuxb85c-uxb370uxc774uxd130uxb97c-uxcc98uxb9acuxd558uxba74-uxbaa8uxb4e0-uxb370uxc774uxd130uxb97c-uxba54uxbaa8uxb9acuxc5d0-uxc62cuxb9acuxc9c0-uxc54auxace0-uxd544uxc694uxd560-uxb54cuxb9cc-uxcd94uxcd9cuxd55cuxb2e4.-tf.datauxb97c-uxc2dcuxc791uxd558uxae30-uxc804uxc5d0-iterator-generator-yielduxc5d0-uxb300uxd574-uxc774uxd574uxd558uxace0-uxc788uxc5b4uxc57c-uxd65cuxc6a9uxc774-uxc6a9uxc774uxd558uxb2e4.}}
+
+\begin{itemize}
+\item
+  http://stackabuse.com/python-generators/
+\item
+  http://pymbook.readthedocs.io/en/latest/igd.htm
+\item
+  https://dojang.io/mod/page/view.php?id=1117
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Iterator - Repeatable Object (반복가능한 객체)
+\item
+  Generator - Iterator를 만들어주는 것, lazy generation of values
+  (on-demand)
+\item
+  Yield - 함수에서 return과 동일한 역할 수행
+\end{enumerate}
+
+\hypertarget{adventages}{%
+\subsubsection{Adventages}\label{adventages}}
+
+\begin{itemize}
+\item
+  온디멘드 방식으로 메모리를 적게 사용 (Streaming, Big Data)
+\item
+  사용하지 않는 값들은 저장하고 있지 않음
+\end{itemize}
+
+\hypertarget{disadventages}{%
+\subsubsection{Disadventages}\label{disadventages}}
+
+\begin{itemize}
+\tightlist
+\item
+  Static 방식에 비해 로드 때마다 IO 연산이 발생되는데, 이후 TF.DATA는
+  관련 방식을 어떻게 해결하는지 확인해보자
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}3}]:} \PY{c+c1}{\PYZsh{} Generator 활용의 예}
+        
+        \PY{c+c1}{\PYZsh{}yield: 함수 실행 중간에 빠져나올 수 있는 generator를 만들 때 사용}
+        
+        \PY{k}{def} \PY{n+nf}{num\PYZus{}gen}\PY{p}{(}\PY{n}{n}\PY{p}{)}\PY{p}{:}
+            \PY{n}{num} \PY{o}{=} \PY{l+m+mi}{0}
+            \PY{k}{while} \PY{n}{num} \PY{o}{\PYZlt{}} \PY{n}{n}\PY{p}{:}
+                \PY{k}{yield} \PY{n}{num} \PY{c+c1}{\PYZsh{} loop 중간에 값을 가져옴}
+                \PY{n}{num} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
+        
+        \PY{n}{gen\PYZus{}execute} \PY{o}{=} \PY{n}{num\PYZus{}gen}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}
+        
+        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Dynamic (동적) 접근}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+        \PY{n+nb}{print}\PY{p}{(}\PY{n+nb}{next}\PY{p}{(}\PY{n}{gen\PYZus{}execute}\PY{p}{)}\PY{p}{)}
+        \PY{n+nb}{print}\PY{p}{(}\PY{n+nb}{next}\PY{p}{(}\PY{n}{gen\PYZus{}execute}\PY{p}{)}\PY{p}{)}
+        \PY{c+c1}{\PYZsh{} 위와 같은 방식으로 데이터를 필요 할 때만 가져오는 방식으로 접근한다.}
+        
+        \PY{c+c1}{\PYZsh{} Static으로 변환하고 싶으면 list를 활용하자}
+        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Static(정적)변환 }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{list}\PY{p}{(}\PY{n}{num\PYZus{}gen}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Dynamic (동적) 접근
+0
+1
+Static(정적)변환 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    \end{Verbatim}
+
+    \hypertarget{tf.data}{%
+\section{TF.Data}\label{tf.data}}
+
+\hypertarget{uxba38uxc2e0uxb7ecuxb2dduxc758-uxc2dcuxc791uxc740-uxacb0uxad6d-uxb370uxc774uxd130uxb97c-uxc5b4uxb5bbuxac8c-uxb2e4uxb8e8uxb290uxb0d0uxac00-key-uxc694uxc18c-uxc911-uxd558uxb098.}{%
+\subsection{머신러닝의 시작은 결국 데이터를 어떻게 다루느냐가 Key 요소
+중
+하나.}\label{uxba38uxc2e0uxb7ecuxb2dduxc758-uxc2dcuxc791uxc740-uxacb0uxad6d-uxb370uxc774uxd130uxb97c-uxc5b4uxb5bbuxac8c-uxb2e4uxb8e8uxb290uxb0d0uxac00-key-uxc694uxc18c-uxc911-uxd558uxb098.}}
+
+\hypertarget{uxb2e8uxc21cuxd788-uxc5f0uxad6cuxc790-uxbfd0uxb9cc-uxc544uxb2c8uxb77c-uxc0c1uxc6a9uxd654-productuxb97c-uxc704uxd574uxc11c-uxb04auxc784uxc5c6uxc774-uxac1cuxc120uxd558uxace0-uxc788uxc74c.}{%
+\subsection{단순히 연구자 뿐만 아니라, 상용화 (Product)를 위해서
+끊임없이 개선하고
+있음.}\label{uxb2e8uxc21cuxd788-uxc5f0uxad6cuxc790-uxbfd0uxb9cc-uxc544uxb2c8uxb77c-uxc0c1uxc6a9uxd654-productuxb97c-uxc704uxd574uxc11c-uxb04auxc784uxc5c6uxc774-uxac1cuxc120uxd558uxace0-uxc788uxc74c.}}
+
+\hypertarget{the-tf.data-mission}{%
+\subsubsection{\texorpdfstring{\textbf{The tf.data
+mission}}{The tf.data mission}}\label{the-tf.data-mission}}
+
+Input piplines for Tensorflow should be:
+
+\textbf{Fast} : to keep up with GPUs and TPUs
+
+\textbf{Flexible} : to handle diverse data sources and use cases
+
+\textbf{Easy to use} : to democratize machine learning
+
+    \hypertarget{extract-transform-load-for-tensorflow}{%
+\subsubsection{Extract Transform Load for
+Tensorflow}\label{extract-transform-load-for-tensorflow}}
+
+\hypertarget{data-pipelineuxc744-uxad6cuxcd95uxd568uxc73cuxb85cuxc368-uxd559uxc2b5-uxb370uxc774uxd130-uxc900uxbe44uxc640-uxd559uxc2b5-uxc2dcuxac04-uxcd5cuxc801uxd654---1}{%
+\paragraph{data pipeline을 구축함으로써, 학습 데이터 준비와 학습 시간
+최적화 -
+1}\label{data-pipelineuxc744-uxad6cuxcd95uxd568uxc73cuxb85cuxc368-uxd559uxc2b5-uxb370uxc774uxd130-uxc900uxbe44uxc640-uxd559uxc2b5-uxc2dcuxac04-uxcd5cuxc801uxd654---1}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Extract}
+\NormalTok{files }\OperatorTok{=}\NormalTok{ tf.data.Dataset.list_files(file_pattern)}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ tf.data.TFRecordDataset(files)}
+
+\CommentTok{#Transform}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.shuffle(}\DecValTok{10000}\NormalTok{)}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.repeat(NUM_EPOCHS)}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.}\BuiltInTok{map}\NormalTok{(}\KeywordTok{lambda}\NormalTok{ x: tf.parse_single_example(x, features))}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.batch(BATCH_SIZE)}
+
+\CommentTok{#Load}
+\NormalTok{iterator }\OperatorTok{=}\NormalTok{ dataset.make_one_shot_iterator() }\CommentTok{#Sequencial Access}
+\NormalTok{features }\OperatorTok{=}\NormalTok{ iterator.get_next()}
+\end{Highlighting}
+\end{Shaded}
+
+    \hypertarget{performance}{%
+\subsubsection{Performance}\label{performance}}
+
+\begin{itemize}
+\item
+  CNN benchmarks reach \textgreater{} \textbf{13,000 images/second} with
+  tf.data -\textgreater{} 8달 전과 비교하여 성능 2배 성장 (DGX -
+  Imagenet) 
+\item
+  텐서플로우 벤치마크 프로젝트를 사용하여 활용:
+  www.tensorflow.org/performance/datasets\_performance
+\item
+  New tf.contrib.data.prefetch\_to\_device() for GPUs tf 1.8
+  (tf-nightly에 보유)
+\item
+  https://www.tensorflow.org/versions/master/performance/datasets\_performance
+\end{itemize}
+
+\hypertarget{parallel-uxae30uxb2a5uxc744-uxd65cuxc6a9uxd558uxc5ec-uxd559uxc2b5-uxb370uxc774uxd130-uxc900uxbe44uxc640-uxd559uxc2b5-uxc2dcuxac04-uxcd5cuxc801uxd654---2}{%
+\paragraph{parallel 기능을 활용하여, 학습 데이터 준비와 학습 시간 최적화
+-
+2}\label{parallel-uxae30uxb2a5uxc744-uxd65cuxc6a9uxd558uxc5ec-uxd559uxc2b5-uxb370uxc774uxd130-uxc900uxbe44uxc640-uxd559uxc2b5-uxc2dcuxac04-uxcd5cuxc801uxd654---2}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+
+\CommentTok{## 속도를 올리기 위해서는?? Parallel!!}
+\CommentTok{## 기존에 shuffle / batch 등등 각각 진행하던 방식을 1개로 합침}
+
+\CommentTok{#Extract}
+\NormalTok{files }\OperatorTok{=}\NormalTok{ tf.data.Dataset.list_files(file_pattern)}
+\CommentTok{# dataset = tf.data.TFRecordDataset(files) ->}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ tf.data.TFRecordDataset(files, num_parallel_reads}\OperatorTok{=}\DecValTok{32}\NormalTok{)}
+
+\CommentTok{#Transform}
+
+\CommentTok{#shuffle_and_repeat: epochs와 buffers사이에서 정지하는 현상 방지}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.}\BuiltInTok{apply}\NormalTok{(}
+\NormalTok{    tf.contrib.data.shuffle_and_repeat(}\DecValTok{10000}\NormalTok{, NUM_EPOCHS))}
+
+\CommentTok{#map_and_batch: map과 data transfer를 동시에 함}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.}\BuiltInTok{apply}\NormalTok{(}
+\NormalTok{    tf.contrib.data.map_and_batch(}\KeywordTok{lambda}\NormalTok{ x: ..., BATCH_SIZE))}
+
+\CommentTok{#Load}
+
+\CommentTok{#prefetch_to_device = 그 다음 batch가 미리 GPU 메모리 대기}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.}\BuiltInTok{apply}\NormalTok{(tf.contrib.data.prefetch_to_device(}\StringTok{"/gpu:0"}\NormalTok{))}
+\NormalTok{iterator }\OperatorTok{=}\NormalTok{ dataset.make_one_shot_iterator() }\CommentTok{#Sequencial Access}
+\NormalTok{features }\OperatorTok{=}\NormalTok{ iterator.get_next()}
+\end{Highlighting}
+\end{Shaded}
+
+    \hypertarget{flexibility}{%
+\subsubsection{Flexibility}\label{flexibility}}
+
+\begin{itemize}
+\item
+  tf.SparseTensor를 지원 (1.5ver) -\textgreater{} 복잡한 Categorical
+  data나 embedding 모델을 다룰때
+\item
+  Custom Python code via Dataset.from\_generator() -\textgreater{}?
+\item
+  Custom C++ code via DatasetOpKernel plugis
+\end{itemize}
+
+-\textgreater{} 실무 새로운 데이터셋을 만들거나 개선할때 좋다.
+
+    \hypertarget{easy-of-use}{%
+\subsubsection{Easy of Use}\label{easy-of-use}}
+
+\textbf{데이터를 읽고 쓰는 것을 조금 더 쉽게 지원하기 위한 기능 추가}
+
+\hypertarget{use-python-for-loops-in-eager-exeuction-mode}{%
+\paragraph{Use Python for loops in eager exeuction
+mode}\label{use-python-for-loops-in-eager-exeuction-mode}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{#Extract}
+\NormalTok{files }\OperatorTok{=}\NormalTok{ tf.data.Dataset.list_files(file_pattern)}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ tf.data.TFRecordDataset(files)}
+
+\CommentTok{#Transform}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.shuffle(}\DecValTok{10000}\NormalTok{)}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.repeat(NUM_EPOCHS)}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.}\BuiltInTok{map}\NormalTok{(}\KeywordTok{lambda}\NormalTok{ x: tf.parse_single_example(x, features))}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ dataset.batch(BATCH_SIZE)}
+
+\CommentTok{#Eager execution make datset a normal Python iterable.}
+
+\ControlFlowTok{for}\NormalTok{ batch }\KeywordTok{in}\NormalTok{ dataset:}
+\NormalTok{    train_model(batch)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{standard-method-csv-file-with-protocal-buffer-tf-1.8}{%
+\paragraph{Standard Method CSV file with protocal buffer (tf
+1.8)}\label{standard-method-csv-file-with-protocal-buffer-tf-1.8}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{tf.enable_eager_execution()}
+
+\CommentTok{#make_batched_features_dataset}
+\NormalTok{dataset }\OperatorTok{=}\NormalTok{ tf.contrib.data.make_batched_features_dataset(}
+\NormalTok{    file_pattern, BATCH_SIZE, features, num_epochs}\OperatorTok{=}\NormalTok{NUM_EPOCHS)}
+
+\CommentTok{#일반적으로는 속도를 위해서는 tf.example, tfrecord와 같은 binary를 추천}
+\CommentTok{#하지만 큰 데이터를 항상 가지고 있는 것은 아님.}
+
+\CommentTok{#kaggle의 예}
+\CommentTok{#$ pip install kaggle}
+\CommentTok{#$ kaggle datasets downaload -d theronk/million-headlins -p .}
+
+\ControlFlowTok{for}\NormalTok{ batch }\KeywordTok{in}\NormalTok{ dataset:}
+\NormalTok{    train_model(batch[}\StringTok{"publish_data"}\NormalTok{], batch[}\StringTok{"headline_text"}\NormalTok{])}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{integration-with-esitmatorsand-keras-comming-soon}{%
+\subsubsection{Integration with Esitmators(and Keras comming
+soon!!)}\label{integration-with-esitmatorsand-keras-comming-soon}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ input_fn():}
+\NormalTok{    dataset }\OperatorTok{=}\NormalTok{ tf.contrib.data.make_csv_dataset(}
+        \StringTok{"*.csv"}\NormalTok{, BATCH_SIZE, num_epochs}\OperatorTok{=}\NormalTok{NUM_EPOCHS)}
+    \ControlFlowTok{return}\NormalTok{ dataset}
+
+\CommentTok{# train an estimator on the dataset}
+\NormalTok{tf.esitmator.Estimator(model_fn}\OperatorTok{=}\NormalTok{train_model).train(input_fn}\OperatorTok{=}\NormalTok{input_fn)}
+\end{Highlighting}
+\end{Shaded}
+
+\emph{공식 홈페이지에서의 추가 정보들과 Performance 참고}
+
+\begin{itemize}
+\tightlist
+\item
+  www.tensorflow.org/programmers\_guide/datasets
+\item
+  www.tensorflow.org/performance/datasets\_performance
+\end{itemize}
+
+    \hypertarget{uxc2e4uxc2b5-uxbc0f-uxd65cuxc6a9}{%
+\section{실습 및 활용}\label{uxc2e4uxc2b5-uxbc0f-uxd65cuxc6a9}}
+
+ref:
+https://towardsdatascience.com/how-to-use-dataset-in-tensorflow-c758ef9e4428
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Importing Data: 데이터셋 생성
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  From numpy
+\item
+  From tensor
+\item
+  From a placeholder
+\item
+  From generator
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Create an Iterator: 생성된 데이터셋을 바탕으로 Iterator 인스턴스를
+  만들기
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  One shot Iterator
+\item
+  Initializable Iterator
+\item
+  Reinitializable Iterator
+\item
+  Feedable Iterator
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}2}]:} \PY{k+kn}{import} \PY{n+nn}{tensorflow} \PY{k}{as} \PY{n+nn}{tf}
+        \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+        
+        \PY{c+c1}{\PYZsh{}with keras}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+/Users/sinseongjin/tf17\_py3/lib/python3.6/site-packages/h5py/\_\_init\_\_.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from .\_conv import register\_converters as \_register\_converters
+
+    \end{Verbatim}
+
+    \hypertarget{importing-data}{%
+\subsection{1. Importing Data}\label{importing-data}}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}8}]:} \PY{c+c1}{\PYZsh{}numpy에서 데이터 불러오기}
+        
+        \PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{300}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{size of x:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{x}\PY{o}{.}\PY{n}{shape}\PY{p}{)}
+        
+        \PY{c+c1}{\PYZsh{} make a dataset from a numpy array}
+        \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+        
+        \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+        \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+        
+        \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+            \PY{c+c1}{\PYZsh{}Session을 통하여 데이터를 print해 볼 수 있음}
+            \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{el}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+size of x: (300, 2)
+[0.18595173 0.27372692]
+
+    \end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}13}]:} \PY{c+c1}{\PYZsh{} features와 label을 불러오는 경우}
+         \PY{n}{features}\PY{p}{,} \PY{n}{labels} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{p}{(}\PY{n}{features}\PY{p}{,}\PY{n}{labels}\PY{p}{)}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} tfrecords를 활용한다면, 따로 데이터와 label을 나눌 필요가 없음}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}14}]:} \PY{c+c1}{\PYZsh{} Tensor Data 처리}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{tf}\PY{o}{.}\PY{n}{random\PYZus{}uniform}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}16}]:} \PY{c+c1}{\PYZsh{} Placeholder 처리방법}
+         \PY{n}{x} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{placeholder}\PY{p}{(}\PY{n}{tf}\PY{o}{.}\PY{n}{float32}\PY{p}{,} \PY{n}{shape}\PY{o}{=}\PY{p}{[}\PY{k+kc}{None}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}17}]:} \PY{c+c1}{\PYZsh{} generator 활용하여 처리}
+         \PY{c+c1}{\PYZsh{} generator를 활용하여 init하기}
+         \PY{c+c1}{\PYZsh{} 주로 sequence와 같은 길이가 다른 element들이 있을때 유용}
+         
+         \PY{n}{sequence} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{l+m+mi}{4}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+         
+         \PY{k}{def} \PY{n+nf}{generator}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+             \PY{k}{for} \PY{n}{el} \PY{o+ow}{in} \PY{n}{sequence}\PY{p}{:}
+                 \PY{k}{yield} \PY{n}{el}
+                 
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{from\PYZus{}generator}\PY{p}{(}\PY{n}{generator}\PY{p}{,}
+                                                    \PY{n}{output\PYZus{}types}\PY{o}{=}\PY{n}{tf}\PY{o}{.}\PY{n}{float32}\PY{p}{,} 
+                                                    \PY{n}{output\PYZus{}shapes}\PY{o}{=}\PY{p}{[}\PY{n}{tf}\PY{o}{.}\PY{n}{float32}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+
+
+    \hypertarget{create-an-iterator---get-data}{%
+\subsection{2. Create an Iterator - get
+data}\label{create-an-iterator---get-data}}
+
+    \hypertarget{one-shot-iterator}{%
+\subsubsection{One shot Iterator}\label{one-shot-iterator}}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}18}]:} \PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} make a dataset from a numpy array}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} create the iterator}
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+         \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{el}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} output: [ 0.42116176  0.40666069]}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[0.46524592 0.91114116]
+
+    \end{Verbatim}
+
+    \hypertarget{initalizable-iterator}{%
+\subsubsection{Initalizable Iterator}\label{initalizable-iterator}}
+
+\begin{itemize}
+\tightlist
+\item
+  Dynamic dataset을 다루기 위해 placeholder와 함께 활용
+\item
+  placeholder를 feed-dict 메커니즘을 활용하여 초기화 함
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}21}]:} \PY{c+c1}{\PYZsh{} using a placeholder}
+         \PY{n}{x} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{placeholder}\PY{p}{(}\PY{n}{tf}\PY{o}{.}\PY{n}{float32}\PY{p}{,} \PY{n}{shape}\PY{o}{=}\PY{p}{[}\PY{k+kc}{None}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+         \PY{n}{data} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+         
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}initializable\PYZus{}iterator}\PY{p}{(}\PY{p}{)} \PY{c+c1}{\PYZsh{} create the iterator}
+         \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             \PY{c+c1}{\PYZsh{} feed the placeholder with data}
+             \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n+nb}{iter}\PY{o}{.}\PY{n}{initializer}\PY{p}{,} \PY{n}{feed\PYZus{}dict}\PY{o}{=}\PY{p}{\PYZob{}} \PY{n}{x}\PY{p}{:} \PY{n}{data} \PY{p}{\PYZcb{}}\PY{p}{)} \PY{c+c1}{\PYZsh{}initializer를 선언}
+             \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{el}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} output [ 0.52374458  0.71968478]}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[0.9624355 0.6523885]
+
+    \end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}24}]:} \PY{c+c1}{\PYZsh{}\PYZsh{} train 과 test 데이터셋 동시에 다루기}
+         
+         \PY{n}{train\PYZus{}data} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+         \PY{n}{test\PYZus{}data} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+         
+         \PY{n}{EPOCHS} \PY{o}{=} \PY{l+m+mi}{10}
+         
+         \PY{n}{x}\PY{p}{,} \PY{n}{y} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{placeholder}\PY{p}{(}\PY{n}{tf}\PY{o}{.}\PY{n}{float32}\PY{p}{,} \PY{n}{shape}\PY{o}{=}\PY{p}{[}\PY{k+kc}{None}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{tf}\PY{o}{.}\PY{n}{placeholder}\PY{p}{(}\PY{n}{tf}\PY{o}{.}\PY{n}{float32}\PY{p}{,} \PY{n}{shape}\PY{o}{=}\PY{p}{[}\PY{k+kc}{None}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+         
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{)}\PY{p}{)}
+         \PY{n}{train\PYZus{}data} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+         \PY{n}{test\PYZus{}data} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}initializable\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+         \PY{n}{features}\PY{p}{,} \PY{n}{labels} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             
+             \PY{c+c1}{\PYZsh{}     initialise iterator with train data}
+             \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n+nb}{iter}\PY{o}{.}\PY{n}{initializer}\PY{p}{,} \PY{n}{feed\PYZus{}dict}\PY{o}{=}\PY{p}{\PYZob{}} \PY{n}{x}\PY{p}{:} \PY{n}{train\PYZus{}data}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{y}\PY{p}{:} \PY{n}{train\PYZus{}data}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{\PYZcb{}}\PY{p}{)}
+             \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{EPOCHS}\PY{p}{)}\PY{p}{:}
+                 \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{p}{[}\PY{n}{features}\PY{p}{,} \PY{n}{labels}\PY{p}{]}\PY{p}{)}
+         
+             \PY{c+c1}{\PYZsh{}     switch to test data}
+             \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n+nb}{iter}\PY{o}{.}\PY{n}{initializer}\PY{p}{,} \PY{n}{feed\PYZus{}dict}\PY{o}{=}\PY{p}{\PYZob{}} \PY{n}{x}\PY{p}{:} \PY{n}{test\PYZus{}data}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{y}\PY{p}{:} \PY{n}{test\PYZus{}data}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{\PYZcb{}}\PY{p}{)}
+             \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{p}{[}\PY{n}{features}\PY{p}{,} \PY{n}{labels}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[array([1., 2.], dtype=float32), array([0.], dtype=float32)]
+
+    \end{Verbatim}
+
+    \hypertarget{reinitializable-iterator}{%
+\subsubsection{Reinitializable
+Iterator}\label{reinitializable-iterator}}
+
+\begin{itemize}
+\tightlist
+\item
+  위의 Initalizable Iterator와 유사하지만, 새로운 데이터를 feed 하는
+  대신, 새로운 데이터로 변경 할 수 있음.
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}27}]:} \PY{c+c1}{\PYZsh{} making fake data using numpy}
+         \PY{n}{train\PYZus{}data} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+         \PY{n}{test\PYZus{}data} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} create two datasets, one for training and one for test}
+         \PY{n}{train\PYZus{}dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{train\PYZus{}data}\PY{p}{)}
+         \PY{n}{test\PYZus{}dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{test\PYZus{}data}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} 한가지 트릭으로, Generic Iterator를 생성한다.}
+         
+         \PY{c+c1}{\PYZsh{} shape와 type으로 iterator를 생성하고,}
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Iterator}\PY{o}{.}\PY{n}{from\PYZus{}structure}\PY{p}{(}\PY{n}{train\PYZus{}dataset}\PY{o}{.}\PY{n}{output\PYZus{}types}\PY{p}{,}
+                                                    \PY{n}{train\PYZus{}dataset}\PY{o}{.}\PY{n}{output\PYZus{}shapes}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} 두개를 동시에 초기화한다.}
+         
+         \PY{c+c1}{\PYZsh{} create the initialisation operations}
+         \PY{n}{train\PYZus{}init\PYZus{}op} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{make\PYZus{}initializer}\PY{p}{(}\PY{n}{train\PYZus{}dataset}\PY{p}{)}
+         \PY{n}{test\PYZus{}init\PYZus{}op} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{make\PYZus{}initializer}\PY{p}{(}\PY{n}{test\PYZus{}dataset}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} We get the next element as before}
+         \PY{n}{features}\PY{p}{,} \PY{n}{labels} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} session을 활용하여 2개의 초기화 연산을 실행한다.}
+         
+         \PY{n}{train\PYZus{}init\PYZus{}op} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{make\PYZus{}initializer}\PY{p}{(}\PY{n}{train\PYZus{}dataset}\PY{p}{)}
+         \PY{n}{test\PYZus{}init\PYZus{}op} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{make\PYZus{}initializer}\PY{p}{(}\PY{n}{test\PYZus{}dataset}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{train\PYZus{}init\PYZus{}op}\PY{p}{)} \PY{c+c1}{\PYZsh{} switch to train dataset}
+             \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{EPOCHS}\PY{p}{)}\PY{p}{:}
+                 \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{p}{[}\PY{n}{features}\PY{p}{,} \PY{n}{labels}\PY{p}{]}\PY{p}{)}
+             \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{test\PYZus{}init\PYZus{}op}\PY{p}{)} \PY{c+c1}{\PYZsh{} switch to val dataset}
+             \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{p}{[}\PY{n}{features}\PY{p}{,} \PY{n}{labels}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[array([0.13652812, 0.69115812]), array([0.24063632])]
+
+    \end{Verbatim}
+
+    \hypertarget{consuming-data}{%
+\subsection{3. Consuming data}\label{consuming-data}}
+
+\begin{itemize}
+\tightlist
+\item
+  데이터를 모델에 pass하기 위하여 get\_next() 활용
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}28}]:} \PY{n}{EPOCHS} \PY{o}{=} \PY{l+m+mi}{10}
+         \PY{n}{BATCH\PYZus{}SIZE} \PY{o}{=} \PY{l+m+mi}{16}
+         \PY{c+c1}{\PYZsh{} using two numpy arrays}
+         \PY{n}{features}\PY{p}{,} \PY{n}{labels} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{p}{]}\PY{p}{)}\PY{p}{,} 
+                             \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+         
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{p}{(}\PY{n}{features}\PY{p}{,}\PY{n}{labels}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{repeat}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{batch}\PY{p}{(}\PY{n}{BATCH\PYZus{}SIZE}\PY{p}{)}
+         
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)} \PY{c+c1}{\PYZsh{}iterator생성하기}
+         \PY{c+c1}{\PYZsh{}첫번째 layer와 label에 iter.get\PYZus{}next를 통해 직접 Tensor를 넣는다.}
+         \PY{n}{x}\PY{p}{,} \PY{n}{y} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} 간단한 뉴럴넷 만들기}
+         
+         \PY{c+c1}{\PYZsh{} pass the first value from iter.get\PYZus{}next() as input}
+         \PY{n}{net} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{layers}\PY{o}{.}\PY{n}{dense}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{n}{tf}\PY{o}{.}\PY{n}{tanh}\PY{p}{)} 
+         \PY{n}{net} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{layers}\PY{o}{.}\PY{n}{dense}\PY{p}{(}\PY{n}{net}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{n}{tf}\PY{o}{.}\PY{n}{tanh}\PY{p}{)}
+         \PY{n}{prediction} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{layers}\PY{o}{.}\PY{n}{dense}\PY{p}{(}\PY{n}{net}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{n}{tf}\PY{o}{.}\PY{n}{tanh}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} pass the second value from iter.get\PYZus{}net() as label}
+         \PY{n}{loss} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{losses}\PY{o}{.}\PY{n}{mean\PYZus{}squared\PYZus{}error}\PY{p}{(}\PY{n}{prediction}\PY{p}{,} \PY{n}{y}\PY{p}{)}
+         \PY{n}{train\PYZus{}op} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{train}\PY{o}{.}\PY{n}{AdamOptimizer}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{minimize}\PY{p}{(}\PY{n}{loss}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{tf}\PY{o}{.}\PY{n}{global\PYZus{}variables\PYZus{}initializer}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+             \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{EPOCHS}\PY{p}{)}\PY{p}{:}
+                 \PY{n}{\PYZus{}}\PY{p}{,} \PY{n}{loss\PYZus{}value} \PY{o}{=} \PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{p}{[}\PY{n}{train\PYZus{}op}\PY{p}{,} \PY{n}{loss}\PY{p}{]}\PY{p}{)}
+                 \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Iter: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{, Loss: }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{loss\PYZus{}value}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Iter: 0, Loss: 0.1603
+Iter: 1, Loss: 0.1561
+Iter: 2, Loss: 0.1521
+Iter: 3, Loss: 0.1482
+Iter: 4, Loss: 0.1446
+Iter: 5, Loss: 0.1412
+Iter: 6, Loss: 0.1380
+Iter: 7, Loss: 0.1351
+Iter: 8, Loss: 0.1323
+Iter: 9, Loss: 0.1296
+
+    \end{Verbatim}
+
+    \hypertarget{tips-batching-repeat-map-shuffle}{%
+\section{TIPS: BATCHING / REPEAT / MAP /
+SHUFFLE}\label{tips-batching-repeat-map-shuffle}}
+
+    \hypertarget{batch}{%
+\subsection{Batch}\label{batch}}
+
+\begin{itemize}
+\tightlist
+\item
+  일반적으로 복잡한 Batch의 처리를 간단하게 활용
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}10}]:} \PY{c+c1}{\PYZsh{} BATCHING}
+         \PY{n}{BATCH\PYZus{}SIZE} \PY{o}{=} \PY{l+m+mi}{4}
+         \PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} make a dataset from a numpy array}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{o}{.}\PY{n}{batch}\PY{p}{(}\PY{n}{BATCH\PYZus{}SIZE}\PY{p}{)}
+         
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+         \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{el}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[[0.59718665 0.89988339]
+ [0.88266584 0.91656019]
+ [0.84153486 0.9416401 ]
+ [0.41580571 0.67149192]]
+
+    \end{Verbatim}
+
+    \hypertarget{repeat}{%
+\subsection{Repeat}\label{repeat}}
+
+\begin{itemize}
+\tightlist
+\item
+  .repeat()을 통해, 데이터를 반복한다.
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}34}]:} \PY{c+c1}{\PYZsh{} REPEAT}
+         \PY{n}{BATCH\PYZus{}SIZE} \PY{o}{=} \PY{l+m+mi}{4}
+         \PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} make a dataset from a numpy array}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{repeat}\PY{p}{(}\PY{p}{)}
+         
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+         \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{c+c1}{\PYZsh{} with tf.Session() as sess:}
+         \PY{c+c1}{\PYZsh{} \PYZsh{}     실행하면 무한 loop 진행}
+         \PY{c+c1}{\PYZsh{}     while True:}
+         \PY{c+c1}{\PYZsh{}         print(sess.run(el))}
+\end{Verbatim}
+
+
+    \hypertarget{shuffle}{%
+\subsection{Shuffle}\label{shuffle}}
+
+\begin{itemize}
+\tightlist
+\item
+  shuffle을 통해 데이터를 섞는다. overfitting을 막기위해 중요한
+  기능이다.
+\item
+  buffer\_size를 지정하여 uniform하게 선택되도록 한다. (seed와 유사)
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}31}]:} \PY{c+c1}{\PYZsh{} SHUFFLE}
+         \PY{n}{BATCH\PYZus{}SIZE} \PY{o}{=} \PY{l+m+mi}{4}
+         \PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} make a dataset from a numpy array}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{shuffle}\PY{p}{(}\PY{n}{buffer\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{batch}\PY{p}{(}\PY{n}{BATCH\PYZus{}SIZE}\PY{p}{)}
+         
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+         \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+             \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{el}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[[1]
+ [4]
+ [3]
+ [2]]
+
+    \end{Verbatim}
+
+    \hypertarget{map}{%
+\subsection{MAP}\label{map}}
+
+\begin{itemize}
+\tightlist
+\item
+  map을 활용하여, 2개의 element를 2로 곱하는 예를 들어보자
+\end{itemize}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}32}]:} \PY{c+c1}{\PYZsh{} MAP}
+         \PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+         \PY{c+c1}{\PYZsh{} make a dataset from a numpy array}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{tf}\PY{o}{.}\PY{n}{data}\PY{o}{.}\PY{n}{Dataset}\PY{o}{.}\PY{n}{from\PYZus{}tensor\PYZus{}slices}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+         \PY{n}{dataset} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{map}\PY{p}{(}\PY{k}{lambda} \PY{n}{x}\PY{p}{:} \PY{n}{x}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}
+         
+         \PY{n+nb}{iter} \PY{o}{=} \PY{n}{dataset}\PY{o}{.}\PY{n}{make\PYZus{}one\PYZus{}shot\PYZus{}iterator}\PY{p}{(}\PY{p}{)}
+         \PY{n}{el} \PY{o}{=} \PY{n+nb}{iter}\PY{o}{.}\PY{n}{get\PYZus{}next}\PY{p}{(}\PY{p}{)}
+         
+         \PY{k}{with} \PY{n}{tf}\PY{o}{.}\PY{n}{Session}\PY{p}{(}\PY{p}{)} \PY{k}{as} \PY{n}{sess}\PY{p}{:}
+         \PY{c+c1}{\PYZsh{}     this will run forever}
+                 \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+                     \PY{n+nb}{print}\PY{p}{(}\PY{n}{sess}\PY{o}{.}\PY{n}{run}\PY{p}{(}\PY{n}{el}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+[2]
+[4]
+[6]
+[8]
+
+    \end{Verbatim}
+
+
+    % Add a bibliography block to the postdoc
+    
+    
+    
+    \end{document}
