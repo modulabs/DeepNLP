@@ -1,8 +1,6 @@
-/2_NLP_Study
-.DS_Store
 .ipynb_checkpoints/
 data/
-sh/
+src/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
