@@ -23,5 +23,7 @@
 
 >  발표영상
 - 4월 25일
-  * 전창욱님: https://youtu.be/-rb_J0xB2DI
-  * 최태균님: https://youtu.be/raE_rp_YuY0
+
+  * 전창욱님: https://youtu.be/-rb_J0xB2DI
+  
+  * 최태균님: https://youtu.be/raE_rp_YuY0
