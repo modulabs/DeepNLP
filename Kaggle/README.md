@@ -27,3 +27,7 @@
   * 전창욱님: https://youtu.be/-rb_J0xB2DI
   
   * 최태균님: https://youtu.be/raE_rp_YuY0
+
+- 5월 2일
+
+  * 최태균님: https://youtu.be/raE_rp_YuY0
