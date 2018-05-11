@@ -1,6 +1,7 @@
+<p>
 NLP 관련 Kaggle 후보군 정리
 
-
+<p>
 Title: Sentiment Analysis on Movie Reviews
 Kaggle : https://www.kaggle.com/c/sentiment-analysis-on-movie-reviews
 Data Set : Rotten Tomatoes dataset
@@ -11,22 +12,28 @@ Data Set : Rotten Tomatoes dataset
 3 - somewhat positive
 4 - positive
 
+<p>
 Title : Toxic Comment Classification Challenge
 Kaggle : https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge
 주제 : 악플 탐지
 
+<p>
 Title : Spooky Author Identification
 Kaggle : https://www.kaggle.com/c/spooky-author-identification
 주제 : 작가의 스타일 찾기
 
+<p>
 Title: Bag of Words Meets Bags of Popcorn
 Kaggle : https://www.kaggle.com/c/word2vec-nlp-tutorial
 Data Set : IMDB dataset
 주제 : 영화 리뷰 보고 긍정 부정 분석
 
+<p>
 Title: What's Cooking?
 Kaggle : https://www.kaggle.com/c/whats-cooking
 주제 : 감정 분석
+
+
 
 
 
