@@ -73,4 +73,4 @@ Kaggle : https://www.kaggle.com/c/whats-cooking
   
 - 5월 16일
 
-  * 최태균님: https://youtu.be/ZhTr5M7AmEY
+  * 최태균님: https://youtu.be/ZhTr5M7AmEY
