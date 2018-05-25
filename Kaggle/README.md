@@ -77,5 +77,5 @@ Kaggle : https://www.kaggle.com/c/whats-cooking
   
 - 5월 23일
    
-  * 전창욱님: https://www.youtube.com/watch?v=ztuu5xc7_M0&feature=youtu.be
+  * 전창욱님: http://youtu.be/ztuu5xc7_M0
   
