@@ -63,9 +63,19 @@ Kaggle : https://www.kaggle.com/c/whats-cooking
 >  발표영상
 - 4월 25일
 
-  * 전창욱님: https://youtu.be/-rb_J0xB2DI
+  * 전창욱님: https://youtu.be/cICsqOzpVLk
   
   * 최태균님: https://youtu.be/raE_rp_YuY0
 
 - 5월 2일
-  * 최태균님: https://youtu.be/raE_rp_YuY0
+
+  * 최태균님: https://youtu.be/1CtCJwGZICE
+  
+- 5월 16일
+
+  * 최태균님: https://youtu.be/ZhTr5M7AmEY
+  
+- 5월 23일
+   
+  * 전창욱님: https://youtu.be/ztuu5xc7_M0
+  
