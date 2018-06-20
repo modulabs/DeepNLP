@@ -5,4 +5,4 @@
 # Tensorflow로 시작하는 Kaggle 자연어처리 (On Progress)
 Git Book: https://nlp.gitbook.io/book/
 
-### 자세한 사항은 모두연 딥 NLP반에 Contact: modu@modulabs.co.kr
+### 자세한 사항은 모두연 딥 NLP반에 Contact: modu@modulabs.co.kr###
