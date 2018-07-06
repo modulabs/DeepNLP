@@ -1,4 +1,4 @@
-# QuoraQuestionPairs
+# QuoraQuestionPairs (Link 정리 해서 공유)
 
 * [QuoraQuestionPairs](https://github.com/changwookjun/Kaggle/tree/master/QuoraQuestionPairs)   
   + [Understanding LSTM](https://github.com/changwookjun/Kaggle/blob/master/QuoraQuestionPairs/Understanding%20LSTM%20Networks.ipynb)  
