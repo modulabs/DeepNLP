@@ -102,12 +102,14 @@ model_dir = os.path.join(os.getcwd(), "checkpoint/cnn_model")
 os.makedirs(model_dir, exist_ok=True)
 
 config_tf = tf.estimator.RunConfig()
-config_tf._save_checkpoints_steps = 100
+config_tf._save_checkpoints_steps = 500
 config_tf._save_checkpoints_secs = None
 config_tf._keep_checkpoint_max =  2
-config_tf._log_step_count_steps = 100
+config_tf._log_step_count_steps = 500
 
 tf.logging.set_verbosity(tf.logging.INFO)
+os.environ["CUDA_VISIBLE_DEVICES"]="5"
+
 print(tf.__version__)
 time_start = datetime.utcnow()
 print("Experiment started at {}".format(time_start.strftime("%H:%M:%S")))
