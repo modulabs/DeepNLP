@@ -52,6 +52,9 @@ word_embedding_matrix = np.load(open(DATA_PATH+WORD_EMBEDDING_MATRIX_FILE, 'rb')
 with open(DATA_PATH+NB_WORDS_DATA_FILE, 'r') as f:
     nb_words = json.load(f)['nb_words']
 
+print(nb_words)
+sys.exit(0)
+
 ## 데이터를 나누어 저장하자. sklearn의 train_test_split을 사용하면 유용하다. 하지만, 쿼라 데이터의 경우는
 ## 입력이 1개가 아니라 2개이다. 따라서, np.stack을 사용하여 두개를 하나로 쌓은다음 활용하여 분류한다.
 
@@ -173,7 +176,7 @@ config_tf = tf.estimator.RunConfig()
 config_tf._save_checkpoints_steps = 100
 config_tf._save_checkpoints_secs = None
 config_tf._keep_checkpoint_max =  2
-config_tf._log_step_count_steps = 10
+config_tf._log_step_count_steps = 100
 
 time_start = datetime.now()
 

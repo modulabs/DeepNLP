@@ -14,6 +14,9 @@ from tensorflow.python.keras._impl.keras.utils.data_utils import get_file
 
 from tensorflow.python.keras._impl.keras import layers
 from tensorflow.python.keras import backend as K
+import os
+import pandas as pd
+from os.path import expanduser, exists
 
 # from tensorflow.python.keras._impl.keras.layers import Embedding
 # from tensorflow.python.keras._impl.keras.layers import Reshape, Flatten, Dropout, Concatenate, dot, add
@@ -24,8 +27,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]="5"
 
 Q1_TEST_DATA_FILE = 'q1_test.npy'
 Q2_TEST_DATA_FILE = 'q2_test.npy'
-WORD_EMBEDDING_MATRIX_FILE_TEST = 'word_embedding_matrix_test.npy'
-NB_WORDS_DATA_FILE_TEST = 'nb_words_test.json'
+WORD_EMBEDDING_MATRIX_FILE_TEST = 'word_embedding_matrix.npy'
+NB_WORDS_DATA_FILE_TEST = 'nb_words.json'
 DATA_PATH = './data/'
 
 ## 학습에 필요한 파라메터들에 대해서 지정하는 부분이다.
@@ -49,6 +52,9 @@ print("shape of q1: {} q2: {}".format(q1_test.shape, q2_test.shape))
 word_embedding_matrix = np.load(open(DATA_PATH+WORD_EMBEDDING_MATRIX_FILE_TEST, 'rb'))
 with open(DATA_PATH+NB_WORDS_DATA_FILE_TEST, 'r') as f:
     nb_words = json.load(f)['nb_words']
+
+print(nb_words)
+sys.exit(0)
 
 def rearrange(q, sim_q):
     features = {"q": q, "sim_q": sim_q}
@@ -157,20 +163,27 @@ tf.logging.set_verbosity(tf.logging.INFO)
 print(tf.__version__)
 
 dssm_est = tf.estimator.Estimator(Malstm, model_dir=model_dir, config=config_tf)
-#
-# train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=10200)
+
+# train_spec = tf.estimator.TrainSpec(input_fn=train_input_fn, max_steps=10000)
 # eval_spec = tf.estimator.EvalSpec(input_fn=eval_input_fn)
-#
+
 # tf.estimator.train_and_evaluate(dssm_est, train_spec, eval_spec)
 
 # For prediction or extract values
+
+
 prediction = dssm_est.predict(test_input_fn)
 
-for i, p in enumerate(prediction):
-    print(p)
+prediction_score = []
 
-# for i, p in enumerate(prediction):
-#     print(i, p['prob'])
+for i, p in enumerate(prediction):
+    if i % 100 == 0:
+        print("num predict: {}".format(i))
+    prediction_score.append(p['prob'][0])
+
+#저장하기
+df = pd.DataFrame({'col':prediction_score})
+df.to_csv('./data/checkpoint/prediction.csv')
 
 time_end = datetime.now()
 
