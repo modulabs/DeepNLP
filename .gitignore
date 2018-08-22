@@ -110,3 +110,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+.vscode
+.ipynb_checkpoints
+
+OLD
