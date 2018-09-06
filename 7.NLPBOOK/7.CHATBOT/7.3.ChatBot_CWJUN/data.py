@@ -7,10 +7,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from configs import DEFINES
 
-from tensorflow.python.keras.preprocessing.sequence import pad_sequences
-from tensorflow.python.keras.preprocessing.text import Tokenizer
-from tensorflow.python.keras.preprocessing import sequence
-
+FILTERS = "([~.,!?\"':;)(])"
 PAD = "<PADDING>"
 STD = "<START>"
 END = "<END>"
@@ -22,75 +19,100 @@ END_INDEX = 2
 UNK_INDEX = 3
 
 MARKER = [PAD, STD, END, UNK]
-
-mVocabularyList = []
-mVocabularyDictionary = []
-mVocabularyLength = 0
-
-tokenizer = Tokenizer()
+changeFilter = re.compile(FILTERS)
 
 def loadData():
-	data = pd.read_csv(DEFINES.dataPath, header=0)
-	changeMark = re.compile("([~.,!?\"':;)(012])")
-	mX = []
-	mY = []
-	X = data.pop('Q');
-	Y = data.pop('A');
-	for x in X:
-		mX.append(re.sub(changeMark, "", x))
-	for y in Y:
-		mY.append(re.sub(changeMark, "", y))
-
-	xTrain, xTest, yTrain, yTest = train_test_split(mX, mY, test_size=0.33, random_state=42)
+	dataDF = pd.read_csv(DEFINES.dataPath, header=0)
+	question, answer = list(dataDF['Q']), list(dataDF['A'])
+	xTrain, xTest, yTrain, yTest = train_test_split(question, answer, test_size=0.33, random_state=42)
 	return xTrain, yTrain, xTest, yTest
 
-def preProcessing(xTrain, yTrain, xTest, yTest):
-	xTrain = tokenizer.texts_to_sequences(xTrain)
-	yTrain = tokenizer.texts_to_sequences(yTrain)
-	xTest = tokenizer.texts_to_sequences(xTest)
-	yTest = tokenizer.texts_to_sequences(yTest)
-	xTrain = pad_sequences(xTrain, maxlen=DEFINES.maxSequenceLength, value=PAD_INDEX)	
-	yTrain = pad_sequences(yTrain, maxlen=DEFINES.maxSequenceLength, value=PAD_INDEX)	
-	xTest = pad_sequences(xTest, maxlen=DEFINES.maxSequenceLength, value=PAD_INDEX)	
-	yTest = pad_sequences(yTest, maxlen=DEFINES.maxSequenceLength, value=PAD_INDEX)	
-	return xTrain, yTrain, xTest, yTest
+def encProcessing(xValue, dictionary):
+	sequencesInputIndex  = []
+	sequencesLength = []
 
+	for sequence in xValue:
+		sequence = re.sub(changeFilter, "", sequence)
+		sequenceIndex = [dictionary.get(word) for word in sequence.split()]
+		sequencesLength.append(len(sequenceIndex))
+		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
+		sequencesInputIndex.append(sequenceIndex)
 
-def trainInputFn(features, labels, batchSize):
-	dataset = tf.data.Dataset.from_tensor_slices((features, labels))
-	dataset = dataset.shuffle(DEFINES.shuffleSeek).repeat().batch(batchSize)
-	return dataset
+	return np.asarray(sequencesInputIndex), sequencesLength
+
+def decOutputProcessing(yValue, dictionary):
+	sequencesOutputIndex = []
+	sequencesLength = []
+
+	for i, sequence in enumerate(yValue):
+		sequence = re.sub(changeFilter, "", sequence)
+		sequenceIndex = [dictionary.get('<START>')] + [dictionary.get(word) for word in sequence.split()]
+		sequencesLength.append(len(sequenceIndex))
+		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
+		# if len(sequenceIndex) != 15:
+		# 	print(i, ':', sequenceIndex, '::', sequence)
+		sequencesOutputIndex.append(sequenceIndex)
+
+	return np.asarray(sequencesOutputIndex), sequencesLength
+
+def decTargetProcessing(yValue, dictionary):
+	sequencesTargetIndex = []
+
+	for sequence in yValue:
+		sequence = re.sub(changeFilter, "", sequence)
+		sequenceIndex = [dictionary.get(word) for word in sequence.split()] + [dictionary.get('<END>')]
+		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
+		sequencesTargetIndex.append(sequenceIndex)
+
+	return np.asarray(sequencesTargetIndex)
+
+def rearrange(input, output, target):
+	features = {"input": input, "output": output}
+	return features, target 
+
+#encoder decoder
+def trainInputFn(inputTrainEnc, outputTrainDec, targetTrainDec, batchSize):
+	dataset = tf.data.Dataset.from_tensor_slices((inputTrainEnc, outputTrainDec, targetTrainDec))
+	dataset = dataset.shuffle(buffer_size=len(inputTrainEnc))
+	dataset = dataset.batch(batchSize)
+	dataset = dataset.map(rearrange)
+	dataset = dataset.repeat()
+	iterator = dataset.make_one_shot_iterator()
+	return iterator.get_next()
 
 def evalInputFn(features, labels, batchSize):
 	if labels is None:
 		inputs = features
 	else:
 		inputs = (features, labels)
-
 	dataset = tf.data.Dataset.from_tensor_flices(inputs)
 	assert batchSize is not None, "batchSize must not be None"
 	dataset = dataset.batch(batchSize)
 	return dataset
 
-def dataTokenizer(sentence):
+def dataTokenizer(data):
 	words = []
-	changeMark = re.compile("([.,!?\"':;)(012])")
-	sentence = re.sub(changeMark, "", sentence)
-
-	for word in sentence.strip().split():
-		#print(word)
-		words.append(word)
+	for sentence in data:
+		sentence =re.sub(changeFilter, "", sentence)
+		for word in sentence.split():
+			words.append(word) 
 
 	return [word for word in words if word]
 
 def loadVocabulary():
-	vocabularyList = MARKER + []
-
+	vocabularyList = []
 	if(not(os.path.exists(DEFINES.vocabularyPath))):
-		with open(DEFINES.dataPath, 'r', encoding='utf-8') as dataFile:
-			data = dataFile.read()
+		dataDF = pd.read_csv(DEFINES.dataPath, encoding='utf-8')
+		question, answer = list(dataDF['Q']), list(dataDF['A'])
+		if(os.path.exists(DEFINES.dataPath)):
+			data = []
+			data.extend(question)
+			data.extend(answer)
 			words = dataTokenizer(data)
 			words = list(set(words))
+			# Add PreDefine 
+			[words.insert(0, word) for word in reversed(MARKER)]
+			#print(words)	
 		with open(DEFINES.vocabularyPath, 'w') as vocabularyFile:
 			for word in words:
 				vocabularyFile.write(word + '\n')
@@ -98,12 +120,13 @@ def loadVocabulary():
 	with open(DEFINES.vocabularyPath, 'r', encoding='utf-8') as vocabularyFile:
 		for line in vocabularyFile:
 			vocabularyList.append(line.strip())
-	
-	vocabularyDictionary = tokenizer.fit_on_texts(vocabularyList)
-	wordVocab = tokenizer.word_index
-	#print(wordVocab)
-	print("================================")
-	return wordVocab, len(wordVocab) 
+
+	char2idx = {char: idx for idx, char in enumerate(vocabularyList)}
+	#idx2char = {idx: char for idx, char in enumerate(vocabularyList)}
+	#print(char2idx)
+	#print(len(char2idx))
+	# print("================================")
+	return char2idx, len(char2idx) 
 
 # def indexsToWords(indexs):
 # 	words = []
@@ -123,21 +146,20 @@ def loadVocabulary():
 
 
 def main(self):
-	vocabularyDictionary, vocabularyLength = loadVocabulary()	
-	xTrain, yTrain, xTest, yTest = loadData()
-	#print(vocabularyDictionary)
-	print("================================")
+	dictionary, vocabularyLength = loadVocabulary()	
+	#print(dictionary)
 	#print(vocabularyLength)
-	print("================================")
-	print(xTrain)
-	print("================================")
-	train_text_sequences = tokenizer.texts_to_sequences(xTrain)
-	#indexs = wordsToIndexs(xTrain)
-	#print(train_text_sequences)
-	print("================================")
-
-	train_text_sequences = pad_sequences(train_text_sequences, maxlen=DEFINES.maxSequenceLength, value=PAD_INDEX)
-	print(train_text_sequences)
+	xTrain, yTrain, xTest, yTest = loadData()
+	#print(xTrain)
+	#print(dictionary)
+	inputTrainEnc, inputTrainEncLength = encProcessing(xTrain, dictionary)
+	inputTestEnc, inputTestEncLength = encProcessing(xTest, dictionary)
+	outputTrainDec, outputTrainDecLength = decOutputProcessing(yTrain, dictionary)
+	outputTestDec, outputTestDecLength = decOutputProcessing(yTest, dictionary)
+	targetTrainDec = decTargetProcessing(yTrain, dictionary)
+	targetTestDec = decTargetProcessing(yTest, dictionary)			
+	#print(targetTrainDec)
+	#print(inputTrainEncLength)
 
 if __name__ == "__main__":
 	tf.logging.set_verbosity(tf.logging.INFO)
