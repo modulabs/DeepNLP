@@ -2,6 +2,7 @@ import tensorflow as tf
 import model as ml
 import data
 import numpy as np
+import os
 
 from configs import DEFINES
 
@@ -13,8 +14,6 @@ def main(self):
 	dictionary,  vocabularyLength = data.loadVocabulary()
 	# print("#######################################################################")
 	# print(dictionary)
-	# print("#######################################################################")
-	# print("#######################################################################")
 	# print(vocabularyLength)
 	# print("#######################################################################")
 	######################################################################
@@ -24,90 +23,37 @@ def main(self):
 	xTrain, yTrain, xTest, yTest = data.loadData()
 	# print("#######################################################################")
 	# print(xTrain)
-	# print("#######################################################################")
-	# print("#######################################################################")
 	# print(yTrain)
 	# print("#######################################################################")
 	######################################################################
-	# index sequences 
-	# pad sequences
-	#print(len(xTrain))
-	print("#######################################################################")
-	#print(xTrain)
-	#print(len(yTrain))
-	print("#######################################################################")
-	#print(yTrain)
 
+	# START END PADDING  (MaxValue 처리)
+	#######################################################################
 	inputTrainEnc, inputTrainEncLength = data.encProcessing(xTrain, dictionary)
 	outputTrainDec, outputTrainDecLength = data.decOutputProcessing(yTrain, dictionary)
 	targetTrainDec = data.decTargetProcessing(yTrain, dictionary)
-	#inputTrainEnc, inputTrainEncLength = data.decOutputProcessing(xTrain, dictionary)
-	#outputTrainDec, outputTrainDecLength = data.encProcessing(yTrain, dictionary)
-	# inputTestEnc, inputTestEncLength = data.encProcessing(xTest,dictionary)
-	# outputTrainDec, outputTrainDecLength = data.decOutputProcessing(yTrain, dictionary)
-	# outputTestDec, outputTestDecLength = data.decOutputProcessing(yTest, dictionary)
-	# targetTrainDec = data.decTargetProcessing(yTrain, dictionary)
-	# targetTestDec = data.decTargetProcessing(yTest, dictionary)
-
-	#for encIndex in range(len(inputTrainEnc)):
-	#	inputTrainEncOneHot.append(np.eye(vocabularyLength)[inputTrainEnc[encIndex]])
 	
-	#for decIndex in range(len(outputTrainDec)):
-	#	outputTrainDecOneHot.append(np.eye(vocabularyLength)[outputTrainDec[decIndex]])
-
+	inputTestEnc, inputTestEncLength = data.encProcessing(xTest,dictionary)
+	outputTestDec, outputTestDecLength = data.decOutputProcessing(yTest, dictionary)
+	targetTrainDec = data.decTargetProcessing(yTrain, dictionary)
+	# print("#######################################################################")
 	# print(type(inputTrainEnc))
 	# print(type(outputTrainDec))
 	# print(type(targetTrainDec))
-	print("#######################################################################")
-	#print(np.asarray(inputTrainEncOneHot.shape))
-	
-	# inputTrainEnc = np.asarray(inputTrainEnc)
-	# #print(inputTrainEnc)
-		
-	# outputTrainDec = np.asarray(outputTrainDec)
-	# #print(outputTrainDec)
-	# targetTrainDec = np.asarray(targetTrainDec)
-	# #print(targetTrainDec)
-	# print(targetTrainDec.shape)
-	# # print("#######################################################################")
-	# # print(targetTrainDec)
-	# print("#######################################################################")
-	# print("#######################################################################")
-	# #print(outputTrainDec)
-	# print(outputTrainDec.shape)
-	# print("#######################################################################")
-	# print("#######################################################################")
-	# print(targetTrainDec.shape)
-	#print(targetTrainDec)
-
-	print("#######################################################################")	
-	# print( type(inputTrainEnc))
-	# print(outputTrainDec[0])
-	# print(type(outputTrainDec))
-	print(inputTrainEnc.shape)
-	print(outputTrainDec.shape)
-	print(targetTrainDec.shape)
-	print("#######################################################################")	
-	# inputTrainEnc = np.array(inputTrainEnc)
-	# print( type(inputTrainEnc))
 	# print(inputTrainEnc.shape)
-	# outputTrainDec = np.array(outputTrainDec)
-	# print( type(outputTrainDec))
 	# print(outputTrainDec.shape)
-	# print(outputTrainDec[0])
-	# print(outputTrainDec[0].shape)
-	# outputTrainDec[0] = outputTrainDec[0].reshape(1,15)
-	# print( type(outputTrainDec))
-	# print(outputTrainDec.shape)
-	# print(outputTrainDec[0])
-	# print(outputTrainDec[0].shape)
-	print("#######################################################################")	
-	######################################################################
-
+	# print(targetTrainDec.shape)
+	# print("#######################################################################")
+	#######################################################################	
 	# classifier 
 	#######################################################################
+	# Create a directory to save
+	checkPointPath = os.path.join(os.getcwd(), DEFINES.checkPointPath)
+	os.makedirs(checkPointPath, exist_ok=True)
+	
 	classifier = tf.estimator.Estimator(
 			model_fn=ml.Model, 
+			model_dir=DEFINES.checkPointPath,
 			params={
 				'hiddenSize': DEFINES.hiddenSize,
 				'layerSize': DEFINES.layerSize,
@@ -115,12 +61,11 @@ def main(self):
 				'vocabularyLength': vocabularyLength,
 				'embeddingSize': DEFINES.embeddingSize,
 			})
-	print("#######################################################################")
+	#print("#######################################################################")
 	print(classifier)
-	print("#######################################################################")	
+	#print("#######################################################################")	
 	######################################################################
 
-	# classifier xTrain 과 yTrain 들어 가는 부분에 먼가 차원이 들어 가야 하는 듯.
 	#######################################################################
 	classifier.train(input_fn=lambda:data.trainInputFn(inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
 	#classifier.train(input_fn=lambda:data.trainInputFn(inputTrainEnc, outputTestDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)

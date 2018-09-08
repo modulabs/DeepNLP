@@ -112,7 +112,7 @@ def loadVocabulary():
 			words = list(set(words))
 			# Add PreDefine 
 			[words.insert(0, word) for word in reversed(MARKER)]
-			#print(words)	
+			# print(words)	
 		with open(DEFINES.vocabularyPath, 'w') as vocabularyFile:
 			for word in words:
 				vocabularyFile.write(word + '\n')
@@ -125,23 +125,8 @@ def loadVocabulary():
 	#idx2char = {idx: char for idx, char in enumerate(vocabularyList)}
 	#print(char2idx)
 	#print(len(char2idx))
-	# print("================================")
 	return char2idx, len(char2idx) 
 
-# def indexsToWords(indexs):
-# 	words = []
-# 	for index in indexs:
-# 		words.append(mVocabularyDictionary[index])
-# 	return words
-
-# def wordsToIndexs(words):
-# 	indexs = []
-# 	for word in words:
-# 		if word in mVocabularyDictionary:
-# 			indexs.append(mVocabularyDictionary[word])
-# 		else:
-# 			indexs.append(UNK_INDEX)
-# 	return indexs
 
 
 
