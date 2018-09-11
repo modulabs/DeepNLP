@@ -35,7 +35,7 @@ def main(self):
 	
 	inputTestEnc, inputTestEncLength = data.encProcessing(xTest,dictionary)
 	outputTestDec, outputTestDecLength = data.decOutputProcessing(yTest, dictionary)
-	targetTrainDec = data.decTargetProcessing(yTrain, dictionary)
+	targetTestDec = data.decTargetProcessing(yTest, dictionary)
 	# print("#######################################################################")
 	# print(type(inputTrainEnc))
 	# print(type(outputTrainDec))
@@ -67,14 +67,14 @@ def main(self):
 	######################################################################
 
 	#######################################################################
-	classifier.train(input_fn=lambda:data.trainInputFn(
-		inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
+	#classifier.train(input_fn=lambda:data.trainInputFn(
+	#	inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
 	#######################################################################
 
 
 	#######################################################################
 	evalResult = classifier.evaluate(input_fn=lambda:data.evalInputFn(
-		inputTestEnc, outputTestDec, targetTestDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
+		inputTestEnc, outputTestDec, targetTestDec,  DEFINES.batchSize))
 	print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**evalResult))
 	#######################################################################
 
@@ -84,9 +84,19 @@ def main(self):
 	#print(idx2char)
 	#print(idx2charLength)
 	# enc = 연애를 잘하는사람들 멋져
-
+	inputPredicEnc, inputPredicEncLength = data.encProcessing(["연애를 잘하는사람들 멋져"], dictionary)
+	outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""], dictionary)		
+	targetPredicDec = data.decTargetProcessing([""], dictionary)		
+	#inputPredicEnc, inputPredicEncLength = encProcessing(["연애를 잘하는사람들 멋져"], dictionary)
+	print("#######################################################################")	
+	print(inputPredicEnc)
+	print(outputPredicDec)
+	print("#######################################################################")
 	predictions = classifier.predict(
-		input_fn=lambda:data.evalInputFn(inputTestEnc, outputTestDec, labels=None, batch_size=DEFINES.batchSize))
+		input_fn=lambda:data.evalInputFn(inputPredicEnc, outputPredicDec, targetPredicDec, DEFINES.batchSize))
+	print("#######################################################################")	
+	print(predictions)
+	print("#######################################################################")	
 													
 if __name__ == '__main__':
 	tf.logging.set_verbosity(tf.logging.INFO)

@@ -92,7 +92,7 @@ def evalInputFn(inputTrainEnc, outputTrainDec, targetTrainDec, batchSize):
 	assert batchSize is not None, "eval batchSize must not be None"
 	dataset = dataset.batch(batchSize)
 	dataset = dataset.map(rearrange)
-	dataset = dataset.repeat()
+	dataset = dataset.repeat(1)
 	iterator = dataset.make_one_shot_iterator()
 	return iterator.get_next()
 
@@ -156,11 +156,12 @@ def main(self):
 	#targetTrainDec = decTargetProcessing(yTrain, dictionary)
 	#targetTestDec = decTargetProcessing(yTest, dictionary)	
 
-	#inputPredicEnc, inputPredicEncLength = encProcessing(["연애를 잘하는사람들 멋져"], dictionary)
-	#print(inputPredicEnc)
-	#print(inputPredicEncLength)				
-	#print(inputTrainEnc)
-	#print(inputTrainEncLength)
+	inputPredicEnc, inputPredicEncLength = encProcessing(["연애를 잘하는사람들 멋져"], dictionary)
+	print(inputPredicEnc)
+	print(inputPredicEncLength)
+	outputPredicDec, outputPredicDecLength = decOutputProcessing([""], dictionary)				
+	print(outputPredicDec)
+	print(outputPredicDecLength)
 
 if __name__ == "__main__":
 	tf.logging.set_verbosity(tf.logging.INFO)

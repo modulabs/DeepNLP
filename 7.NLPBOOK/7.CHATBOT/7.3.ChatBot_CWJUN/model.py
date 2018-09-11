@@ -40,10 +40,12 @@ def Model(features, labels, mode, params):
 	logits = tf.layers.dense(decoder_outputs, params['vocabularyLength'], activation=None)
 
 	predict = tf.argmax(logits, 2)
+	print("predict.shape")
+	print(predict.shape)
 ########################################################################################################
 	if mode == tf.estimator.ModeKeys.PREDICT:
 		predictions = {
-			'class_ids': predict[:, params['vocabularyLength']],
+			'class_ids': predict[:, params['maxSequenceLength']],
 			'probabilities': tf.nn.softmax(logits),
 			'logits': logits,
 		}
