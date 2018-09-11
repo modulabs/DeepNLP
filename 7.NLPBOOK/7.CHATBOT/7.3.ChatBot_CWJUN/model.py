@@ -37,35 +37,23 @@ def Model(features, labels, mode, params):
                                                              inputs=t_batch,
                                                              initial_state=decoder_initial_state,
                                                              dtype=tf.float32)
-	logits = tf.layers.dense(decoder_outputs, params['vocabularyLength'])
-	# decoder_predict = tf.argmax(decoder_outputs, 2)
-	#rnnCell = tf.nn.rnn_cell.BasicLSTMCell(params['hiddenSize'])
-	# if mode == tf.estimator.ModeKeys.TRAIN:
-	# rnnCell = tf.nn.rnn_cell.DropoutWrapper(rnnCell, output_keep_prob=DEFINES.dropoutWidth)
-	# encCell = tf.nn.rnn_cell.MultiRNNCell([rnnCell for _ in range(params['layerSize'])])
-	# decCell = tf.nn.rnn_cell.MultiRNNCell([rnnCell for _ in range(params['layerSize'])])	
-	# outputs, encStates = tf.nn.dynamic_rnn(encCell, encoderEmbedded, dtype=tf.float32)
-	# outputs, decStates = tf.nn.dynamic_rnn(decCell, decoderEmbedded, dtype=tf.float32, initial_state=encStates)	
+	logits = tf.layers.dense(decoder_outputs, params['vocabularyLength'], activation=None)
+
+	predict = tf.argmax(logits, 2)
 ########################################################################################################
 	if mode == tf.estimator.ModeKeys.PREDICT:
 		predictions = {
-			'class_ids': predictedClasses[:, tf.newaxis], # Classes 처리 필요
-			'probabilities': tf.nn.softmax(logits),	# 처리 필요
-			'logits': logits,	# 처리 필요
+			'class_ids': predict[:, params['vocabularyLength']],
+			'probabilities': tf.nn.softmax(logits),
+			'logits': logits,
 		}
 		return tf.estimator.EstimatorSpec(mode, predictions=predictions)
-
-	cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits,
-																	labels=labels)
-	loss = tf.reduce_mean(cross_entropy)
 ########################################################################################################	
-	#loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels))
-	# accuracy = tf.metrics.accuracy(labels=labels,	# 작업 필요
-	# 								predictions=decoder_outputs,
-	# 								name='accOp')
+	loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+	accuracy = tf.metrics.accuracy(labels=labels, predictions=predict,name='accOp')
 
-	# metrics = {'accuracy': accuracy}
-	# tf.summary.scalar('accuracy', accuracy[1])
+	metrics = {'accuracy': accuracy}
+	tf.summary.scalar('accuracy', accuracy[1])
 	
 	if mode == tf.estimator.ModeKeys.EVAL:
 		return tf.estimator.EstimatorSpec(mode, loss=loss, eval_metric_ops=metrics)
@@ -73,6 +61,6 @@ def Model(features, labels, mode, params):
 	assert mode == tf.estimator.ModeKeys.TRAIN
 
 	optimizer = tf.train.AdamOptimizer(learning_rate=DEFINES.learningRate)
-	trainOp = optimizer.minimize(cross_entropy, global_step=tf.train.get_global_step())	
+	trainOp = optimizer.minimize(loss, global_step=tf.train.get_global_step())	
 ########################################################################################################
 	return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=trainOp)

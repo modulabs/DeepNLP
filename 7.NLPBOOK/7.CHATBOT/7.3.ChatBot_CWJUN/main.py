@@ -67,21 +67,26 @@ def main(self):
 	######################################################################
 
 	#######################################################################
-	classifier.train(input_fn=lambda:data.trainInputFn(inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
-	#classifier.train(input_fn=lambda:data.trainInputFn(inputTrainEnc, outputTestDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
-	#classifier.train(input_fn=lambda:data.trainInputFn(inputTrainEnc, outputTestDec, targetTrainDec, DEFINES.batchSize), steps=DEFINES.trainSteps)
+	classifier.train(input_fn=lambda:data.trainInputFn(
+		inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
 	#######################################################################
 
-	# evalResult = classifier.evaluate(
-	# 		input_fn=lambda:data.evalInputFn(xTest, yTest, DEFINED.batchSize))
 
-	# print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**evalResult))
+	#######################################################################
+	evalResult = classifier.evaluate(input_fn=lambda:data.evalInputFn(
+		inputTestEnc, outputTestDec, targetTestDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
+	print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**evalResult))
+	#######################################################################
 
-#predictX 선언필요
-#predictions = classifier.predict(
-#			input_fn=lambda:data.evalInputFn(predictX,
-#													labels=None,
-#													batch_size=DEFINES.batchSize))
+	# 결과값 바로 나오도록 처리
+	# inputPredicEnc, outputPredicDec
+	#idx2char, idx2charLength = data.idx2char(dictionary)
+	#print(idx2char)
+	#print(idx2charLength)
+	# enc = 연애를 잘하는사람들 멋져
+
+	predictions = classifier.predict(
+		input_fn=lambda:data.evalInputFn(inputTestEnc, outputTestDec, labels=None, batch_size=DEFINES.batchSize))
 													
 if __name__ == '__main__':
 	tf.logging.set_verbosity(tf.logging.INFO)

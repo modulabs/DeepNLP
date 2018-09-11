@@ -30,10 +30,14 @@ def loadData():
 def encProcessing(xValue, dictionary):
 	sequencesInputIndex  = []
 	sequencesLength = []
-
 	for sequence in xValue:
 		sequence = re.sub(changeFilter, "", sequence)
-		sequenceIndex = [dictionary.get(word) for word in sequence.split()]
+		sequenceIndex = []
+		for word in sequence.split():
+			if dictionary.get(word) is not None:
+				sequenceIndex.extend([dictionary.get(word)])
+			else:
+				sequenceIndex.extend([dictionary.get('<UNKWON>')])
 		sequencesLength.append(len(sequenceIndex))
 		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
 		sequencesInputIndex.append(sequenceIndex)
@@ -46,6 +50,7 @@ def decOutputProcessing(yValue, dictionary):
 
 	for i, sequence in enumerate(yValue):
 		sequence = re.sub(changeFilter, "", sequence)
+		sequenceIndex = []
 		sequenceIndex = [dictionary.get('<START>')] + [dictionary.get(word) for word in sequence.split()]
 		sequencesLength.append(len(sequenceIndex))
 		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
@@ -74,21 +79,22 @@ def rearrange(input, output, target):
 def trainInputFn(inputTrainEnc, outputTrainDec, targetTrainDec, batchSize):
 	dataset = tf.data.Dataset.from_tensor_slices((inputTrainEnc, outputTrainDec, targetTrainDec))
 	dataset = dataset.shuffle(buffer_size=len(inputTrainEnc))
+	assert batchSize is not None, "train batchSize must not be None"
 	dataset = dataset.batch(batchSize)
 	dataset = dataset.map(rearrange)
 	dataset = dataset.repeat()
 	iterator = dataset.make_one_shot_iterator()
 	return iterator.get_next()
 
-def evalInputFn(features, labels, batchSize):
-	if labels is None:
-		inputs = features
-	else:
-		inputs = (features, labels)
-	dataset = tf.data.Dataset.from_tensor_flices(inputs)
-	assert batchSize is not None, "batchSize must not be None"
+def evalInputFn(inputTrainEnc, outputTrainDec, targetTrainDec, batchSize):
+	dataset = tf.data.Dataset.from_tensor_slices((inputTrainEnc, outputTrainDec, targetTrainDec))
+	dataset = dataset.shuffle(buffer_size=len(inputTrainEnc))
+	assert batchSize is not None, "eval batchSize must not be None"
 	dataset = dataset.batch(batchSize)
-	return dataset
+	dataset = dataset.map(rearrange)
+	dataset = dataset.repeat()
+	iterator = dataset.make_one_shot_iterator()
+	return iterator.get_next()
 
 def dataTokenizer(data):
 	words = []
@@ -121,29 +127,39 @@ def loadVocabulary():
 		for line in vocabularyFile:
 			vocabularyList.append(line.strip())
 
+	index = char2idx(vocabularyList)
+	return index, len(index) 
+
+def char2idx(vocabularyList):
 	char2idx = {char: idx for idx, char in enumerate(vocabularyList)}
-	#idx2char = {idx: char for idx, char in enumerate(vocabularyList)}
 	#print(char2idx)
 	#print(len(char2idx))
-	return char2idx, len(char2idx) 
+	return char2idx
 
-
-
+def idx2char(dictionary):
+	idx2char = {idx: char for idx, char in enumerate(dictionary)}
+	#print(idx2char)
+	#print(len(idx2char))
+	return char, len(char) 
 
 def main(self):
 	dictionary, vocabularyLength = loadVocabulary()	
 	#print(dictionary)
 	#print(vocabularyLength)
-	xTrain, yTrain, xTest, yTest = loadData()
+	#xTrain, yTrain, xTest, yTest = loadData()
 	#print(xTrain)
 	#print(dictionary)
-	inputTrainEnc, inputTrainEncLength = encProcessing(xTrain, dictionary)
-	inputTestEnc, inputTestEncLength = encProcessing(xTest, dictionary)
-	outputTrainDec, outputTrainDecLength = decOutputProcessing(yTrain, dictionary)
-	outputTestDec, outputTestDecLength = decOutputProcessing(yTest, dictionary)
-	targetTrainDec = decTargetProcessing(yTrain, dictionary)
-	targetTestDec = decTargetProcessing(yTest, dictionary)			
-	#print(targetTrainDec)
+	#inputTrainEnc, inputTrainEncLength = encProcessing(xTrain, dictionary)
+	#inputTestEnc, inputTestEncLength = encProcessing(xTest, dictionary)
+	#outputTrainDec, outputTrainDecLength = decOutputProcessing(yTrain, dictionary)
+	#outputTestDec, outputTestDecLength = decOutputProcessing(yTest, dictionary)
+	#targetTrainDec = decTargetProcessing(yTrain, dictionary)
+	#targetTestDec = decTargetProcessing(yTest, dictionary)	
+
+	#inputPredicEnc, inputPredicEncLength = encProcessing(["연애를 잘하는사람들 멋져"], dictionary)
+	#print(inputPredicEnc)
+	#print(inputPredicEncLength)				
+	#print(inputTrainEnc)
 	#print(inputTrainEncLength)
 
 if __name__ == "__main__":
