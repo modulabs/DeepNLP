@@ -8,6 +8,12 @@ def makeLSTMCell(hiddenSize):
     cell = tf.contrib.rnn.BasicLSTMCell(hiddenSize)
     return cell
 
+def makeBidirectionalLSTMCell(hiddenSize):
+	forwardCell = tf.nn.rnn_cell.BasicLSTMCell(hiddenSize)
+	backwardCell = tf.nn.rnn_cell.BasicLSTMCell(hiddenSize)
+	return forwardCell, backwardCell
+
+
 def Model(features, labels, mode, params):
 	print(params['vocabularyLength'])
 	if params['embedding'] == True:
@@ -43,9 +49,11 @@ def Model(features, labels, mode, params):
 	embeddingDecoderBatch = tf.nn.embedding_lookup(params = embeddingDecoder, ids = features['output'])
 ######################################################################################################
 	with tf.variable_scope('encoderScope', reuse=tf.AUTO_REUSE):
+		
 		if params['multilayer'] == True:
 			encoderCellList = [makeLSTMCell(params['hiddenSize']) for i in range(params['layerSize'])]
 			rnnCell = tf.contrib.rnn.MultiRNNCell(encoderCellList)
+		#elif Bidirectional 처리
 		else:
 			rnnCell = makeLSTMCell(params['hiddenSize'])
 
@@ -66,7 +74,6 @@ def Model(features, labels, mode, params):
 			attention = tf.contrib.seq2seq.LuongAttention(num_units=params['hiddenSize'], 
 															memory=encoderOutputs)
 			# Attention 구성 중	
-
 
 		decoderOutputs, decoderFinalState = tf.nn.dynamic_rnn(cell=rnnCell,
 																inputs=embeddingDecoderBatch,
