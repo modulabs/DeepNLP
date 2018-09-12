@@ -50,7 +50,7 @@ def main(self):
 	# Create a directory to save
 	checkPointPath = os.path.join(os.getcwd(), DEFINES.checkPointPath)
 	os.makedirs(checkPointPath, exist_ok=True)
-	
+
 	classifier = tf.estimator.Estimator(
 			model_fn=ml.Model, 
 			model_dir=DEFINES.checkPointPath,
@@ -60,6 +60,13 @@ def main(self):
 				'learningRate': DEFINES.learningRate,
 				'vocabularyLength': vocabularyLength,
 				'embeddingSize': DEFINES.embeddingSize,
+				'embedding': DEFINES.embedding,
+				'embeddingSize': DEFINES.embeddingSize,
+				'multilayer': DEFINES.multilayer, 
+				'attention': DEFINES.attention,
+				'bidirectional': DEFINES.bidirectional,
+				'bucket': DEFINES.bucket,
+				'beamsearch': DEFINES.beamsearch,
 			})
 	#print("#######################################################################")
 	print(classifier)
@@ -67,8 +74,8 @@ def main(self):
 	######################################################################
 
 	#######################################################################
-	#classifier.train(input_fn=lambda:data.trainInputFn(
-	#	inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
+	classifier.train(input_fn=lambda:data.trainInputFn(
+		inputTrainEnc, outputTrainDec, targetTrainDec,  DEFINES.batchSize), steps=DEFINES.trainSteps)
 	#######################################################################
 
 
