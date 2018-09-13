@@ -88,7 +88,7 @@ def Model(features, labels, mode, params):
 ########################################################################################################
 	if mode == tf.estimator.ModeKeys.PREDICT:
 		predictions = {
-			'class_ids': predict[:, params['maxSequenceLength']],
+			'class_ids': predict, # 태균님 변경 요청 내용
 			'probabilities': tf.nn.softmax(logits),
 			'logits': logits,
 		}

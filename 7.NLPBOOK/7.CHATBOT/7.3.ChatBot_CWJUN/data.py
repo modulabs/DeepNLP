@@ -11,7 +11,7 @@ FILTERS = "([~.,!?\"':;)(])"
 PAD = "<PADDING>"
 STD = "<START>"
 END = "<END>"
-UNK = "<UNKWON>"
+UNK = "<UNKNWON>"
 
 PAD_INDEX = 0
 STD_INDEX = 1
@@ -34,12 +34,12 @@ def encProcessing(xValue, dictionary):
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = []
 		for word in sequence.split():
-			if dictionary.get(word) is not None:
-				sequenceIndex.extend([dictionary.get(word)])
+			if dictionary[word] is not None:
+				sequenceIndex.extend([dictionary[word]])
 			else:
-				sequenceIndex.extend([dictionary.get('<UNKWON>')])
+				sequenceIndex.extend([dictionary[UNK]])
 		sequencesLength.append(len(sequenceIndex))
-		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
+		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
 		sequencesInputIndex.append(sequenceIndex)
 
 	return np.asarray(sequencesInputIndex), sequencesLength
@@ -51,9 +51,9 @@ def decOutputProcessing(yValue, dictionary):
 	for i, sequence in enumerate(yValue):
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = []
-		sequenceIndex = [dictionary.get('<START>')] + [dictionary.get(word) for word in sequence.split()]
+		sequenceIndex = [dictionary[STD]] + [dictionary[word] for word in sequence.split()]
 		sequencesLength.append(len(sequenceIndex))
-		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
+		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
 		# if len(sequenceIndex) != 15:
 		# 	print(i, ':', sequenceIndex, '::', sequence)
 		sequencesOutputIndex.append(sequenceIndex)
@@ -65,8 +65,8 @@ def decTargetProcessing(yValue, dictionary):
 
 	for sequence in yValue:
 		sequence = re.sub(changeFilter, "", sequence)
-		sequenceIndex = [dictionary.get(word) for word in sequence.split()] + [dictionary.get('<END>')]
-		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary.get('<PADDING>')]
+		sequenceIndex = [dictionary[word] for word in sequence.split()] + [dictionary[END]]
+		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
 		sequencesTargetIndex.append(sequenceIndex)
 
 	return np.asarray(sequencesTargetIndex)
@@ -117,7 +117,8 @@ def loadVocabulary():
 			words = dataTokenizer(data)
 			words = list(set(words))
 			# Add PreDefine 
-			[words.insert(0, word) for word in reversed(MARKER)]
+			words[:0] = MARKER  # 성곤님 수정 요청 사항
+			#[words.insert(0, word) for word in reversed(MARKER)]
 			# print(words)	
 		with open(DEFINES.vocabularyPath, 'w') as vocabularyFile:
 			for word in words:
