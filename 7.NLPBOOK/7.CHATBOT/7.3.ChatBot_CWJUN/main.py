@@ -6,6 +6,8 @@ import os
 
 from configs import DEFINES
 
+os.environ["CUDA_VISIBLE_DEVICES"]="0" #For TEST
+
 def main(self):
 	inputTrainEncOneHot = []
 	outputTrainDecOneHot = []
