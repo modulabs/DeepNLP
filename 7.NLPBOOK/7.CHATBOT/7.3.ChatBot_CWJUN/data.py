@@ -1,3 +1,4 @@
+from konlpy.tag import Twitter
 import pandas as pd
 import tensorflow as tf
 import enum
@@ -27,6 +28,17 @@ def loadData():
 	xTrain, xTest, yTrain, yTest = train_test_split(question, answer, test_size=0.33, random_state=42)
 	return xTrain, yTrain, xTest, yTest
 
+def preproLikeMorphlized(data):
+	morphAnalyzer = Twitter()
+	
+	result_data = list()
+	for seq in data:
+		morphlizedSeq = " ".join(morphAnalyzer.morphs(seq.replace(' ', '')))
+		result_data.append(morphlizedSeq)
+
+	return result_data
+
+
 def encProcessing(xValue, dictionary):
 	sequencesInputIndex  = []
 	sequencesLength = []
@@ -34,12 +46,15 @@ def encProcessing(xValue, dictionary):
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = []
 		for word in sequence.split():
-			if dictionary[word] is not None:
+			# if dictionary[word] is not None:
+			if word in dictionary:
 				sequenceIndex.extend([dictionary[word]])
 			else:
 				sequenceIndex.extend([dictionary[UNK]])
 		sequencesLength.append(len(sequenceIndex))
 		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
+		if len(sequenceIndex) != DEFINES.maxSequenceLength:
+			sequenceIndex = sequenceIndex[:DEFINES.maxSequenceLength]
 		sequencesInputIndex.append(sequenceIndex)
 
 	return np.asarray(sequencesInputIndex), sequencesLength
@@ -51,11 +66,11 @@ def decOutputProcessing(yValue, dictionary):
 	for i, sequence in enumerate(yValue):
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = []
-		sequenceIndex = [dictionary[STD]] + [dictionary[word] for word in sequence.split()]
+		sequenceIndex = [dictionary[STD]] + [dictionary[word] if word in dictionary else dictionary[UNK] for word in sequence.split()]
 		sequencesLength.append(len(sequenceIndex))
 		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
-		# if len(sequenceIndex) != 15:
-		# 	print(i, ':', sequenceIndex, '::', sequence)
+		if len(sequenceIndex) != DEFINES.maxSequenceLength:
+			sequenceIndex = sequenceIndex[:DEFINES.maxSequenceLength]
 		sequencesOutputIndex.append(sequenceIndex)
 
 	return np.asarray(sequencesOutputIndex), sequencesLength
@@ -65,8 +80,11 @@ def decTargetProcessing(yValue, dictionary):
 
 	for sequence in yValue:
 		sequence = re.sub(changeFilter, "", sequence)
-		sequenceIndex = [dictionary[word] for word in sequence.split()] + [dictionary[END]]
+		sequenceIndex = [dictionary[word] if word in dictionary else dictionary[UNK] for word in sequence.split()] + [dictionary[END]]
 		sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
+		if len(sequenceIndex) != DEFINES.maxSequenceLength:
+			sequenceIndex = sequenceIndex[:DEFINES.maxSequenceLength]
+
 		sequencesTargetIndex.append(sequenceIndex)
 
 	return np.asarray(sequencesTargetIndex)
@@ -105,11 +123,12 @@ def dataTokenizer(data):
 
 	return [word for word in words if word]
 
-def loadVocabulary():
+def loadVocabulary(question=None, answer=None):
 	vocabularyList = []
 	if(not(os.path.exists(DEFINES.vocabularyPath))):
-		dataDF = pd.read_csv(DEFINES.dataPath, encoding='utf-8')
-		question, answer = list(dataDF['Q']), list(dataDF['A'])
+		if question is None or answer is None:
+			dataDF = pd.read_csv(DEFINES.dataPath, encoding='utf-8')
+			question, answer = list(dataDF['Q']), list(dataDF['A'])
 		if(os.path.exists(DEFINES.dataPath)):
 			data = []
 			data.extend(question)

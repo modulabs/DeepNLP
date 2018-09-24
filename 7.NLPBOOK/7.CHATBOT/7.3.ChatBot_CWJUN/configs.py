@@ -1,6 +1,7 @@
 #-*- coding: utf-8 -*-
 import tensorflow as tf
 
+tf.app.flags.DEFINE_boolean('tokenizeAsMorph', True, 'set morph tokenize')
 tf.app.flags.DEFINE_integer('batchSize', 100, 'batch size')
 tf.app.flags.DEFINE_integer('trainSteps', 50000, 'train steps') #50000
 tf.app.flags.DEFINE_float('dropoutWidth', 0.5, 'dropout width')

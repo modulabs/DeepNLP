@@ -114,4 +114,8 @@ venv.bak/
 .vscode
 .ipynb_checkpoints
 
+*.voc
+checkPoint
+*.log
+
 OLD
