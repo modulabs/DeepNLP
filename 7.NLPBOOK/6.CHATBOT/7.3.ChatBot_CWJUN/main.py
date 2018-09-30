@@ -13,27 +13,26 @@ def main(self):
 	outputTrainDecOneHot = []
 	# Make Vocabulary
 	#######################################################################
-	# dictionary,  vocabularyLength = data.loadVocabulary()
-	# print("#######################################################################")
+	dictionary,  vocabularyLength = data.loadVocabulary()
+	print("#######################################################################")
 	# print(dictionary)
-	# print(vocabularyLength)
-	# print("#######################################################################")
+	print(vocabularyLength)
+	print("#######################################################################")
 	######################################################################
 
 	# Load Data
 	#######################################################################
 	xTrain, yTrain, xTest, yTest = data.loadData()
 
-	if DEFINES.tokenizeAsMorph:
-		print('Set All strings to be Morph Tokenized!!')
-		xTrain = data.preproLikeMorphlized(xTrain)
-		yTrain = data.preproLikeMorphlized(yTrain)
-		xTest = data.preproLikeMorphlized(xTest)
-		yTest = data.preproLikeMorphlized(yTest)
+	# if DEFINES.tokenizeAsMorph:
+	#	print('Set All strings to be Morph Tokenized!!')
+	#	xTrain = data.preproLikeMorphlized(xTrain)
+	#	yTrain = data.preproLikeMorphlized(yTrain)
+	#	xTest = data.preproLikeMorphlized(xTest)
+	#	yTest = data.preproLikeMorphlized(yTest)
 	
-	print(xTrain[0], yTrain[0], xTest[0], yTest[0])
+	# print(xTrain[0], yTrain[0], xTest[0], yTest[0])
 
-	dictionary,  vocabularyLength = data.loadVocabulary(question=xTrain, answer=yTrain)
 	# print("#######################################################################")
 	# print(xTrain)
 	# print(yTrain)

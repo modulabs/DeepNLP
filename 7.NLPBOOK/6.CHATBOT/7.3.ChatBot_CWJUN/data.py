@@ -42,6 +42,8 @@ def preproLikeMorphlized(data):
 def encProcessing(xValue, dictionary):
 	sequencesInputIndex  = []
 	sequencesLength = []
+	if DEFINES.tokenizeAsMorph:
+                        xValue = preproLikeMorphlized(xValue)
 	for sequence in xValue:
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = []
@@ -62,7 +64,8 @@ def encProcessing(xValue, dictionary):
 def decOutputProcessing(yValue, dictionary):
 	sequencesOutputIndex = []
 	sequencesLength = []
-
+	if DEFINES.tokenizeAsMorph:
+		yValue = preproLikeMorphlized(yValue)
 	for i, sequence in enumerate(yValue):
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = []
@@ -77,7 +80,8 @@ def decOutputProcessing(yValue, dictionary):
 
 def decTargetProcessing(yValue, dictionary):
 	sequencesTargetIndex = []
-
+	if DEFINES.tokenizeAsMorph:
+                        yValue = preproLikeMorphlized(yValue)
 	for sequence in yValue:
 		sequence = re.sub(changeFilter, "", sequence)
 		sequenceIndex = [dictionary[word] if word in dictionary else dictionary[UNK] for word in sequence.split()] + [dictionary[END]]
@@ -123,12 +127,14 @@ def dataTokenizer(data):
 
 	return [word for word in words if word]
 
-def loadVocabulary(question=None, answer=None):
+def loadVocabulary():
 	vocabularyList = []
 	if(not(os.path.exists(DEFINES.vocabularyPath))):
-		if question is None or answer is None:
-			dataDF = pd.read_csv(DEFINES.dataPath, encoding='utf-8')
-			question, answer = list(dataDF['Q']), list(dataDF['A'])
+		dataDF = pd.read_csv(DEFINES.dataPath, encoding='utf-8')
+		question, answer = list(dataDF['Q']), list(dataDF['A'])
+		if DEFINE.tokenizeAsMorph:
+			question = preproLikeMorphlized(question)
+			answer = preproLikeMorphlized(answer)	
 		if(os.path.exists(DEFINES.dataPath)):
 			data = []
 			data.extend(question)
