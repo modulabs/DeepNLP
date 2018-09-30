@@ -29,10 +29,14 @@ def loadData():
 	return xTrain, yTrain, xTest, yTest
 
 def preproLikeMorphlized(data):
+	# 형태소 분석 모듈 객체를 생성합니다.
 	morphAnalyzer = Twitter()
 	
+	# 형태소 토크나이즈 결과 문장을 받을 리스트를 생성합니다.
 	result_data = list()
+	# 데이터에 있는 매 문장에 대해 토크나이즈를 할 수 있도록 반복문을 선언합니다.
 	for seq in data:
+		# Twitter.morphs 함수를 통해 토크나이즈 된 리스트 객체를 받고 다시 공백문자를 기준으로 하여 문자열로 재구성 해줍니다.
 		morphlizedSeq = " ".join(morphAnalyzer.morphs(seq.replace(' ', '')))
 		result_data.append(morphlizedSeq)
 
