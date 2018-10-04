@@ -132,7 +132,7 @@ def loadVocabulary():
 	if(not(os.path.exists(DEFINES.vocabularyPath))):
 		dataDF = pd.read_csv(DEFINES.dataPath, encoding='utf-8')
 		question, answer = list(dataDF['Q']), list(dataDF['A'])
-		if DEFINE.tokenizeAsMorph:
+		if DEFINES.tokenizeAsMorph:
 			question = preproLikeMorphlized(question)
 			answer = preproLikeMorphlized(answer)	
 		if(os.path.exists(DEFINES.dataPath)):
