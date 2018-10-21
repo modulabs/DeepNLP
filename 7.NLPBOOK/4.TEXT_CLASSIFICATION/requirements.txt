@@ -1,4 +1,0 @@
-torchtext
-nltk
-bs4
-tqdm
