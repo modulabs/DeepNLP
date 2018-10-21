@@ -206,7 +206,7 @@ class EarlyStoppingLossHook(tf.train.SessionRunHook):
                 logging.info("EarlyStoppingHook: Request early stop")
                 run_context.request_stop()
 
-early_stopping = EarlyStoppingLossHook('sigmoid_cross_entropy_loss/value:0', None, 5)
+early_stopping = EarlyStoppingLossHook('sigmoid_cross_entropy_loss/value:0', 0.1, 5)
 
 train_spec = tf.estimator.TrainSpec(input_fn=custom_input_fn(X=input_train, y=label_train, is_training=True), max_steps=NUM_EPOCHS, hooks=[early_stopping])
 eval_spec = tf.estimator.EvalSpec(input_fn=custom_input_fn(X=input_train, y=label_train, is_training=True))
