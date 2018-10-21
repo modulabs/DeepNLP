@@ -36,7 +36,7 @@ with open(FILE_DIR_PATH + DATA_CONFIGS_FILE_NAME, 'r') as f:
 # 파라메터 변수
 RNG_SEED = 1234
 BATCH_SIZE = 128
-NUM_EPOCHS = 10
+NUM_EPOCHS = 10000
 VOCAB_SIZE = len(prepro_configs)
 EMB_SIZE = 128
 VALID_SPLIT = 0.2
@@ -48,7 +48,7 @@ input_train, input_valid, label_train, label_valid = train_test_split(train_inpu
 len_train = np.array([min(len(x), MAX_SEQ_LEN) for x in input_train])
 len_valid = np.array([min(len(x), MAX_SEQ_LEN) for x in input_valid])
 
-def input_fn(X, y=None, is_training=False):
+def custom_input_fn(X, y=None, is_training=False):
 
     def internal_input_fn(X, y=None, is_training=False):
         
@@ -121,7 +121,7 @@ def model_fn(features, labels, mode, params):
     pool = tf.reduce_max(input_tensor=conv, axis=1)
     hidden = tf.layers.dense(inputs=pool, units=250, activation=tf.nn.relu)
     dropout_hidden = tf.layers.dropout(inputs=hidden, rate=0.2, training=training)
-    logits = tf.layers.dense(inputs=dropout_hidden, units=1)
+    logits = tf.layers.dense(inputs=dropout_hidden, units=1, name='logits')
     
     #prediction 진행 시, None
     if labels is not None:
@@ -131,6 +131,8 @@ def model_fn(features, labels, mode, params):
         global_step = tf.train.get_global_step()
         loss = tf.losses.sigmoid_cross_entropy(labels, logits)
         train_op = tf.train.AdamOptimizer(0.001).minimize(loss, global_step)
+
+        print("######loss######: {}".format(loss))
 
         return tf.estimator.EstimatorSpec(mode=mode, train_op=train_op, loss = loss)
     
@@ -154,18 +156,68 @@ model_dir = os.path.join(os.getcwd(), "data_out/checkpoint/cnn/")
 os.makedirs(model_dir, exist_ok=True)
 
 config_tf = tf.estimator.RunConfig()
-config_tf._save_checkpoints_steps = 100
-config_tf._save_checkpoints_secs = None
+# config_tf._save_checkpoints_steps = 100
+config_tf._save_checkpoints_secs = 100
 config_tf._keep_checkpoint_max =  2
 config_tf._log_step_count_steps = 100
 
+tf.logging.set_verbosity("INFO")
+
 cnn_est = tf.estimator.Estimator(model_fn, model_dir=model_dir, config=config_tf, params=params)
+# early_stopping = tf.contrib.estimator.stop_if_no_decrease_hook(
+#     cnn_est,
+#     metric_name='loss',
+#     max_steps_without_decrease=100
+# )
 
-for epoch in range(NUM_EPOCHS):
-    print("Epoch : ", epoch)
-    tf.logging.set_verbosity("INFO")
+from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.training import session_run_hook
 
-    # cnn_est.train(input_fn(X=input_train, y=label_train, is_training=True))
-    eval_results = cnn_est.evaluate(input_fn(X=input_valid, y=label_valid, is_training=True))
-    print("eval result:")
-    print(eval_results)
+class EarlyStoppingLossHook(tf.train.SessionRunHook):
+    def __init__(self, loss_tensor_name, value, threshold=3):
+        '''
+        A train hook to stop the training at specified train loss
+        Usage:
+        loss_monitor = EarlyStoppingLossHook("reduced_mean:0", 0.35, 3)
+        estimator.train(input_fn=train_input_fn, hooks=[loss_monitor], ...)
+
+        :param loss_tensor_name: Name of the loss tensor eg: loss:0
+        :param value: Value at which the trianing should stop
+        :param threshold: number of times to check for the loss value, before stopping the training
+        '''
+        self._best_loss = value
+        self.threshold = threshold
+        self.count  = 0
+        self.loss_tensor_name = loss_tensor_name
+        logging.info("Create EarlyStoppingLossHook for {}".format(self.loss_tensor_name))
+
+    def before_run(self, run_context):
+        graph = run_context.session.graph
+        tensor_name = self.loss_tensor_name
+        loss_tensor_name = graph.get_tensor_by_name(tensor_name)
+        return session_run_hook.SessionRunArgs(loss_tensor_name)
+
+    def after_run(self, run_context, run_values):
+        last_loss = run_values.results
+
+        if last_loss <= self._best_loss:
+            self.count += 1
+            if self.count == self.threshold:
+                logging.info("EarlyStoppingHook: Request early stop")
+                run_context.request_stop()
+
+early_stopping = EarlyStoppingLossHook('sigmoid_cross_entropy_loss/value:0', None, 5)
+
+train_spec = tf.estimator.TrainSpec(input_fn=custom_input_fn(X=input_train, y=label_train, is_training=True), max_steps=NUM_EPOCHS, hooks=[early_stopping])
+eval_spec = tf.estimator.EvalSpec(input_fn=custom_input_fn(X=input_train, y=label_train, is_training=True))
+
+tf.estimator.train_and_evaluate(cnn_est, train_spec, eval_spec)
+
+# for epoch in range(NUM_EPOCHS):
+#     print("Epoch : ", epoch)
+    # tf.logging.set_verbosity("INFO")
+
+#     cnn_est.train(input_fn(X=input_train, y=label_train, is_training=True))
+#     eval_results = cnn_est.evaluate(input_fn(X=input_valid, y=label_valid, is_training=True))
+#     print("eval result:")
+#     print(eval_results)
