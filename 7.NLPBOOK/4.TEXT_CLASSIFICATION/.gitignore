@@ -192,3 +192,4 @@ logs/
 .DS_Store*
 export/
 OLD/
+sh/
