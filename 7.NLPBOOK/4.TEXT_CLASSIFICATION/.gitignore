@@ -186,7 +186,6 @@ Temporary Items
 data/
 checkpoint/
 logs/
-OLD/
 .vscode/
 .ipynb_checkpoints/
 .DS_Store
