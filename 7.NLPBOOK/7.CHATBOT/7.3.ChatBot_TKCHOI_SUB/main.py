@@ -53,6 +53,7 @@ def main(self):
             'hiddenSize': DEFINES.hiddenSize,  # 가중치 크기 설정한다.
             'layerSize': DEFINES.layerSize,  # 멀티 레이어 층 개수를 설정한다.
             'learningRate': DEFINES.learningRate,  # 학습율 설정한다.
+            'teachingForceRate': DEFINES.teachingForceRate,
             'vocabularyLength': vocabularyLength,  # 딕셔너리 크기를 설정한다.
             'embeddingSize': DEFINES.embeddingSize,  # 임베딩 크기를 설정한다.
             'embedding': DEFINES.embedding,  # 임베딩 사용 유무를 설정한다.

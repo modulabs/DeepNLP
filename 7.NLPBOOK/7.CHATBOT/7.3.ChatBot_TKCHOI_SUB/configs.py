@@ -7,6 +7,7 @@ tf.app.flags.DEFINE_float('dropoutWidth', 0.8, 'dropout width') # 드롭아웃 �
 tf.app.flags.DEFINE_integer('layerSize', 1, 'layer size') # 멀티 레이어 크기 (multi rnn)
 tf.app.flags.DEFINE_integer('hiddenSize', 128, 'weights size') # 가중치 크기
 tf.app.flags.DEFINE_float('learningRate', 1e-3, 'learning rate') # 학습률
+tf.app.flags.DEFINE_float('teachingForceRate', 0.7, 'teacher forcing rate') # 학습률
 tf.app.flags.DEFINE_string('dataPath', './data/ChatBotData.csv', 'data path') #  데이터 위치
 tf.app.flags.DEFINE_string('vocabularyPath', './data/vocabularyData.voc', 'vocabulary path') # 사전 위치
 tf.app.flags.DEFINE_string('checkPointPath', './checkPoint', 'check point path') # 체크 포인트 위치
@@ -19,3 +20,4 @@ tf.app.flags.DEFINE_boolean('multilayer', True, 'Use Multi RNN Cell') # 멀티 R
 tf.app.flags.DEFINE_string('saveModelPath', './model', 'save model')
 # Define FLAGS
 DEFINES = tf.app.flags.FLAGS
+teachingForceRate
