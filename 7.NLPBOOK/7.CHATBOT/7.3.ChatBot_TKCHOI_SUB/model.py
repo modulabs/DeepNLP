@@ -139,7 +139,8 @@ def Model(features, labels, mode, params):
         for i in range(DEFINES.maxSequenceLength):
             # 두 번쨰 스텝 이후에는 teacher forcing을 적용하는지 확률에 따라 결정하도록 한다.
             # teacher forcing rate은 teacher forcing을 어느정도 줄 것인지를 조절한다.
-            if i > 0:
+            # 1. 배치 구조가 아닌 단일로 가도록 모든 네트워크를 풀어야 하는가 ?
+			if i > 0:
                 # tf.cond를 통해 rnn에 입력할 입력 임베딩 벡터를 결정한다 여기서 true인 경우엔 입력된 output값 아닌경우에는 이전 스텝에
                 # 나온 output을 사용한다.
                 input_token_emb = tf.cond(
@@ -153,9 +154,11 @@ def Model(features, labels, mode, params):
                 )
             else:
                 # 첫번쨰 스텝은 start 토큰이기 때문에 동일하게 입력을 준다
+				# 2. train이 아닌 상황에서도 맞는 형태의 구문인가 ?
                 input_token_emb = tf.nn.embedding_lookup(embeddingEncoder, features['output'][:, 0])
 
             # RNNCell을 호출하여 RNN 스텝 연산을 진행하도록 한다.
+			# 3.  이건 어디서 부르고 어떻게 동작하는 것인가 ?
             decoder_outputs, decoder_state = rnnCell(input_token_emb, decoder_state)
             # feedforward를 거쳐 output에 대한 logit값을 구한다.
             output_logits = tf.layers.dense(decoder_outputs, params['vocabularyLength'], activation=None)
@@ -170,6 +173,10 @@ def Model(features, labels, mode, params):
         # 저장했던 토큰과 logit 리스트를 stack을 통해 메트릭스로 만들어 준다.
         # 만들게 뙤면 차원이 [시퀀스 X 배치 X 단어 feature 수] 이렇게 되는데
         # 이를 transpose하여 [배치 X 시퀀스 X 단어 feature 수] 로 맞춰준다.
+		# 4. axis =0 Default value  입니다.
+		# 5. predict 를 transpose하는 이유는 무엇인가요 ?
+		# 6. logits를 이렇게 하는 이유에 대해서 궁금합니다. ?
+		# 5.6 번에 대해서 정확히 이해 하고 싶습니다. 
         predict = tf.transpose(tf.stack(predict_tokens, axis=0), [1, 0])
         logits = tf.transpose(tf.stack(temp_logits, axis=0), [1, 0, 2])
 
