@@ -11,11 +11,6 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing import sequence
 
-from tensorflow.keras import layers
-from tensorflow.keras.layers import TimeDistributed, Bidirectional
-from tensorflow.keras import backend as K
-
-
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 tf.logging.set_verbosity("INFO")
 
@@ -96,20 +91,22 @@ def model_fn(features, labels, mode, params):
                                    rate=0.5,
                                    training=training)
 
-    with tf.variable_scope('lstm'):
-        lstm_layers = Bidirectional(layers.LSTM(self.enc_hidden_sizes, return_sequences=True, dropout=self.dropout_keep_prob))
-        lstm = lstm_layers(dropout_emb)
+    def conv_layer(input_layer, filter_size, kernel_size):
+                conv = tf.layers.conv1d(
+                    inputs=input_layer,
+                    filters=filter_size,
+                    kernel_size=kernel_size,
+                    padding='same',
+                    activation=tf.nn.relu)
 
-    with tf.variable_scope('cnn'):
-        cnns = [layers.Conv1D(kernel_size=kernel_size, filters=self.cnn_filters, activation='tanh', padding='same') for kernel_size in self.cnn_kernel_sizes]
-        q_cnn = layers.concatenate([layers.GlobalMaxPooling1D()(cnn(q_lstm)) for cnn in cnns], axis=-1)
-        
+                batch_norm = tf.layers.batch_normalization(conv, training=training)
 
-    with tf.variable_scope('output_layer'):
-        dropout = layers.Dropout(0.5)
-        self.q_dense_output = layers.Dense(self.embedding_size)(dropout(q_cnn))
-        self.sim_dense_output = layers.Dense(self.embedding_size)(dropout(sim_cnn))
-        print("output layer {}, {}".format(self.q_dense_output, self.sim_dense_output))
+                pool = tf.reduce_max(input_tensor=batch_norm, axis=1)
+                return pool
+
+    conv1 = conv_layer(dropout_emb, 64, 3)
+    conv2 = conv_layer(dropout_emb, 64, 4)
+    conv3= conv_layer(dropout_emb, 64, 5)
 
     hidden1 = tf.layers.dense(inputs=conv1, units=64, activation=tf.nn.relu)
     conv1_output = tf.layers.dropout(inputs=hidden1, rate=0.5, training=training)

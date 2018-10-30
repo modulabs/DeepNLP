@@ -11,11 +11,6 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing import sequence
 
-from tensorflow.keras import layers
-from tensorflow.keras.layers import TimeDistributed, Bidirectional
-from tensorflow.keras import backend as K
-
-
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 tf.logging.set_verbosity("INFO")
 
@@ -40,7 +35,7 @@ with open(DATA_IN_PATH + DATA_CONFIGS_FILE_NAME, 'r') as f:
 # 파라메터 변수
 RNG_SEED = 1234
 BATCH_SIZE = 128
-NUM_EPOCHS = 2000
+NUM_EPOCHS = 10000
 VOCAB_SIZE = len(prepro_configs)
 EMB_SIZE = 128
 VALID_SPLIT = 0.2
@@ -91,36 +86,25 @@ def model_fn(features, labels, mode, params):
     training = (mode == tf.estimator.ModeKeys.TRAIN)    
     # embedding layer에 대한 output에 대해 dropout을 취합니다.
 
-    # dropout_emb = layers.Dropout(rate=0.5)(input_layer)
-    dropout_emb = tf.layers.dropout(inputs=input_layer,
-                                   rate=0.5,
-                                   training=training)
+    dropout_emb = layers.Dropout(rate=0.5)(input_layer)
 
-    with tf.variable_scope('lstm'):
-        lstm_layers = Bidirectional(layers.LSTM(self.enc_hidden_sizes, return_sequences=True, dropout=self.dropout_keep_prob))
-        lstm = lstm_layers(dropout_emb)
-
-    with tf.variable_scope('cnn'):
-        cnns = [layers.Conv1D(kernel_size=kernel_size, filters=self.cnn_filters, activation='tanh', padding='same') for kernel_size in self.cnn_kernel_sizes]
-        q_cnn = layers.concatenate([layers.GlobalMaxPooling1D()(cnn(q_lstm)) for cnn in cnns], axis=-1)
+    # dropout_emb = tf.layers.dropout(inputs=input_layer,
+    #                                rate=0.5,
+    #                                training=training)
         
-
-    with tf.variable_scope('output_layer'):
-        dropout = layers.Dropout(0.5)
-        self.q_dense_output = layers.Dense(self.embedding_size)(dropout(q_cnn))
-        self.sim_dense_output = layers.Dense(self.embedding_size)(dropout(sim_cnn))
-        print("output layer {}, {}".format(self.q_dense_output, self.sim_dense_output))
-
-    hidden1 = tf.layers.dense(inputs=conv1, units=64, activation=tf.nn.relu)
-    conv1_output = tf.layers.dropout(inputs=hidden1, rate=0.5, training=training)
-    hidden2 = tf.layers.dense(inputs= conv2, units=64, activation=tf.nn.relu)
-    conv2_output = tf.layers.dropout(inputs=hidden2, rate=0.5, training=training)
-    hidden3 = tf.layers.dense(inputs=conv3, units=64, activation=tf.nn.relu)
-    conv3_output = tf.layers.dropout(inputs=hidden3, rate=0.5, training=training)
+    conv = tf.layers.conv1d(
+            inputs=dropout_emb,
+            filters=32,
+            kernel_size=3,
+            padding='same',
+            activation=tf.nn.relu)
     
-    outputs = tf.concat([conv1_output, conv2_output, conv3_output], 1)    
-    hidden = layers.Dense(128, activation=tf.nn.relu)(outputs)
-    dropout_hidden = layers.Dropout(rate=0.5)(hidden)
+    pool = tf.reduce_max(input_tensor=conv, axis=1)
+#     hidden = tf.layers.dense(inputs=pool, units=250, activation=tf.nn.relu)
+#     dropout_hidden = tf.layers.dropout(inputs=hidden, rate=0.2, training=training)
+#     logits = tf.layers.dense(inputs=dropout_hidden, units=1, name='logits')
+    hidden = layers.Dense(250, activation=tf.nn.relu)(pool)
+    dropout_hidden = layers.Dropout(rate=0.2)(hidden)
     logits = layers.Dense(1, name='logits')(dropout_hidden)
     
     #prediction 진행 시, None
@@ -157,7 +141,7 @@ os.makedirs(model_dir, exist_ok=True)
 config_tf = tf.estimator.RunConfig()
 # config_tf._save_checkpoints_secs = 100
 config_tf._keep_checkpoint_max =  2
-config_tf._log_step_count_steps = 300
+config_tf._log_step_count_steps = 100
 
 cnn_est = tf.estimator.Estimator(model_fn, model_dir=model_dir, config=config_tf, params=params)
 
@@ -169,5 +153,3 @@ tf.estimator.train_and_evaluate(cnn_est, train_spec, eval_spec)
 # cnn_est = tf.estimator.Estimator(model_fn, model_dir=model_dir, config=config_tf, params=params)
 # cnn_est.train(train_input_fn) #학습하기
 # cnn_est.evaluate(eval_input_fn) #평가하기
-
-#Model1: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8208, global_step = 5000, loss = 0.9476856
