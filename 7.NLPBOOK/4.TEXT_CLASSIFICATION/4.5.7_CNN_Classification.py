@@ -11,6 +11,11 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing import sequence
 
+from tensorflow.keras import layers
+from tensorflow.keras.layers import TimeDistributed, Bidirectional
+from tensorflow.keras import backend as K
+
+
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 tf.logging.set_verbosity("INFO")
 
@@ -35,7 +40,7 @@ with open(DATA_IN_PATH + DATA_CONFIGS_FILE_NAME, 'r') as f:
 # 파라메터 변수
 RNG_SEED = 1234
 BATCH_SIZE = 128
-NUM_EPOCHS = 2000
+NUM_EPOCHS = 5000
 VOCAB_SIZE = len(prepro_configs)
 EMB_SIZE = 128
 VALID_SPLIT = 0.2
@@ -91,34 +96,19 @@ def model_fn(features, labels, mode, params):
                                    rate=0.5,
                                    training=training)
 
-    def conv_layer(input_layer, filter_size, kernel_size):
-                conv = tf.layers.conv1d(
-                    inputs=input_layer,
-                    filters=filter_size,
-                    kernel_size=kernel_size,
-                    padding='same',
-                    activation=tf.nn.relu)
+    with tf.variable_scope('lstm'):
+        # lstm_layers = Bidirectional(layers.CuDNNLSTM(32, return_sequences=True, dropout=0.5))
+        lstm_layers = Bidirectional(layers.CuDNNLSTM(64, return_sequences=True))
+        lstm = lstm_layers(dropout_emb)
 
-                batch_norm = tf.layers.batch_normalization(conv, training=training)
-
-                pool = tf.reduce_max(input_tensor=batch_norm, axis=1)
-                return pool
-
-    conv1 = conv_layer(dropout_emb, 64, 3)
-    conv2 = conv_layer(dropout_emb, 64, 4)
-    conv3= conv_layer(dropout_emb, 64, 5)
-
-    hidden1 = tf.layers.dense(inputs=conv1, units=64, activation=tf.nn.relu)
-    conv1_output = tf.layers.dropout(inputs=hidden1, rate=0.5, training=training)
-    hidden2 = tf.layers.dense(inputs= conv2, units=64, activation=tf.nn.relu)
-    conv2_output = tf.layers.dropout(inputs=hidden2, rate=0.5, training=training)
-    hidden3 = tf.layers.dense(inputs=conv3, units=64, activation=tf.nn.relu)
-    conv3_output = tf.layers.dropout(inputs=hidden3, rate=0.5, training=training)
-    
-    outputs = tf.concat([conv1_output, conv2_output, conv3_output], 1)    
-    hidden = layers.Dense(128, activation=tf.nn.relu)(outputs)
-    dropout_hidden = layers.Dropout(rate=0.5)(hidden)
-    logits = layers.Dense(1, name='logits')(dropout_hidden)
+    with tf.variable_scope('cnn'):
+        cnns = [layers.Conv1D(kernel_size=kernel_size, filters=128, activation='tanh', padding='same') for kernel_size in [2,3,5]]
+        cnn = layers.concatenate([layers.GlobalMaxPooling1D()(cnn(lstm)) for cnn in cnns], axis=-1)
+        
+    with tf.variable_scope('output_layer'):
+        hidden1 = tf.layers.dense(inputs=cnn, units=128, activation=tf.nn.relu)
+        dropout = layers.Dropout(0.5)(hidden1)
+        logits = layers.Dense(1, name='logits')(dropout)
     
     #prediction 진행 시, None
     if labels is not None:
@@ -154,7 +144,7 @@ os.makedirs(model_dir, exist_ok=True)
 config_tf = tf.estimator.RunConfig()
 # config_tf._save_checkpoints_secs = 100
 config_tf._keep_checkpoint_max =  2
-config_tf._log_step_count_steps = 300
+config_tf._log_step_count_steps = 100
 
 cnn_est = tf.estimator.Estimator(model_fn, model_dir=model_dir, config=config_tf, params=params)
 
@@ -168,3 +158,24 @@ tf.estimator.train_and_evaluate(cnn_est, train_spec, eval_spec)
 # cnn_est.evaluate(eval_input_fn) #평가하기
 
 #Model1: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8208, global_step = 5000, loss = 0.9476856
+#Model2: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8872, global_step = 5000, loss = 0.9010733
+
+# 예측된 모델을 불러 체크포인트로 결과치를 불러온다.
+test_input_data = np.load(open(DATA_IN_PATH + INPUT_TEST_DATA_FILE_NAME, 'rb')) #테스트데이터 로드
+
+predict_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x":test_input_data}, shuffle=False) #numpy 형태로 저장
+cnn_est.predict(input_fn=predict_input_fn)
+
+predictions = np.array([p['prob'][0] for p in cnn_est.predict(input_fn=predict_input_fn)])
+
+import pandas as pd
+#테스트 데이터 로드
+test = pd.read_csv(DEFAULT_PATH+"testData.tsv", header=0, delimiter="\t", quoting=3 )
+
+print ("test dataset shape: {}".format(test.shape))
+
+#알아보기 쉽게 데이터랑 붙여두는 편이 좋을 거 같습니다.
+output = pd.DataFrame( data={"id":test["id"], "sentiment":list(predictions)} )
+
+#지금까지 처리한 결과를 파일로 저장합니다.
+output.to_csv("./data_out/Bag_of_Words_model_test.csv", index=False, quoting=3 )

@@ -35,7 +35,7 @@ with open(DATA_IN_PATH + DATA_CONFIGS_FILE_NAME, 'r') as f:
 # 파라메터 변수
 RNG_SEED = 1234
 BATCH_SIZE = 128
-NUM_EPOCHS = 10000
+NUM_EPOCHS = 2000
 VOCAB_SIZE = len(prepro_configs)
 EMB_SIZE = 128
 VALID_SPLIT = 0.2
@@ -141,7 +141,7 @@ os.makedirs(model_dir, exist_ok=True)
 config_tf = tf.estimator.RunConfig()
 # config_tf._save_checkpoints_secs = 100
 config_tf._keep_checkpoint_max =  2
-config_tf._log_step_count_steps = 100
+config_tf._log_step_count_steps = 300
 
 cnn_est = tf.estimator.Estimator(model_fn, model_dir=model_dir, config=config_tf, params=params)
 

@@ -16,7 +16,7 @@ from tensorflow.keras.layers import TimeDistributed, Bidirectional
 from tensorflow.keras import backend as K
 
 
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
 tf.logging.set_verbosity("INFO")
 
 DEFAULT_PATH ='~/.kaggle/competitions/word2vec-nlp-tutorial/'
@@ -40,7 +40,7 @@ with open(DATA_IN_PATH + DATA_CONFIGS_FILE_NAME, 'r') as f:
 # 파라메터 변수
 RNG_SEED = 1234
 BATCH_SIZE = 128
-NUM_EPOCHS = 20000
+NUM_EPOCHS = 2000
 VOCAB_SIZE = len(prepro_configs)
 EMB_SIZE = 128
 VALID_SPLIT = 0.2
@@ -93,7 +93,7 @@ def model_fn(features, labels, mode, params):
 
     # dropout_emb = layers.Dropout(rate=0.5)(input_layer)
     dropout_emb = tf.layers.dropout(inputs=input_layer,
-                                   rate=0.5,
+                                   rate=0.2,
                                    training=training)
 
     with tf.variable_scope('lstm'):
@@ -107,8 +107,9 @@ def model_fn(features, labels, mode, params):
         
     with tf.variable_scope('output_layer'):
         hidden1 = tf.layers.dense(inputs=cnn, units=128, activation=tf.nn.relu)
-        dropout = layers.Dropout(0.5)(hidden1)
+        dropout = layers.Dropout(0.2)(hidden1)
         logits = layers.Dense(1, name='logits')(dropout)
+
     #prediction 진행 시, None
     if labels is not None:
         labels = tf.reshape(labels, [-1, 1])
@@ -137,13 +138,13 @@ def model_fn(features, labels, mode, params):
 
 params = {'embedding_initializer': tf.random_uniform_initializer(-1.0, 1.0)}
 
-model_dir = os.path.join(os.getcwd(), "data_out/checkpoint/rnn/")
+model_dir = os.path.join(os.getcwd(), "data_out/checkpoint/cnn/")
 os.makedirs(model_dir, exist_ok=True)
 
 config_tf = tf.estimator.RunConfig()
 # config_tf._save_checkpoints_secs = 100
 config_tf._keep_checkpoint_max =  2
-config_tf._log_step_count_steps = 100
+config_tf._log_step_count_steps = 300
 
 cnn_est = tf.estimator.Estimator(model_fn, model_dir=model_dir, config=config_tf, params=params)
 
@@ -157,28 +158,3 @@ tf.estimator.train_and_evaluate(cnn_est, train_spec, eval_spec)
 # cnn_est.evaluate(eval_input_fn) #평가하기
 
 #Model1: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8208, global_step = 5000, loss = 0.9476856
-#Model2: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8872, global_step = 5000, loss = 0.9010733
-#Model3: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8718, global_step = 5000, loss = 0.43977556
-#Model4: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8742, global_step = 5000, loss = 0.450572
-
-
-
-# 예측된 모델을 불러 체크포인트로 결과치를 불러온다.
-test_input_data = np.load(open(DATA_IN_PATH + INPUT_TEST_DATA_FILE_NAME, 'rb')) #테스트데이터 로드
-
-predict_input_fn = tf.estimator.inputs.numpy_input_fn(x={"x":test_input_data}, shuffle=False) #numpy 형태로 저장
-cnn_est.predict(input_fn=predict_input_fn)
-
-predictions = np.array([p['prob'][0] for p in cnn_est.predict(input_fn=predict_input_fn)])
-
-import pandas as pd
-#테스트 데이터 로드
-test = pd.read_csv(DEFAULT_PATH+"testData.tsv", header=0, delimiter="\t", quoting=3 )
-
-print ("test dataset shape: {}".format(test.shape))
-
-#알아보기 쉽게 데이터랑 붙여두는 편이 좋을 거 같습니다.
-output = pd.DataFrame( data={"id":test["id"], "sentiment":list(predictions)} )
-
-#지금까지 처리한 결과를 파일로 저장합니다.
-output.to_csv("./data_out/Bag_of_Words_model_test.csv", index=False, quoting=3 )
