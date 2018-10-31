@@ -98,6 +98,7 @@ if __name__ == '__main__':
             'embeddingSize': DEFINES.embeddingSize,  # 임베딩 크기를 설정한다.
             'embedding': DEFINES.embedding,  # 임베딩 사용 유무를 설정한다.
             'multilayer': DEFINES.multilayer,  # 멀티 레이어 사용 유무를 설정한다.
+            'teachingForceRate': 0,
         })
 
     main()

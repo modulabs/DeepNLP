@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import tensorflow as tf
 import sys
-import numpy as np
+
 from configs import DEFINES
 
 
@@ -11,11 +11,6 @@ def makeLSTMCell(mode, hiddenSize, index):
         cell = tf.contrib.rnn.DropoutWrapper(cell, output_keep_prob=DEFINES.dropoutWidth)
     return cell
 
-
-def softmax_mask(values, mask):
-    # adds big negative to masked values
-    INF = 1e30
-    return -INF * (1 - tf.cast(mask, tf.float32)) + values
 
 # 에스티메이터 모델 부분이다.
 # freatures : tf.data.Dataset.map을 통해서 만들어진 
@@ -80,7 +75,7 @@ def Model(features, labels, mode, params):
     # embedding_lookup을 통해서 output['input']의 인덱스를
     # 위에서 만든 embeddingEncoder의 인덱스의 값으로 변경하여 
     # 임베딩된 디코딩 배치를 만든다.
-    #embeddingDecoderBatch = tf.nn.embedding_lookup(params=embeddingDecoder, ids=features['output'])
+    embeddingDecoderBatch = tf.nn.embedding_lookup(params=embeddingDecoder, ids=features['output'])
     # 변수 재사용을 위해서 reuse=.AUTO_REUSE를 사용하며 범위를
     # 정해주고 사용하기 위해 scope설정을 한다.
     # makeLSTMCell이 "cell"반복적으로 호출 되면서 재사용된다.
@@ -153,25 +148,24 @@ def Model(features, labels, mode, params):
                         # tf.random_uniform(shape=(), maxval=1) <= teacher_forcing_rate_ph
                         tf.random_uniform(shape=(), maxval=1) <= params['teachingForceRate']
                     ),
-                    lambda: tf.nn.embedding_lookup(embeddingEncoder, labels[:, i-1]),  # teacher forcing
+                    lambda: tf.nn.embedding_lookup(embeddingEncoder, features['output'][:, i-1]),  # teacher forcing
                     lambda: tf.nn.embedding_lookup(embeddingEncoder, output_token)
                 )
             else:
                 input_token_emb = tf.nn.embedding_lookup(embeddingEncoder, output_token)
 
             # RNNCell을 호출하여 RNN 스텝 연산을 진행하도록 한다.
-            input_token_emb = tf.keras.layers.Dropout(0.5)(input_token_emb)
+            if is_train == True:
+                input_token_emb = tf.nn.dropout(input_token_emb, keep_prob=0.5)
+            else:
+                input_token_emb = tf.nn.dropout(input_token_emb, keep_prob=1)
             decoder_outputs, decoder_state = rnnCell(input_token_emb, decoder_state)
-            decoder_outputs = tf.keras.layers.Dropout(0.5)(decoder_outputs)
+            if is_train == True:
+                decoder_outputs = tf.nn.dropout(decoder_outputs, keep_prob=0.5)
+            else:
+                decoder_outputs = tf.nn.dropout(decoder_outputs, keep_prob=1)
             # feedforward를 거쳐 output에 대한 logit값을 구한다.
             output_logits = tf.layers.dense(decoder_outputs, params['vocabularyLength'], activation=None)
-            
-            
-            INF = 1e30
-            mask = np.equal(labels[:, i-1], 0)
-            if mask:
-                output_logits = -INF + output_logits
-
             # softmax를 통해 단어에 대한 예측 probability를 구한다.
             output_probs = tf.nn.softmax(output_logits)
             output_token = tf.argmax(output_probs, axis=-1)
@@ -215,7 +209,7 @@ def Model(features, labels, mode, params):
     # tf.nn.sparse_softmax_cross_entropy_with_logits(로스함수)를 
     # 통과 시켜 틀린 만큼의
     # 에러 값을 가져 오고 이것들은 차원 축소를 통해 단일 텐서 값을 반환 한다.
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)) 
+    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels))
     # 라벨과 결과가 일치하는지 빈도 계산을 통해 
     # 정확도를 측정하는 방법이다.
     accuracy = tf.metrics.accuracy(labels=labels, predictions=predict, name='accOp')

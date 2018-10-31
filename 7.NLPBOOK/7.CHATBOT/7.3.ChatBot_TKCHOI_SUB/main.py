@@ -27,12 +27,10 @@ def main(self):
     # 훈련셋 인코딩 만드는 부분이다.
     inputTrainEnc, inputTrainEncLength = data.encProcessing(xTrain, char2idx)
     # 훈련셋 디코딩 입력 부분 만드는 부분이다.
-    outputTrainDec, outputTrainDecLength = data.decOutputProcessing(yTrain, char2idx)
     # 훈련셋 디코딩 출력 부분 만드는 부분이다.
     targetTrainDec = data.decTargetProcessing(yTrain, char2idx)
 
     inputTestEnc, inputTestEncLength = data.encProcessing(xTest, char2idx)
-    outputTestDec, outputTestDecLength = data.decOutputProcessing(yTest, char2idx)
     targetTestDec = data.decTargetProcessing(yTest, char2idx)
 
     # 현재 경로'./'에 현재 경로 하부에 
@@ -58,12 +56,13 @@ def main(self):
             'embeddingSize': DEFINES.embeddingSize,  # 임베딩 크기를 설정한다.
             'embedding': DEFINES.embedding,  # 임베딩 사용 유무를 설정한다.
             'multilayer': DEFINES.multilayer,  # 멀티 레이어 사용 유무를 설정한다.
+	    'teachingForceRate': DEFINES.teachingForceRate,
         })
 
     # 학습 실행
-    print(inputTrainEnc.shape, outputTrainDec.shape, targetTrainDec.shape)
+    print(inputTrainEnc.shape, targetTrainDec.shape)
     classifier.train(input_fn=lambda: data.trainInputFn(
-        inputTrainEnc, outputTrainDec, targetTrainDec, DEFINES.batchSize), steps=DEFINES.trainSteps)
+        inputTrainEnc, targetTrainDec, DEFINES.batchSize), steps=DEFINES.trainSteps)
 
     evalResult = classifier.evaluate(input_fn=lambda: data.evalInputFn(
         inputTestEnc, outputTestDec, targetTestDec, DEFINES.batchSize))
@@ -81,17 +80,16 @@ def main(self):
 
     # 테스트용 데이터 만드는 부분이다.
     # 인코딩 부분 만든다.
-    inputPredicEnc, inputPredicEncLength = data.encProcessing(["가끔 궁금해"], char2idx)
+    inputPredicEnc, inputPredicEncLength = data.encProcessing(["건강이 최고"], char2idx)
     # 학습 과정이 아니므로 디코딩 입력은 
     # 존재하지 않는다.(구조를 맞추기 위해 넣는다.)
-    outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""], char2idx)
     # 학습 과정이 아니므로 디코딩 출력 부분도 
     # 존재하지 않는다.(구조를 맞추기 위해 넣는다.)
     targetPredicDec = data.decTargetProcessing([""], char2idx)
 
     # 예측을 하는 부분이다.
     predictions = classifier.predict(
-        input_fn=lambda: data.evalInputFn(inputPredicEnc, outputPredicDec, targetPredicDec, DEFINES.batchSize))
+        input_fn=lambda: data.evalInputFn(inputPredicEnc, targetPredicDec, DEFINES.batchSize))
 
     # 예측한 값을 인지 할 수 있도록 
     # 텍스트로 변경하는 부분이다.
