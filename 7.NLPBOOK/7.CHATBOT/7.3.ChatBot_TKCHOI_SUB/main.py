@@ -65,7 +65,7 @@ def main(self):
         inputTrainEnc, targetTrainDec, DEFINES.batchSize), steps=DEFINES.trainSteps)
 
     evalResult = classifier.evaluate(input_fn=lambda: data.evalInputFn(
-        inputTestEnc, outputTestDec, targetTestDec, DEFINES.batchSize))
+        inputTestEnc,targetTestDec, DEFINES.batchSize))
     print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**evalResult))
 
     # outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""] * 100, char2idx)
