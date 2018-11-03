@@ -31,13 +31,12 @@ def pred(input):
     print(inputPredicEnc)
     # 학습 과정이 아니므로 디코딩 입력은
     # 존재하지 않는다.(구조를 맞추기 위해 넣는다.)
-    outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""], char2idx)
     # 학습 과정이 아니므로 디코딩 출력 부분도
     # 존재하지 않는다.(구조를 맞추기 위해 넣는다.)
     targetPredicDec = data.decTargetProcessing([""], char2idx)
 
     predictions = classifier.predict(
-        input_fn=lambda: data.evalInputFn(inputPredicEnc, outputPredicDec, targetPredicDec, DEFINES.batchSize))
+        input_fn=lambda: data.evalInputFn(inputPredicEnc, targetPredicDec, DEFINES.batchSize))
     print(predictions)
     # 예측한 값을 인지 할 수 있도록
     # 텍스트로 변경하는 부분이다.
@@ -98,6 +97,7 @@ if __name__ == '__main__':
             'embeddingSize': DEFINES.embeddingSize,  # 임베딩 크기를 설정한다.
             'embedding': DEFINES.embedding,  # 임베딩 사용 유무를 설정한다.
             'multilayer': DEFINES.multilayer,  # 멀티 레이어 사용 유무를 설정한다.
+            'teachingForceRate': 0,
         })
 
     main()

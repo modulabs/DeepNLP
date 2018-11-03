@@ -80,7 +80,7 @@ def Model(features, labels, mode, params):
     # embedding_lookup을 통해서 output['input']의 인덱스를
     # 위에서 만든 embeddingEncoder의 인덱스의 값으로 변경하여 
     # 임베딩된 디코딩 배치를 만든다.
-    #embeddingDecoderBatch = tf.nn.embedding_lookup(params=embeddingDecoder, ids=features['output'])
+    embeddingDecoderBatch = tf.nn.embedding_lookup(params=embeddingDecoder, ids=features['output'])
     # 변수 재사용을 위해서 reuse=.AUTO_REUSE를 사용하며 범위를
     # 정해주고 사용하기 위해 scope설정을 한다.
     # makeLSTMCell이 "cell"반복적으로 호출 되면서 재사용된다.
@@ -153,22 +153,22 @@ def Model(features, labels, mode, params):
                         # tf.random_uniform(shape=(), maxval=1) <= teacher_forcing_rate_ph
                         tf.random_uniform(shape=(), maxval=1) <= params['teachingForceRate']
                     ),
-                    lambda: tf.nn.embedding_lookup(embeddingEncoder, labels[:, i-1]),  # teacher forcing
+                    lambda: tf.nn.embedding_lookup(embeddingEncoder, features['output'][:, i-1]),  # teacher forcing
                     lambda: tf.nn.embedding_lookup(embeddingEncoder, output_token)
                 )
             else:
                 input_token_emb = tf.nn.embedding_lookup(embeddingEncoder, output_token)
 
             # RNNCell을 호출하여 RNN 스텝 연산을 진행하도록 한다.
-            input_token_emb = tf.keras.layers.Dropout(0.5)(input_token_emb)
+            input_token_emb = tf.layers.Dropout(0.5)(input_token_emb)
             decoder_outputs, decoder_state = rnnCell(input_token_emb, decoder_state)
-            decoder_outputs = tf.keras.layers.Dropout(0.5)(decoder_outputs)
+            decoder_outputs = tf.layers.Dropout(0.5)(decoder_outputs)
             # feedforward를 거쳐 output에 대한 logit값을 구한다.
             output_logits = tf.layers.dense(decoder_outputs, params['vocabularyLength'], activation=None)
             
             
             INF = 1e30
-            mask = np.equal(labels[:, i-1], 0)
+            mask = np.equal(features['output'][:, i-1], 0)
             if mask:
                 output_logits = -INF + output_logits
 

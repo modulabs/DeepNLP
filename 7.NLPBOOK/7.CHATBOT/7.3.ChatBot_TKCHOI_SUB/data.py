@@ -110,50 +110,6 @@ def encProcessing(xValue, dictionary):
     return np.asarray(sequencesInputIndex), sequencesLength
 
 
-# 인덱스화 할 yValue와 키가 워드 이고 값이 
-# 인덱스인 딕셔너리를 받는다.
-def decOutputProcessing(yValue, dictionary):
-    # 인덱스 값들을 가지고 있는 
-    # 배열이다.(누적된다)
-    sequencesOutputIndex = []
-    # 하나의 디코딩 입력 되는 문장의 
-    # 길이를 가지고 있다.(누적된다)
-    sequencesLength = []
-    # 형태소 토크나이징 사용 유무
-    if DEFINES.tokenizeAsMorph:
-        yValue = preproLikeMorphlized(yValue)
-    # 한줄씩 불어온다.
-    for sequence in yValue:
-        # FILTERS = "([~.,!?\"':;)(])"
-        # 정규화를 사용하여 필터에 들어 있는 
-        # 값들을 "" 으로 치환 한다.
-        sequence = re.sub(changeFilter, "", sequence)
-        # 하나의 문장을 디코딩 할때 가지고 
-        # 있기 위한 배열이다.
-        sequenceIndex = []
-        # 디코딩 입력의 처음에는 START가 와야 하므로 
-        # 그 값을 넣어 주고 시작한다.
-        # 문장에서 스페이스 단위별로 단어를 가져와서 딕셔너리의 
-        # 값인 인덱스를 넣어 준다.
-        sequenceIndex = [dictionary[STD]] + [dictionary[word] for word in sequence.split()]
-        # 문장 제한 길이보다 길어질 경우 뒤에 토큰을 자르고 있다.
-        if len(sequenceIndex) > DEFINES.maxSequenceLength:
-            sequenceIndex = sequenceIndex[:DEFINES.maxSequenceLength]
-        # 하나의 문장에 길이를 넣어주고 있다.
-        sequencesLength.append(len(sequenceIndex))
-        # maxSequenceLength보다 문장 길이가 
-        # 작다면 빈 부분에 PAD(0)를 넣어준다.
-        sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
-        # 인덱스화 되어 있는 값을 
-        # sequencesOutputIndex에 넣어 준다.
-        sequencesOutputIndex.append(sequenceIndex)
-    # 인덱스화된 일반 배열을 넘파이 배열로 변경한다. 
-    # 이유는 텐서플로우 dataset에 넣어 주기 위한 
-    # 사전 작업이다.
-    # 넘파이 배열에 인덱스화된 배열과 그 길이를 넘겨준다.
-    return np.asarray(sequencesOutputIndex), sequencesLength
-
-
 # 인덱스화 할 yValue와 키가 워드 이고
 # 값이 인덱스인 딕셔너리를 받는다.
 def decTargetProcessing(yValue, dictionary):
@@ -202,14 +158,12 @@ def pred2string(value, dictionary):
     for v in value:
         # 딕셔너리에 있는 단어로 변경해서 배열에 담는다.
         sentenceString = [dictionary[index] for index in v['indexs']]
-
-    print("sentenceString***********************")
+    
     print(sentenceString)
-    print("***********************")
     answer = ""
     # 패딩값도 담겨 있으므로 패딩은 모두 스페이스 처리 한다.
     for word in sentenceString:
-        if word not in PAD:
+        if word not in PAD and word not in END:
             answer += word
             answer += " "
     # 결과를 출력한다.
@@ -217,18 +171,18 @@ def pred2string(value, dictionary):
     return answer
 
 
-def rearrange(input, output, target):
-    features = {"input": input, "output": output}
+def rearrange(input, target):
+    features = {"input": input}
     return features, target
 
 
 # 학습에 들어가 배치 데이터를 만드는 함수이다.
-def trainInputFn(inputTrainEnc, outputTrainDec, targetTrainDec, batchSize):
+def trainInputFn(inputTrainEnc, targetTrainDec, batchSize):
     # Dataset을 생성하는 부분으로써 from_tensor_slices부분은 
     # 각각 한 문장으로 자른다고 보면 된다.
     # inputTrainEnc, outputTrainDec, targetTrainDec 
     # 3개를 각각 한문장으로 나눈다.
-    dataset = tf.data.Dataset.from_tensor_slices((inputTrainEnc, outputTrainDec, targetTrainDec))
+    dataset = tf.data.Dataset.from_tensor_slices((inputTrainEnc, targetTrainDec))
     # 전체 데이터를 썩는다.
     dataset = dataset.shuffle(buffer_size=len(inputTrainEnc))
     # 배치 인자 값이 없다면  에러를 발생 시킨다.
@@ -251,12 +205,12 @@ def trainInputFn(inputTrainEnc, outputTrainDec, targetTrainDec, batchSize):
 
 
 # 평가에 들어가 배치 데이터를 만드는 함수이다.
-def evalInputFn(inputTestEnc, outputTestDec, targetTestDec, batchSize):
+def evalInputFn(inputTestEnc, targetTestDec, batchSize):
     # Dataset을 생성하는 부분으로써 from_tensor_slices부분은 
     # 각각 한 문장으로 자른다고 보면 된다.
     # inputTestEnc, outputTestDec, targetTestDec 
     # 3개를 각각 한문장으로 나눈다.
-    dataset = tf.data.Dataset.from_tensor_slices((inputTestEnc, outputTestDec, targetTestDec))
+    dataset = tf.data.Dataset.from_tensor_slices((inputTestEnc, targetTestDec))
     # 전체 데이터를 섞는다.
     dataset = dataset.shuffle(buffer_size=len(inputTestEnc))
     # 배치 인자 값이 없다면  에러를 발생 시킨다.
