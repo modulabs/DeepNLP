@@ -156,11 +156,8 @@ tf.estimator.train_and_evaluate(cnn_est, train_spec, eval_spec)
 # cnn_est.train(train_input_fn) #학습하기
 # cnn_est.evaluate(eval_input_fn) #평가하기
 
-#Model1: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8208, global_step = 5000, loss = 0.9476856
 #Model2: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8872, global_step = 5000, loss = 0.9010733
-#Model3: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8718, global_step = 5000, loss = 0.43977556
-#Model4: INFO:tensorflow:Saving dict for global step 5000: acc = 0.8742, global_step = 5000, loss = 0.450572
-
+#Model(simpleCNN): INFO:tensorflow:Saving dict for global step 20000: acc = 0.8742, global_step = 20000, loss = 0.71656954
 
 
 # 예측된 모델을 불러 체크포인트로 결과치를 불러온다.
