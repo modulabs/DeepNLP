@@ -115,9 +115,9 @@ def Model(features, labels, mode, params):
             rnn_cell = make_lstm_cell(mode, params['hidden_size'], "")
 
         decoder_initial_state = encoder_states
-        # RNNCell에 의해 지정된 반복적인 신경망을 만든다.
-        # decoderOutputs(RNN 출력 Tensor)[batch_size, max_time, cell.output_size]
-        # decoderFinalState 최종 상태  [batch_size, cell.state_size]
+        # rnn_cell에 의해 지정된 반복적인 신경망을 만든다.
+        # decoder_outputs(RNN 출력 Tensor)[batch_size, max_time, cell.output_size]
+        # decoder_states 최종 상태  [batch_size, cell.state_size]
         decoder_outputs, decoder_states = tf.nn.dynamic_rnn(cell=rnn_cell, # RNN 셀
                        inputs=embedding_decoder_batch, # 입력 값
                        initial_state=decoder_initial_state, # 인코딩의 마지막 값으로 초기화 한다.
