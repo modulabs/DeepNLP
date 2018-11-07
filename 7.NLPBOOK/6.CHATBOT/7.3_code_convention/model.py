@@ -84,7 +84,7 @@ def Model(features, labels, mode, params):
         # 값이 True이면 멀티레이어로 모델을 구성하고 False이면 
         # 단일레이어로 모델을 구성 한다.
         if params['multilayer'] == True:
-            # layerSize 만큼  LSTMCell을  encoder_cell_list에 담는다.
+            # layer_size 만큼  LSTMCell을  encoder_cell_list에 담는다.
             encoder_cell_list = [make_lstm_cell(mode, params['hidden_size'], i) for i in range(params['layer_size'])]
             # MUltiLayer RNN CEll에 encoder_cell_list를 넣어 멀티 레이어를 만든다.
             rnn_cell = tf.contrib.rnn.MultiRNNCell(encoder_cell_list)
