@@ -31,9 +31,9 @@ def load_data():
     question, answer = list(data_df['Q']), list(data_df['A'])
     # skleran에서 지원하는 함수를 통해서 학습 셋과 
     # 테스트 셋을 나눈다.
-    train_input, test_input, train_label, test_label = train_test_split(question, answer, test_size=0.33, random_state=42)
+    train_input, eval_input, train_label, eval_label = train_test_split(question, answer, test_size=0.33, random_state=42)
     # 그 값을 리턴한다.
-    return train_input, train_label, test_input, test_label
+    return train_input, train_label, eval_input, eval_label
 
 
 def prepro_like_morphlized(data):
@@ -82,7 +82,7 @@ def enc_processing(value, dictionary):
         # 자르고 있다.
         for word in sequence.split():
             # 잘려진 단어들이 딕셔너리에 존재 하는지 보고 
-            # 그 값을 가져와 sequenceIndex에 추가한다.
+            # 그 값을 가져와 sequence_index에 추가한다.
             if dictionary.get(word) is not None:
                 sequence_index.extend([dictionary[word]])
             # 잘려진 단어가 딕셔너리에 존재 하지 않는 
@@ -205,7 +205,7 @@ def pred2string(value, dictionary):
     answer = ""
     # 패딩값도 담겨 있으므로 패딩은 모두 스페이스 처리 한다.
     for word in sentence_string:
-        if word not in PAD:
+        if word not in PAD and word not in END:
             answer += word
             answer += " "
     # 결과를 출력한다.

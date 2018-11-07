@@ -7,7 +7,10 @@ import sys
 
 from configs import DEFINES
 
+DATA_OUT_PATH = './data_out/'
 def main(self):
+    data_out_path = os.path.join(os.getcwd(), DATA_OUT_PATH)
+    os.makedirs(data_out_path, exist_ok=True)
     # 데이터를 통한 사전 구성 한다.
     char2idx,  idx2char, vocabulary_length = data.load_vocabulary()
 	# 훈련 데이터와 테스트 데이터를 가져온다.
@@ -57,7 +60,7 @@ def main(self):
 
     eval_result = classifier.evaluate(input_fn=lambda:data.eval_input_fn(
         eval_input_enc, eval_output_dec, eval_target_dec,  DEFINES.batch_size))
-    print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
+    print('\nEVAL set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
 
 
 	# 테스트용 데이터 만드는 부분이다.

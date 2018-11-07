@@ -5,7 +5,7 @@ import sys
 from configs import DEFINES
 
 def make_lstm_cell(mode, hiddenSize, index):
-    cell = tf.contrib.rnn.BasicLSTMCell(hiddenSize, name = "lstm"+str(index))
+    cell = tf.nn.rnn_cell.BasicLSTMCell(hiddenSize, name = "lstm"+str(index))
     if mode == tf.estimator.ModeKeys.TRAIN:
         cell = tf.contrib.rnn.DropoutWrapper(cell, output_keep_prob=DEFINES.dropout_width)
     return cell
@@ -46,7 +46,7 @@ def Model(features, labels, mode, params):
                                             trainable = False) # 학습 유무
 
     # embedding_lookup을 통해서 features['input']의 인덱스를
-    # 위에서 만든 eembedding_encoder의 인덱스의 값으로 변경하여 
+    # 위에서 만든 embedding_encoder의 인덱스의 값으로 변경하여 
     # 임베딩된 디코딩 배치를 만든다.
     embedding_encoder_batch = tf.nn.embedding_lookup(params = embedding_encoder, ids = features['input'])
     
@@ -89,7 +89,7 @@ def Model(features, labels, mode, params):
             # MUltiLayer RNN CEll에 encoder_cell_list를 넣어 멀티 레이어를 만든다.
             rnn_cell = tf.contrib.rnn.MultiRNNCell(encoder_cell_list)
         else:
-            # 단층 make_lstm_cell을 만든다.
+            # 단층 LSTMLCell을 만든다.
             rnn_cell = make_lstm_cell(mode, params['hidden_size'], "")
         # rnn_cell에 의해 지정된 반복적인 신경망을 만든다.
         # encoder_outputs(RNN 출력 Tensor)[batch_size, 
@@ -106,7 +106,7 @@ def Model(features, labels, mode, params):
         # 값이 True이면 멀티레이어로 모델을 구성하고 False이면 단일레이어로
         # 모델을 구성 한다.
         if params['multilayer'] == True:
-            # layerSize 만큼  LSTMCell을  decoder_cell_list에 담는다.
+            # layer_size 만큼  LSTMCell을  decoder_cell_list에 담는다.
             decoder_cell_list = [make_lstm_cell(mode, params['hidden_size'], i) for i in range(params['layer_size'])]
             # MUltiLayer RNN CEll에 decoder_cell_list를 넣어 멀티 레이어를 만든다.
             rnn_cell = tf.contrib.rnn.MultiRNNCell(decoder_cell_list)
