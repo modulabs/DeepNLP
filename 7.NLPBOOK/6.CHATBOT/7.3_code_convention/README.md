@@ -20,7 +20,19 @@ pandas
 sklearn   
 
 # Project Structure
-![images](images/project_structure.png)     
+    .
+    ├── data_in                     # 데이터가 존재하는 영역
+        ├── ChatBotData.csv         # 전체 데이터
+        ├── ChatBotData.csv_short   # 축소된 데이터 (테스트 용도)
+        ├── README.md               # 데이터 저자 READMD 파일
+    ├── data_out                    # 출력 되는 모든 데이터가 모이는 영역
+        ├── vocabularyData.voc      # 사전 파일
+        ├── check_point             # check_point 저장 공간
+    ├── configs.py                  # 모델 설정에 관한 소스
+    ├── data.py                     # data 전처리 및 모델에 주입되는 data set 만드는 소스
+    ├── main.py                     # 전체적인 프로그램이 시작되는 소스
+    ├── model.py                    # 모델이 들어 있는 소스
+    └── predict.py                  # 학습된 모델로 실행 해보는 소스    
    
 
 # Config
