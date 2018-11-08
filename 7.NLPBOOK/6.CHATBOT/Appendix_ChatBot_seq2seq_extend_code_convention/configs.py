@@ -19,7 +19,7 @@ tf.app.flags.DEFINE_boolean('embedding', True, 'Use Embedding flag') # 임베딩
 tf.app.flags.DEFINE_boolean('multilayer', True, 'Use Multi RNN Cell') # 멀티 RNN 유무
 tf.app.flags.DEFINE_boolean('attention', True, 'Use Attention') #  어텐션 사용 유무
 tf.app.flags.DEFINE_boolean('teacher_forcing', True, 'Use Teacher Forcing') # 학습시 디코더 인풋 정답 지원 유무
-tf.app.flags.DEFINE_boolean('tokenize_as_morph', True, 'set morph tokenize') # 형태소에 따른 토크나이징 사용 유무
+tf.app.flags.DEFINE_boolean('tokenize_as_morph', False, 'set morph tokenize') # 형태소에 따른 토크나이징 사용 유무
 tf.app.flags.DEFINE_boolean('serving', False, 'Use Serving') #  서빙 기능 지원 여부
 tf.app.flags.DEFINE_boolean('loss_mask', False, 'Use loss mask') # PAD에 대한 마스크를 통한 loss를 제한
 
