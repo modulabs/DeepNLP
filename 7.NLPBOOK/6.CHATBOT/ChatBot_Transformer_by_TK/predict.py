@@ -37,20 +37,20 @@ def run():
 
 
 def pred(input):
-    inputPredicEnc, inputPredicEncLength = data.encProcessing([input], char2idx)
+    inputPredicEnc, inputPredicEncLength = data.encProcessing([input], char2idx, pred=True)
     print(inputPredicEnc)
     # 학습 과정이 아니므로 디코딩 입력은
     # 존재하지 않는다.(구조를 맞추기 위해 넣는다.)
-    outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""], char2idx)
+    outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""], char2idx, pred=True)
     # 학습 과정이 아니므로 디코딩 출력 부분도
     # 존재하지 않는다.(구조를 맞추기 위해 넣는다.)
 
-    targetPredicDec = data.decTargetProcessing([""], char2idx)
+    targetPredicDec = data.decTargetProcessing([""], char2idx, pred=True)
 
     for i in range(DEFINES.maxSequenceLength):
         if i > 0:
-            outputPredicDec, outputPredicDecLength = data.decOutputProcessing([answer], char2idx)
-            targetPredicDec = data.decTargetProcessing([answer], char2idx)
+            outputPredicDec, outputPredicDecLength = data.decOutputProcessing([answer], char2idx, pred=True)
+            targetPredicDec = data.decTargetProcessing([answer], char2idx, pred=True)
         # 예측을 하는 부분이다.
         predictions = classifier.predict(
             input_fn=lambda: data.evalInputFn(inputPredicEnc, outputPredicDec, targetPredicDec, 1))
@@ -58,6 +58,9 @@ def pred(input):
         # 예측한 값을 인지 할 수 있도록
         # 텍스트로 변경하는 부분이다.
         answer = data.pred2string(predictions, idx2char)
+
+        if END in answer:
+            break
 
     print("final answer:", answer)
 

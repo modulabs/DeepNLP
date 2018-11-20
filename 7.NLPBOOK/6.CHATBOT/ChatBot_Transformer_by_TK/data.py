@@ -59,7 +59,7 @@ def preproLikeMorphlized(data):
 
 # 인덱스화 할 xValue와 키가 워드이고 
 # 값이 인덱스인 딕셔너리를 받는다.
-def encProcessing(xValue, dictionary):
+def encProcessing(xValue, dictionary, pred=True):
     # 인덱스 값들을 가지고 있는 
     # 배열이다.(누적된다.)
     sequencesInputIndex = []
@@ -98,10 +98,14 @@ def encProcessing(xValue, dictionary):
         # maxSequenceLength보다 문장 길이가 
         # 작다면 빈 부분에 PAD(0)를 넣어준다.
         sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
+        if not pred:
+            for i in range(len(sequenceIndex)):
+                sequencesInputIndex.append(sequenceIndex)
         # 인덱스화 되어 있는 값을 
         # sequencesInputIndex에 넣어 준다.
         # sequenceIndex.reverse()
-        sequencesInputIndex.append(sequenceIndex)
+        else:
+            sequencesInputIndex.append(sequenceIndex)
     # 인덱스화된 일반 배열을 넘파이 배열로 변경한다. 
     # 이유는 텐서플로우 dataset에 넣어 주기 위한 
     # 사전 작업이다.
@@ -112,7 +116,7 @@ def encProcessing(xValue, dictionary):
 
 # 인덱스화 할 yValue와 키가 워드 이고 값이 
 # 인덱스인 딕셔너리를 받는다.
-def decOutputProcessing(yValue, dictionary):
+def decOutputProcessing(yValue, dictionary, pred=True):
     # 인덱스 값들을 가지고 있는 
     # 배열이다.(누적된다)
     sequencesOutputIndex = []
@@ -144,9 +148,16 @@ def decOutputProcessing(yValue, dictionary):
         # maxSequenceLength보다 문장 길이가 
         # 작다면 빈 부분에 PAD(0)를 넣어준다.
         sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
+
+        if not pred:
+            for i in range(len(sequenceIndex)):
+                tempIndex = np.zeros(len(sequenceIndex), dtype=np.int32)
+                tempIndex[:i] = sequenceIndex[:i]
+                sequencesOutputIndex.append(tempIndex)
         # 인덱스화 되어 있는 값을 
         # sequencesOutputIndex에 넣어 준다.
-        sequencesOutputIndex.append(sequenceIndex)
+        else:
+            sequencesOutputIndex.append(sequenceIndex)
     # 인덱스화된 일반 배열을 넘파이 배열로 변경한다. 
     # 이유는 텐서플로우 dataset에 넣어 주기 위한 
     # 사전 작업이다.
@@ -156,7 +167,7 @@ def decOutputProcessing(yValue, dictionary):
 
 # 인덱스화 할 yValue와 키가 워드 이고
 # 값이 인덱스인 딕셔너리를 받는다.
-def decTargetProcessing(yValue, dictionary):
+def decTargetProcessing(yValue, dictionary, pred=True):
     # 인덱스 값들을 가지고 있는 
     # 배열이다.(누적된다)
     sequencesTargetIndex = []
@@ -182,9 +193,16 @@ def decTargetProcessing(yValue, dictionary):
         # maxSequenceLength보다 문장 길이가 
         # 작다면 빈 부분에 PAD(0)를 넣어준다.
         sequenceIndex += (DEFINES.maxSequenceLength - len(sequenceIndex)) * [dictionary[PAD]]
+
+        if not pred:
+            for i in range(len(sequenceIndex)):
+                tempIndex = np.zeros(len(sequenceIndex), dtype=np.int32)
+                tempIndex[:i] = sequenceIndex[:i]
+                sequencesTargetIndex.append(tempIndex)
         # 인덱스화 되어 있는 값을 
         # sequencesTargetIndex에 넣어 준다.
-        sequencesTargetIndex.append(sequenceIndex)
+        else:
+            sequencesTargetIndex.append(sequenceIndex)
     # 인덱스화된 일반 배열을 넘파이 배열로 변경한다. 
     # 이유는 텐서플로우 dataset에 넣어 주기 위한 사전 작업이다.
     # 넘파이 배열에 인덱스화된 배열과 그 길이를 넘겨준다.

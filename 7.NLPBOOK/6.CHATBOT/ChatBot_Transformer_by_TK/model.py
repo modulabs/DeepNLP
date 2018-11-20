@@ -22,18 +22,14 @@ def sublayer_connection(inputs, sublayer):
 
 
 def feed_forward(inputs, num_units):
-    feature_dim = inputs.get_shape().as_list()[-1]
-    outputs = inputs
+    outputs = tf.keras.layers.Dense(num_units[0], activation=tf.nn.relu)(inputs)
 
-    for unit in num_units:
-        outputs = tf.keras.layers.Dense(unit, activation=tf.nn.relu)(outputs)
-        outputs = tf.keras.layers.Dropout(0.2)(outputs)
-
-    return tf.keras.layers.Dense(feature_dim)(outputs)
+    return tf.keras.layers.Dense(num_units[1])(outputs)
 
 
 def positional_encoding(dim, sentence_length, dtype=tf.float32):
-    encoded_vec = np.array([pos/np.power(10000, 2*i/dim) for pos in range(sentence_length) for i in range(dim)])
+    encoded_vec = np.array([pos/np.power(10000, 2*i/dim)
+                            for pos in range(sentence_length) for i in range(dim)])
     encoded_vec[::2] = np.sin(encoded_vec[::2])
     encoded_vec[1::2] = np.cos(encoded_vec[1::2])
     return tf.convert_to_tensor(encoded_vec.reshape([sentence_length, dim]), dtype=dtype)
@@ -41,7 +37,6 @@ def positional_encoding(dim, sentence_length, dtype=tf.float32):
 
 def scaled_dot_product_attention(query, key, value, masked=False):
     key_seq_length = float(key.get_shape().as_list()[-2])
-
     key = tf.transpose(key, perm=[0, 2, 1])
     outputs = tf.matmul(query, key) / tf.sqrt(key_seq_length)
 
@@ -77,15 +72,32 @@ def multi_head_attention(query, key, value, heads, masked=False):
 
 
 def encoder_module(inputs, num_units, heads):
-    self_attn = sublayer_connection(inputs, lambda: multi_head_attention(inputs, inputs, inputs, heads))
-    outputs = sublayer_connection(self_attn, lambda: feed_forward(inputs, num_units))
+    self_attn = sublayer_connection(inputs,
+                                    lambda: multi_head_attention(inputs,
+                                                                 inputs,
+                                                                 inputs,
+                                                                 heads))
+    outputs = sublayer_connection(self_attn,
+                                  lambda: feed_forward(self_attn,
+                                                       num_units))
     return outputs
 
 
 def decoder_module(inputs, encoder_outputs, num_units, heads):
-    masked_self_attn = sublayer_connection(inputs, lambda: multi_head_attention(inputs, inputs, inputs, heads, masked=True))
-    self_attn = sublayer_connection(masked_self_attn, lambda: multi_head_attention(encoder_outputs, encoder_outputs, inputs, heads))
-    outputs = sublayer_connection(self_attn, lambda: feed_forward(inputs, num_units))
+    masked_self_attn = sublayer_connection(inputs,
+                                           lambda: multi_head_attention(inputs,
+                                                                        inputs,
+                                                                        inputs,
+                                                                        heads,
+                                                                        masked=True))
+    self_attn = sublayer_connection(masked_self_attn,
+                                    lambda: multi_head_attention(masked_self_attn,
+                                                                 encoder_outputs,
+                                                                 encoder_outputs,
+                                                                 heads))
+    outputs = sublayer_connection(self_attn,
+                                  lambda: feed_forward(self_attn,
+                                                       num_units))
 
     return outputs
 
@@ -93,7 +105,7 @@ def decoder_module(inputs, encoder_outputs, num_units, heads):
 def encoder(inputs, num_units, heads, num_layers):
     outputs = inputs
     for _ in range(num_layers):
-        outputs = encoder_module(inputs, num_units, heads)
+        outputs = encoder_module(outputs, num_units, heads)
 
     return outputs
 
@@ -101,7 +113,7 @@ def encoder(inputs, num_units, heads, num_layers):
 def decoder(inputs, encoder_outputs, num_units, heads, num_layers):
     outputs = inputs
     for _ in range(num_layers):
-        outputs = decoder_module(inputs, encoder_outputs, num_units, heads)
+        outputs = decoder_module(outputs, encoder_outputs, num_units, heads)
 
     return outputs
 
@@ -131,8 +143,11 @@ def model_fn(features, labels, mode, params):
     x_embedded_matrix = x_embedded_matrix + position_encode
     y_embedded_matrix = y_embedded_matrix + position_encode
 
-    encoder_outputs = encoder(x_embedded_matrix, [params['hiddenSize'] * 4, params['hiddenSize']], 4, 2)
-    decoder_outputs = decoder(y_embedded_matrix, encoder_outputs, [params['hiddenSize'] * 4, params['hiddenSize']], 4, 2)
+    encoder_outputs = encoder(x_embedded_matrix,
+                              [params['hiddenSize'] * 4, params['hiddenSize']], 4, 2)
+    decoder_outputs = decoder(y_embedded_matrix,
+                              encoder_outputs,
+                              [params['hiddenSize'] * 4, params['hiddenSize']], 4, 2)
 
     logits = tf.keras.layers.Dense(params['vocabularyLength'])(decoder_outputs)
 

@@ -31,6 +31,8 @@ def main(self):
     # 훈련셋 디코딩 출력 부분 만드는 부분이다.
     targetTrainDec = data.decTargetProcessing(yTrain, char2idx)
 
+    print(inputTrainEnc.shape, outputTrainDec.shape, targetTrainDec.shape)
+
     inputTestEnc, inputTestEncLength = data.encProcessing(xTest, char2idx)
     outputTestDec, outputTestDecLength = data.decOutputProcessing(yTest, char2idx)
     targetTestDec = data.decTargetProcessing(yTest, char2idx)
@@ -66,7 +68,7 @@ def main(self):
         inputTrainEnc, outputTrainDec, targetTrainDec, DEFINES.batchSize), steps=DEFINES.trainSteps)
 
     evalResult = classifier.evaluate(input_fn=lambda: data.evalInputFn(
-        inputTestEnc, outputTestDec, targetTestDec, 1))
+        inputTrainEnc, outputTrainDec, targetTrainDec, 1))
     print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**evalResult))
 
     # outputPredicDec, outputPredicDecLength = data.decOutputProcessing([""] * 100, char2idx)
