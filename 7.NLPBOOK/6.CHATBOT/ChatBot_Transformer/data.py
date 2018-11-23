@@ -196,12 +196,18 @@ def dec_target_processing(value, dictionary):
 def pred2string(value, dictionary):
     # 텍스트 문장을 보관할 배열을 선언한다.
     sentence_string = []
+    print(value)
     # 인덱스 배열 하나를 꺼내서 v에 넘겨준다.
     for v in value:
         # 딕셔너리에 있는 단어로 변경해서 배열에 담는다.
+        print(v['indexs'])
+        for index in v['indexs']:
+            print(index)
         sentence_string = [dictionary[index] for index in v['indexs']]
 
+    print("***********************")
     print(sentence_string)
+    print("***********************")
     answer = ""
     # 패딩값도 담겨 있으므로 패딩은 모두 스페이스 처리 한다.
     for word in sentence_string:
@@ -210,6 +216,23 @@ def pred2string(value, dictionary):
             answer += " "
     # 결과를 출력한다.
     print(answer)
+    return answer
+
+def pred_next_string(value, dictionary):
+    # 텍스트 문장을 보관할 배열을 선언한다.
+    sentence_string = []
+    # 인덱스 배열 하나를 꺼내서 v에 넘겨준다.
+    for v in value:
+        # 딕셔너리에 있는 단어로 변경해서 배열에 담는다.
+        sentence_string = [dictionary[index] for index in v['indexs']]
+    
+    answer = ""
+    # 패딩값도 담겨 있으므로 패딩은 모두 스페이스 처리 한다.
+    for word in sentence_string:
+        if word not in PAD and word not in END:
+            answer += word
+            answer += " "
+    # 결과를 출력한다.
     return answer
 
 
@@ -231,7 +254,7 @@ def train_input_fn(train_input_enc, train_output_dec, train_target_dec, batch_si
     assert batch_size is not None, "train batchSize must not be None"
     # from_tensor_slices를 통해 나눈것을 
     # 배치크기 만큼 묶어 준다.
-    dataset = dataset.batch(batch_size)
+    dataset = dataset.batch(batch_size, drop_remainder=True)
     # 데이터 각 요소에 대해서 rearrange 함수를 
     # 통해서 요소를 변환하여 맵으로 구성한다.
     dataset = dataset.map(rearrange)
@@ -259,7 +282,7 @@ def eval_input_fn(eval_input_enc, eval_output_dec, eval_target_dec, batch_size):
     assert batch_size is not None, "eval batchSize must not be None"
     # from_tensor_slices를 통해 나눈것을 
     # 배치크기 만큼 묶어 준다.
-    dataset = dataset.batch(batch_size)
+    dataset = dataset.batch(batch_size, drop_remainder=True)
     # 데이터 각 요소에 대해서 rearrange 함수를 
     # 통해서 요소를 변환하여 맵으로 구성한다.
     dataset = dataset.map(rearrange)

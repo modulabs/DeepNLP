@@ -18,6 +18,7 @@ if __name__ == '__main__':
 
     # 테스트용 데이터 만드는 부분이다.
     # 인코딩 부분 만든다.
+    print(sys.argv)
     input = ""
     for i in sys.argv[1:]:
         input += i 
@@ -38,18 +39,22 @@ if __name__ == '__main__':
             model_dir=DEFINES.check_point_path, # 체크포인트 위치 등록한다.
             params={ # 모델 쪽으로 파라메터 전달한다.
                 'hidden_size': DEFINES.hidden_size, # 가중치 크기 설정한다.
-                'layer_size': DEFINES.layer_size, # 멀티 레이어 층 개수를 설정한다.
                 'learning_rate': DEFINES.learning_rate, # 학습율 설정한다. 
                 'vocabulary_length': vocabulary_length, # 딕셔너리 크기를 설정한다.
                 'embedding_size': DEFINES.embedding_size, # 임베딩 크기를 설정한다.
-                'embedding': DEFINES.embedding, # 임베딩 사용 유무를 설정한다.
-                'multilayer': DEFINES.multilayer, # 멀티 레이어 사용 유무를 설정한다.
+                'max_sequence_length': DEFINES.max_sequence_length,
+                
             })
 
+    for i in range(DEFINES.max_sequence_length):
+    if i > 0:
+        predic_output_dec, predic_output_decLength = data.dec_output_processing([answer], char2idx)
+        predic_target_dec = data.dec_target_processing([answer], char2idx)
     # 예측을 하는 부분이다.
     predictions = classifier.predict(
-        input_fn=lambda:data.eval_input_fn(predic_input_enc, predic_output_dec, predic_target_dec, DEFINES.batch_size))
+        input_fn=lambda: data.eval_input_fn(predic_input_enc, predic_output_dec, predic_target_dec, 1))
     
-    # 예측한 값을 인지 할 수 있도록 
+    answer = data.pred_next_string(predictions, idx2char)
+    # 예측한 값을 인지 할 수 있도록
     # 텍스트로 변경하는 부분이다.
-    data.pred2string(predictions, idx2char)
+    print("answer: ", answer)
