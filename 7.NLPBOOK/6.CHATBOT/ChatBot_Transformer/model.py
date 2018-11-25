@@ -191,7 +191,7 @@ def Model(features, labels, mode, params):
     #     embedding_tile = tf.tile(tf.expand_dims(embedding, 0), [DEFINES.batch_size, 1, 1])
     #     linear_outputs = tf.matmul(decoder_outputs, embedding_tile, transpose_b = True) 
 
-    #     #mask_zero = 1 - tf.cast(tf.equal(labels, 0),dtype=tf.float32)
+    #     mask_zero = 1 - tf.cast(tf.equal(labels, 0),dtype=tf.float32)
     #     mask_end = 1 - tf.cast(tf.equal(labels, 2), dtype=tf.float32)
     #     labels_one_hot = tf.one_hot(indices = labels, depth = params['vocabulary_length'], dtype = tf.float32) # [BS, senxlen, vocab_size]
     #     loss = tf.nn.softmax_cross_entropy_with_logits(labels = labels_one_hot, logits = linear_outputs)
@@ -199,8 +199,11 @@ def Model(features, labels, mode, params):
     #     loss = loss * mask_end
     #     loss = tf.reduce_mean(loss)
     # else:
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels))
     
+    # 정답 차원 변경을 한다. [배치 * max_sequence_length * vocabulary_length]  
+    # logits과 같은 차원을 만들기 위함이다.
+    labels_ = tf.one_hot(labels, params['vocabulary_length'])
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels_))
     
     accuracy = tf.metrics.accuracy(labels=labels, predictions=predict, name='accOp')
 
