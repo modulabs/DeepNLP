@@ -214,14 +214,18 @@ def Model(features, labels, mode, params):
     # 에러 값을 가져 오고 이것들은 차원 축소를 통해 단일 텐서 값을 반환 한다.
     # pad의 loss값을 무력화 시킨다. pad가 아닌값은 1 pad인 값은 0을 주어 동작
     # 하도록 한다.
+    # 정답 차원 변경을 한다. [배치 * max_sequence_length * vocabulary_length]  
+    # logits과 같은 차원을 만들기 위함이다.
+    labels_ = tf.one_hot(labels, params['vocabulary_length'])
+    
     if TRAIN and params['loss_mask'] == True:
-        loss = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)
+        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels_))
         masks = features['length']
 
         loss = loss * tf.cast(masks, tf.float32)
         loss = tf.reduce_mean(loss)
     else:
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels)) 
+       loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels_))
     # 라벨과 결과가 일치하는지 빈도 계산을 통해 
     # 정확도를 측정하는 방법이다.
     accuracy = tf.metrics.accuracy(labels=labels, predictions=predict, name='accOp')

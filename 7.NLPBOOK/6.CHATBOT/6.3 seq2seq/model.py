@@ -89,7 +89,7 @@ def Model(features, labels, mode, params):
             # MUltiLayer RNN CEll에 encoder_cell_list를 넣어 멀티 레이어를 만든다.
             rnn_cell = tf.contrib.rnn.MultiRNNCell(encoder_cell_list)
         else:
-            # 단층 LSTMLCell을 만든다.
+            # 단층 rnn_cell을 만든다.
             rnn_cell = make_lstm_cell(mode, params['hidden_size'], "")
         # rnn_cell에 의해 지정된 반복적인 신경망을 만든다.
         # encoder_outputs(RNN 출력 Tensor)[batch_size, 
@@ -150,7 +150,10 @@ def Model(features, labels, mode, params):
     # tf.nn.sparse_softmax_cross_entropy_with_logits(로스함수)를 
     # 통과 시켜 틀린 만큼의
     # 에러 값을 가져 오고 이것들은 차원 축소를 통해 단일 텐서 값을 반환 한다.
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels))
+    # 정답 차원 변경을 한다. [배치 * max_sequence_length * vocabulary_length]  
+    # logits과 같은 차원을 만들기 위함이다.
+    labels_ = tf.one_hot(labels, params['vocabulary_length'])
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels_))
     # 라벨과 결과가 일치하는지 빈도 계산을 통해 
     # 정확도를 측정하는 방법이다.
     accuracy = tf.metrics.accuracy(labels=labels, predictions=predict,name='accOp')
