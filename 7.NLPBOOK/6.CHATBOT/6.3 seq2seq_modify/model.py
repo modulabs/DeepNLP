@@ -79,7 +79,6 @@ def model(features, labels, mode, params):
     if PREDICT:
         predictions = { # 예측 값들이 여기에 딕셔너리 형태로 담긴다.
             'indexs': predict, # 시퀀스 마다 예측한 값
-            'logits': logits, # 마지막 결과 값
         }
         return tf.estimator.EstimatorSpec(mode, predictions=predictions)
     
