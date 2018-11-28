@@ -22,7 +22,7 @@ if __name__ == '__main__':
     print(input)
     # 테스트셋 인코딩 / 디코딩 입력 / 디코딩 출력 만드는 부분이다.
     predic_input_enc, predic_input_enc_length = data.enc_processing([input], char2idx)
-    predic_output_dec, predic_output_dec_length = data.dec_output_processing([""], char2idx)
+    predic_output_dec, predic_output_dec_length = data.dec_input_processing([""], char2idx)
     predic_target_dec = data.dec_target_processing([""], char2idx)
 
 	# 에스티메이터 구성
