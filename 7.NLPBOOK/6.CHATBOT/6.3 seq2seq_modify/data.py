@@ -1,4 +1,4 @@
-from konlpy.tag import Twitter
+from konlpy.tag import Okt
 import pandas as pd
 import tensorflow as tf
 import enum
@@ -31,10 +31,10 @@ def load_data():
     train_input, eval_input, train_label, eval_label = train_test_split(question, answer, test_size=0.33, random_state=42)
     return train_input, train_label, eval_input, eval_label
 
-# Twitter.morphs 함수를 통해 토크나이즈 된 
+# Okt.morphs 함수를 통해 토크나이즈 된 
 # 리스트 객체를 받아 문자열을 재구성해서 리턴한다.
 def prepro_like_morphlized(data):
-    morph_analyzer = Twitter()
+    morph_analyzer = Okt()
     result_data = list()
     for seq in tqdm(data):
         morphlized_seq = " ".join(morph_analyzer.morphs(seq.replace(' ', '')))

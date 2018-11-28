@@ -34,7 +34,7 @@ def main(self):
     classifier = tf.estimator.Estimator(
             model_fn=ml.Model, # 모델 등록한다.
             model_dir=DEFINES.check_point_path, 
-            params={ .
+            params={
                 'hidden_size': DEFINES.hidden_size, 
                 'layer_size': DEFINES.layer_size, 
                 'learning_rate': DEFINES.learning_rate, 

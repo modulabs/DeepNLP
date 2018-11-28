@@ -22,7 +22,7 @@ def Model(features, labels, mode, params):
         # xavier (Xavier Glorot와 Yoshua Bengio (2010)
         # URL : http://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf
         initializer = tf.contrib.layers.xavier_initializer()
-        embedding_encoder = tf.get_variable(name = "embedding_encoder", # 이름
+        embedding = tf.get_variable(name = "embedding", # 이름
                                  	  shape=[params['vocabulary_length'], params['embedding_size']], #  모양
                                  	  dtype=tf.float32, # 타입
                                  	  initializer=initializer, # 초기화 값
@@ -30,31 +30,16 @@ def Model(features, labels, mode, params):
     else:   
         # tf.eye를 통해서 사전의 크기 만큼의 단위행렬 
         # 구조를 만든다.
-        embedding_encoder = tf.eye(num_rows = params['vocabulary_length'], dtype = tf.float32)
-        embedding_encoder = tf.get_variable(name = "embedding_encoder", # 이름
-                                            initializer = embedding_encoder, # 초기화 값
+        embedding = tf.eye(num_rows = params['vocabulary_length'], dtype = tf.float32)
+        embedding = tf.get_variable(name = "embedding", # 이름
+                                            initializer = embedding, # 초기화 값
                                             trainable = False) # 학습 유무
 
     # 임베딩된 인코딩 배치를 만든다.
-    embedding_encoder_batch = tf.nn.embedding_lookup(params = embedding_encoder, ids = features['input'])
-    
-    # 디코딩 부분 (미리 정의된 임베딩 벡터 사용 유무)
-    if params['embedding'] == True:
-        initializer = tf.contrib.layers.xavier_initializer()
-        embedding_decoder = tf.get_variable(name = "embedding_decoder",
-                                 	  shape=[params['vocabulary_length'], params['embedding_size']],
-                                 	  dtype=tf.float32, 
-                                 	  initializer=initializer, 
-                                 	  trainable=True)
-    else:
-        embedding_decoder = tf.eye(num_rows = params['vocabulary_length'], dtype = tf.float32)
-        embedding_decoder = tf.get_variable(name = 'embedding_decoder', 
-                                            initializer = embedding_decoder, 
-                                            trainable = False)
-
+    embedding_encoder = tf.nn.embedding_lookup(params = embedding, ids = features['input'])
 
     # 임베딩된 디코딩 배치를 만든다.
-    embedding_decoder_batch = tf.nn.embedding_lookup(params = embedding_decoder, ids = features['output'])
+    embedding_decoder = tf.nn.embedding_lookup(params = embedding, ids = features['output'])
 
     with tf.variable_scope('encoder_scope', reuse=tf.AUTO_REUSE):
         # 값이 True이면 멀티레이어로 모델을 구성하고 False이면 
@@ -68,7 +53,7 @@ def Model(features, labels, mode, params):
         # rnn_cell에 의해 지정된 dynamic_rnn 반복적인 신경망을 만든다. 
         # encoder_states 최종 상태  [batch_size, cell.state_size]
         encoder_outputs, encoder_states = tf.nn.dynamic_rnn(cell=rnn_cell, # RNN 셀
-                                                                inputs=embedding_encoder_batch, # 입력 값
+                                                                inputs=embedding_encoder, # 입력 값
                                                                 dtype=tf.float32) # 타입
 
     with tf.variable_scope('decoder_scope', reuse=tf.AUTO_REUSE):
@@ -80,7 +65,7 @@ def Model(features, labels, mode, params):
 
         decoder_initial_state = encoder_states
         decoder_outputs, decoder_states = tf.nn.dynamic_rnn(cell=rnn_cell, # RNN 셀
-                       inputs=embedding_decoder_batch, # 입력 값
+                       inputs=embedding_decoder, # 입력 값
                        initial_state=decoder_initial_state, # 인코딩의 마지막 값으로 초기화
                        dtype=tf.float32) # 타입
 
