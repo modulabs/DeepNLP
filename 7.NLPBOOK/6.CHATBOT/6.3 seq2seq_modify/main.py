@@ -18,12 +18,12 @@ def main(self):
 
 	# 훈련셋 인코딩 / 디코딩 입력 / 디코딩 출력 만드는 부분이다.
     train_input_enc, train_input_enc_length = data.enc_processing(train_input, word2idx)
-    train_output_dec, train_output_dec_length = data.dec_output_processing(train_label, word2idx)
+    train_output_dec, train_output_dec_length = data.dec_put_processing(train_label, word2idx)
     train_target_dec = data.dec_target_processing(train_label, word2idx)
 	
 	# 평가셋 인코딩 / 디코딩 입력 / 디코딩 출력 만드는 부분이다.
     eval_input_enc, eval_input_enc_length = data.enc_processing(eval_input,word2idx)
-    eval_output_dec, eval_output_dec_length = data.dec_output_processing(eval_label, word2idx)
+    eval_output_dec, eval_output_dec_length = data.dec_input_processing(eval_label, word2idx)
     eval_target_dec = data.dec_target_processing(eval_label, word2idx)
 
     # 현재 경로'./'에 현재 경로 하부에 체크 포인트를 저장한 디렉토리를 설정한다.
