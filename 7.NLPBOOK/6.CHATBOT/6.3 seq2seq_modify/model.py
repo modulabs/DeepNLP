@@ -12,7 +12,7 @@ def make_lstm_cell(mode, hiddenSize, index):
     return cell
 
 # 에스티메이터 모델 부분이다.
-def Model(features, labels, mode, params):
+def model(features, labels, mode, params):
     TRAIN = mode == tf.estimator.ModeKeys.TRAIN
     EVAL = mode == tf.estimator.ModeKeys.EVAL
     PREDICT = mode == tf.estimator.ModeKeys.PREDICT
