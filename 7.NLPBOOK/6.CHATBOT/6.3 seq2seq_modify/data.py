@@ -80,7 +80,7 @@ def enc_processing(value, dictionary):
 
 
 # 디코딩 입력 데이터를 만드는 함수이다.
-def dec_output_processing(value, dictionary):
+def dec_input_processing(value, dictionary):
     sequences_output_index = []
     sequences_length = []
 
