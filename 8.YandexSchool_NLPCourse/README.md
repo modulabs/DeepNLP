@@ -1,2 +1,2 @@
-# NLPBOOK
+# YandexSchool_NLPCourse
 
