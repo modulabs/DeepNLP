@@ -11,6 +11,7 @@ Git Book: https://nlp.gitbook.io/book/
 
 
 # 스터디 Member 자료 공유  
-신성진 깃헙 :   
+신성진 깃헙 :   https://github.com/aiscientist  
 조중현 개인 블로그 : https://reniew.github.io/   
+
 
