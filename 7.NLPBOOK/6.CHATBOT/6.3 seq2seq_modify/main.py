@@ -18,12 +18,12 @@ def main(self):
 
 	# 훈련셋 인코딩 / 디코딩 입력 / 디코딩 출력 만드는 부분이다.
     train_input_enc, train_input_enc_length = data.enc_processing(train_input, word2idx)
-    train_output_dec, train_output_dec_length = data.dec_put_processing(train_label, word2idx)
+    train_input_dec, train_input_dec_length = data.dec_input_processing(train_label, word2idx)
     train_target_dec = data.dec_target_processing(train_label, word2idx)
 	
 	# 평가셋 인코딩 / 디코딩 입력 / 디코딩 출력 만드는 부분이다.
     eval_input_enc, eval_input_enc_length = data.enc_processing(eval_input,word2idx)
-    eval_output_dec, eval_output_dec_length = data.dec_input_processing(eval_label, word2idx)
+    eval_input_dec, eval_input_dec_length = data.dec_input_processing(eval_label, word2idx)
     eval_target_dec = data.dec_target_processing(eval_label, word2idx)
 
     # 현재 경로'./'에 현재 경로 하부에 체크 포인트를 저장한 디렉토리를 설정한다.
@@ -46,22 +46,22 @@ def main(self):
 
 	# 학습 실행
     classifier.train(input_fn=lambda:data.train_input_fn(
-        train_input_enc, train_output_dec, train_target_dec,  DEFINES.batch_size), steps=DEFINES.train_steps)
+        train_input_enc, train_input_dec, train_target_dec,  DEFINES.batch_size), steps=DEFINES.train_steps)
     
     # 평가 실행
     eval_result = classifier.evaluate(input_fn=lambda:data.eval_input_fn(
-        eval_input_enc, eval_output_dec, eval_target_dec,  DEFINES.batch_size))
+        eval_input_enc, eval_input_dec, eval_target_dec,  DEFINES.batch_size))
     print('\nEVAL set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
 
 
 	# 테스트셋 인코딩 / 디코딩 입력 / 디코딩 출력 만드는 부분이다.
     predic_input_enc, predic_input_enc_length = data.enc_processing(["가끔 궁금해"], word2idx)
-    predic_output_dec, predic_output_decLength = data.dec_output_processing([""], word2idx)       
+    predic_input_dec, predic_input_dec_length = data.dec_input_processing([""], word2idx)       
     predic_target_dec = data.dec_target_processing([""], word2idx)      
 
     # 예측 실행
     predictions = classifier.predict(
-        input_fn=lambda:data.eval_input_fn(predic_input_enc, predic_output_dec, predic_target_dec, DEFINES.batch_size))
+        input_fn=lambda:data.eval_input_fn(predic_input_enc, predic_input_dec, predic_target_dec, DEFINES.batch_size))
     
     # 예측한 값을 텍스트로 변경하는 부분이다.
     data.pred2string(predictions, idx2word)
