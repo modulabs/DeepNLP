@@ -8,3 +8,9 @@
 Git Book: https://nlp.gitbook.io/book/
 
 ### 자세한 사항은 모두연 딥 NLP반에 Contact: modu@modulabs.co.kr###
+
+
+# 스터디 Member 자료 공유  
+신성진 깃헙 :   
+조중현 개인 블로그 : https://reniew.github.io/   
+
