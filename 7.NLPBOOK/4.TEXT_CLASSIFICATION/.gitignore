@@ -193,3 +193,5 @@ logs/
 export/
 OLD/
 sh/
+data_in/
+data_out/
