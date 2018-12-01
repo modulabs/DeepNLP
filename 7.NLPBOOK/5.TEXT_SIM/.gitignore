@@ -108,5 +108,4 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-data_in/
 data_out/
