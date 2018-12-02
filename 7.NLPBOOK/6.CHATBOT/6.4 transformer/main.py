@@ -85,7 +85,11 @@ def main(self):
         predictions = classifier.predict(
             input_fn=lambda: data.eval_input_fn(predic_input_enc, predic_output_dec, predic_target_dec, 1))
 
-        answer = data.pred_next_string(predictions, idx2char)
+        answer, finished = data.pred_next_string(predictions, idx2char)
+
+        if finished:
+            break
+
     # 예측한 값을 인지 할 수 있도록
     # 텍스트로 변경하는 부분이다.
     print("answer: ", answer)

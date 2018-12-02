@@ -49,6 +49,7 @@ if __name__ == '__main__':
             'embedding_size': DEFINES.embedding_size,  # 임베딩 크기를 설정한다.
             'layer_size': DEFINES.layer_size,
             'max_sequence_length': DEFINES.max_sequence_length,
+            'xavier_initializer': DEFINES.xavier_initializer
         })
 
     for i in range(DEFINES.max_sequence_length):

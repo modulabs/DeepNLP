@@ -47,9 +47,9 @@ def positional_encoding(dim, sentence_length):
 
 def scaled_dot_product_attention(query, key, value, masked=False):
     # Attention(Q, K, V ) = softmax(QKt / root dk)V
-    key_seq_length = float(key.get_shape().as_list()[-2])
+    key_dim_size = float(key.get_shape().as_list()[-1])
     key = tf.transpose(key, perm=[0, 2, 1])
-    outputs = tf.matmul(query, key) / tf.sqrt(key_seq_length)
+    outputs = tf.matmul(query, key) / tf.sqrt(key_dim_size)
 
     if masked:
         diag_vals = tf.ones_like(outputs[0, :, :])
