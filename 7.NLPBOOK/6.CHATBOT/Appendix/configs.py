@@ -2,7 +2,7 @@
 import tensorflow as tf
 
 tf.app.flags.DEFINE_integer('batch_size', 64, 'batch size') # 배치 크기
-tf.app.flags.DEFINE_integer('train_steps', 10000, 'train steps') # 학습 에포크
+tf.app.flags.DEFINE_integer('train_steps', 20000, 'train steps') # 학습 에포크
 tf.app.flags.DEFINE_float('dropout_width', 0.8, 'dropout width') # 드롭아웃 크기
 tf.app.flags.DEFINE_integer('layer_size', 1, 'layer size') # 멀티 레이어 크기 (multi rnn)
 tf.app.flags.DEFINE_integer('hidden_size', 128, 'weights size') # 가중치 크기
