@@ -9,11 +9,12 @@ import numpy as np
 from configs import DEFINES
 
 from tqdm import tqdm
+
 FILTERS = "([~.,!?\"':;)(])"
-PAD = "<PADDING>"
-STD = "<START>"
+PAD = "<PAD>"
+STD = "<SOS>"
 END = "<END>"
-UNK = "<UNKNWON>"
+UNK = "<UNK>"
 
 PAD_INDEX = 0
 STD_INDEX = 1
@@ -31,7 +32,8 @@ def load_data():
     question, answer = list(data_df['Q']), list(data_df['A'])
     # skleran에서 지원하는 함수를 통해서 학습 셋과 
     # 테스트 셋을 나눈다.
-    train_input, eval_input, train_label, eval_label = train_test_split(question, answer, test_size=0.33, random_state=42)
+    train_input, eval_input, train_label, eval_label = train_test_split(question, answer, test_size=0.33,
+                                                                        random_state=42)
     # 그 값을 리턴한다.
     return train_input, train_label, eval_input, eval_label
 
@@ -174,7 +176,7 @@ def dec_target_processing(value, dictionary):
         # 문장 제한 길이보다 길어질 경우 뒤에 토큰을 자르고 있다.
         # 그리고 END 토큰을 넣어 준다
         if len(sequence_index) >= DEFINES.max_sequence_length:
-            sequence_index = sequence_index[:DEFINES.max_sequence_length-1] + [dictionary[END]]
+            sequence_index = sequence_index[:DEFINES.max_sequence_length - 1] + [dictionary[END]]
         else:
             sequence_index += [dictionary[END]]
         # max_sequence_length보다 문장 길이가 
@@ -218,22 +220,30 @@ def pred2string(value, dictionary):
     print(answer)
     return answer
 
+
 def pred_next_string(value, dictionary):
     # 텍스트 문장을 보관할 배열을 선언한다.
     sentence_string = []
+    is_finished = False
+
     # 인덱스 배열 하나를 꺼내서 v에 넘겨준다.
     for v in value:
         # 딕셔너리에 있는 단어로 변경해서 배열에 담는다.
         sentence_string = [dictionary[index] for index in v['indexs']]
-    
+
     answer = ""
     # 패딩값도 담겨 있으므로 패딩은 모두 스페이스 처리 한다.
     for word in sentence_string:
-        if word not in PAD and word not in END:
+        if word == END:
+            is_finished = True
+            break
+
+        if word != PAD and word != END:
             answer += word
             answer += " "
+
     # 결과를 출력한다.
-    return answer
+    return answer, is_finished
 
 
 def rearrange(input, output, target):
