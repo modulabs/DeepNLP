@@ -5,7 +5,7 @@
 ## 매주 수요일 8:00 ~ 10:30. 강남 모두의 연구소 캠퍼스
 
 # Tensorflow로 시작하는 Kaggle 자연어처리 (On Progress)
-Git Book: https://nlp.gitbook.io/book/
+Git Book: https://nlp.gitbook.io/book/  
 DeepNLP 위키북스 Git Hub : https://github.com/NLP-kr/tensorflow-ml-nlp  
 
 ### 자세한 사항은 모두연 딥 NLP반에 Contact: modu@modulabs.co.kr###
