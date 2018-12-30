@@ -3,6 +3,7 @@
 .ipynb_checkpoints/
 data_in/
 sh/
+input/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
