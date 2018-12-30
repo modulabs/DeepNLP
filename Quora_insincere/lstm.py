@@ -11,7 +11,7 @@ import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 # For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
 
 import os
-print(os.listdir("../data_in"))
+print(os.listdir("./data_in"))
 
 # Any results you write to the current directory are saved as output.
 
@@ -35,10 +35,12 @@ from tensorflow.keras.layers import Reshape, Flatten, Concatenate, Dropout, Spat
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import Model
 from tensorflow.keras import backend as K
-# from tensorflow.keras.engine.topology import Layer
+from tensorflow.keras.layers import Layer
 from tensorflow.keras import initializers, regularizers, constraints, optimizers, layers
 from tensorflow.keras.layers import concatenate
 from tensorflow.keras.callbacks import *
+
+os.environ["CUDA_VISIBLE_DEVICES"]="7"
 
 ## some config values 
 embed_size = 300 # how big is each word vector
@@ -46,8 +48,8 @@ max_features = 95000 # how many unique words to use (i.e num rows in embedding v
 maxlen = 70 # max number of words in a question to use
 
 def load_and_prec():
-    train_df = pd.read_csv("../data_in/train.csv")
-    test_df = pd.read_csv("../data_in/test.csv")
+    train_df = pd.read_csv("./data_in/train.csv")
+    test_df = pd.read_csv("./data_in/test.csv")
     print("Train shape : ",train_df.shape)
     print("Test shape : ",test_df.shape)
     
@@ -78,7 +80,7 @@ def load_and_prec():
     return train_X, test_X, train_y, tokenizer.word_index
 
 def load_glove(word_index):
-    EMBEDDING_FILE = '../data_in/embeddings/glove.840B.300d/glove.840B.300d.txt'
+    EMBEDDING_FILE = './data_in/embeddings/glove.840B.300d/glove.840B.300d.txt'
     def get_coefs(word,*arr): return word, np.asarray(arr, dtype='float32')
     embeddings_index = dict(get_coefs(*o.split(" ")) for o in open(EMBEDDING_FILE))
 
@@ -97,7 +99,7 @@ def load_glove(word_index):
     return embedding_matrix 
     
 def load_fasttext(word_index):    
-    EMBEDDING_FILE = '../data_in/embeddings/wiki-news-300d-1M/wiki-news-300d-1M.vec'
+    EMBEDDING_FILE = './data_in/embeddings/wiki-news-300d-1M/wiki-news-300d-1M.vec'
     def get_coefs(word,*arr): return word, np.asarray(arr, dtype='float32')
     embeddings_index = dict(get_coefs(*o.split(" ")) for o in open(EMBEDDING_FILE) if len(o)>100)
 
@@ -116,7 +118,7 @@ def load_fasttext(word_index):
     return embedding_matrix
 
 def load_para(word_index):
-    EMBEDDING_FILE = '../data_in/embeddings/paragram_300_sl999/paragram_300_sl999.txt'
+    EMBEDDING_FILE = './data_in/embeddings/paragram_300_sl999/paragram_300_sl999.txt'
     def get_coefs(word,*arr): return word, np.asarray(arr, dtype='float32')
     embeddings_index = dict(get_coefs(*o.split(" ")) for o in open(EMBEDDING_FILE, encoding="utf8", errors='ignore') if len(o)>100)
 
@@ -471,7 +473,7 @@ for idx, (train_idx, valid_idx) in enumerate(splits):
         train_meta[valid_idx] = pred_val_y.reshape(-1)
         test_meta += pred_test_y.reshape(-1) / len(splits)
 
-sub = pd.read_csv('../input/sample_submission.csv')
+sub = pd.read_csv('./input/sample_submission.csv')
 sub.prediction = test_meta > 0.33
 sub.to_csv("submission.csv", index=False)
 
