@@ -65,8 +65,8 @@ def load_and_prec():
     train_df = pd.read_csv("../input/train.csv")
     test_df = pd.read_csv("../input/test.csv")
 
-    train_df = train_df[:100]
-    test_df = test_df[:100]
+    # train_df = train_df[:100]
+    # test_df = test_df[:100]
     
     train_df["question_text"] = train_df["question_text"].str.lower()
     test_df["question_text"] = test_df["question_text"].str.lower()
