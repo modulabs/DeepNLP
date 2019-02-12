@@ -8,6 +8,7 @@
 Git Book: https://nlp.gitbook.io/book/  
 DeepNLP 위키북스 GitHub : https://github.com/NLP-kr/tensorflow-ml-nlp  
 DeepNLP 2019 GitHub : https://github.com/NLP-kr/DeepNLP2019  
+DeepNLP 논문 구현 : https://github.com/NLP-kr/paper-implement.git  
 
 ### 자세한 사항은 모두연 딥 NLP반에 Contact: modu@modulabs.co.kr###
 
