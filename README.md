@@ -6,8 +6,8 @@
 
 # Tensorflow로 시작하는 Kaggle 자연어처리 (On Progress)
 Git Book: https://nlp.gitbook.io/book/  
-DeepNLP 위키북스 Git Hub : https://github.com/NLP-kr/tensorflow-ml-nlp  
-DeepNLP 2019 : https://github.com/NLP-kr/DeepNLP2019  
+DeepNLP 위키북스 GitHub : https://github.com/NLP-kr/tensorflow-ml-nlp  
+DeepNLP 2019 GitHub : https://github.com/NLP-kr/DeepNLP2019  
 
 ### 자세한 사항은 모두연 딥 NLP반에 Contact: modu@modulabs.co.kr###
 
