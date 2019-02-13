@@ -1,4 +1,5 @@
 # Chat_Learning
+* **2019년 DeepNLP Repository**: https://github.com/modudeepnlp/DeepNLP2019
 * 스케쥴: https://docs.google.com/spreadsheets/d/1-m9TveaMZ54EVI-ikGYcp1orD1-GsIwXZbaZDi0oW4c/edit#gid=1282839535
 
 * 구글드라이브 저장소: https://drive.google.com/drive/folders/13fitbwqw_r-IjNJuSk-tMjKETjyIuWFd?usp=sharing
